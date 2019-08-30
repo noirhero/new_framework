@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Vk.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkDevice.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkCommon.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkSwapChain.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkCamera.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkTexture.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkModel.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkUtils.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkWin.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkBody.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Vk.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkWin.cpp" />
+    <ClCompile Include="VkBody.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="vulkan">
+      <UniqueIdentifier>{f385478d-8963-4d9a-9699-7861763e099b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
