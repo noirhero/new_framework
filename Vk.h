@@ -2,14 +2,17 @@
 
 #pragma once
 
+#include "VkCommon.h"
+
 namespace Vk
 {
+	Settings& GetSettings();
+
 	bool Initialize();
 	void Release();
 
-	HWND SetupWindow(HINSTANCE instance, WNDPROC wndProc);
-	void Prepare();
-	void RenderLoop();
+	void Prepare(HINSTANCE windowInstance, HWND window);
+	void RenderLoop(HWND window);
 
 	void HandleMessage(HWND handle, uint32_t msg, WPARAM wParam, LPARAM lParam);
 }

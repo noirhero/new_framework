@@ -30,7 +30,22 @@
     <ClInclude Include="VkWin.h">
       <Filter>vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="VkBody.h">
+    <ClInclude Include="VkDebug.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkPhysicalDevice.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkInstance.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkRenderPass.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkCommand.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkFrameBuffer.h">
       <Filter>vulkan</Filter>
     </ClInclude>
   </ItemGroup>
@@ -40,8 +55,25 @@
     <ClCompile Include="Vk.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="VkWin.cpp" />
-    <ClCompile Include="VkBody.cpp" />
+    <ClCompile Include="VkWin.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkDebug.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkInstance.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkPhysicalDevice.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkRenderPass.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkCommand.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkFrameBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="vulkan">

@@ -3,8 +3,14 @@
 #include "stdafx.h"
 #include "Vk.h"
 
+#include "VkDebug.h"
+#include "VkInstance.h"
+#include "VkPhysicalDevice.h"
 #include "VkDevice.h"
 #include "VkSwapChain.h"
+#include "VkRenderPass.h"
+#include "VkCommand.h"
+#include "VkFrameBuffer.h"
 #include "VkCamera.h"
 #include "VkTexture.h"
 #include "VkModel.h"
@@ -12,105 +18,51 @@
 
 namespace Vk
 {
-	float fpsTimer = 0.0f;
-	uint32_t frameCounter = 0;
-	uint32_t destWidth;
-	uint32_t destHeight;
-	bool resizing = false;
+	enum PBRWorkflows
+	{
+		PBR_WORKFLOW_METALLIC_ROUGHNESS = 0,
+		PBR_WORKFLOW_SPECULAR_GLOSINESS = 1
+	};
 
-	bool prepared = false;
-	uint32_t width = 1280;
-	uint32_t height = 720;
-	float frameTimer = 1.0f;
-	Camera camera;
-	glm::vec2 mousePos;
-	bool paused = false;
-	uint32_t lastFPS = 0;
-
-	Settings settings;
-
-	struct DepthStencil {
-		VkImage image;
-		VkDeviceMemory mem;
-		VkImageView view;
-	} depthStencil;
-
-	struct GamePadState {
-		glm::vec2 axisLeft = glm::vec2(0.0f);
-		glm::vec2 axisRight = glm::vec2(0.0f);
-	} gamePadState;
-
-	struct MouseButtons {
+	struct MouseButtons
+	{
 		bool left = false;
 		bool right = false;
 		bool middle = false;
-	} mouseButtons;
+	};
 
-	HWND window;
-	HINSTANCE windowInstance;
-
-	bool validation = false;
-	VkInstance instance = VK_NULL_HANDLE;
-	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-	VkPhysicalDeviceProperties deviceProperties;
-	VkPhysicalDeviceFeatures deviceFeatures;
-	VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
-	VkDevice device = VK_NULL_HANDLE;
-	VulkanDevice* vulkanDevice = nullptr;
-	VkQueue queue = VK_NULL_HANDLE;
-	VkFormat depthFormat;
-	VkCommandPool cmdPool = VK_NULL_HANDLE;
-	VkRenderPass renderPass = VK_NULL_HANDLE;
-	std::vector<VkFramebuffer>frameBuffers;
-	uint32_t currentBuffer = 0;
-	VkDescriptorPool descriptorPool;
-	VkPipelineCache pipelineCache;
-	VulkanSwapChain swapChain;
-
-	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallback = nullptr;
-	PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallback = nullptr;
-	VkDebugReportCallbackEXT debugReportCallback = VK_NULL_HANDLE;
-
-	struct MultisampleTarget {
-		struct {
-			VkImage image;
-			VkImageView view;
-			VkDeviceMemory memory;
-		} color;
-		struct {
-			VkImage image;
-			VkImageView view;
-			VkDeviceMemory memory;
-		} depth;
-	} multisampleTarget;
-
-	struct Textures {
+	struct Textures
+	{
 		TextureCubeMap environmentCube;
 		Texture2D empty;
 		Texture2D lutBrdf;
 		TextureCubeMap irradianceCube;
 		TextureCubeMap prefilteredCube;
-	} textures;
+	};
 
-	struct Models {
+	struct Models
+	{
 		VkModel::Model scene;
 		VkModel::Model skybox;
-	} models;
+	};
 
-	struct UniformBufferSet {
+	struct UniformBufferSet
+	{
 		Buffer scene;
 		Buffer skybox;
 		Buffer params;
 	};
 
-	struct UBOMatrices {
+	struct UBOMatrices
+	{
 		glm::mat4 projection;
 		glm::mat4 model;
 		glm::mat4 view;
 		glm::vec3 camPos;
-	} shaderValuesScene, shaderValuesSkybox;
+	};
 
-	struct shaderValuesParams {
+	struct ShaderValuesParams
+	{
 		glm::vec4 lightDir;
 		float exposure = 4.5f;
 		float gamma = 2.2f;
@@ -118,26 +70,101 @@ namespace Vk
 		float scaleIBLAmbient = 1.0f;
 		float debugViewInputs = 0;
 		float debugViewEquation = 0;
-	} shaderValuesParams;
+	};
 
-	VkPipelineLayout pipelineLayout;
-
-	struct Pipelines {
+	struct Pipelines
+	{
 		VkPipeline skybox;
 		VkPipeline pbr;
 		VkPipeline pbrAlphaBlend;
-	} pipelines;
+	};
 
-	struct DescriptorSetLayouts {
+	struct DescriptorSetLayouts
+	{
 		VkDescriptorSetLayout scene;
 		VkDescriptorSetLayout material;
 		VkDescriptorSetLayout node;
-	} descriptorSetLayouts;
+	};
 
-	struct DescriptorSets {
+	struct DescriptorSets
+	{
 		VkDescriptorSet scene;
 		VkDescriptorSet skybox;
 	};
+
+	struct PushConstBlockMaterial
+	{
+		glm::vec4 baseColorFactor;
+		glm::vec4 emissiveFactor;
+		glm::vec4 diffuseFactor;
+		glm::vec4 specularFactor;
+		float workflow;
+		int colorTextureSet;
+		int PhysicalDescriptorTextureSet;
+		int normalTextureSet;
+		int occlusionTextureSet;
+		int emissiveTextureSet;
+		float metallicFactor;
+		float roughnessFactor;
+		float alphaMask;
+		float alphaMaskCutoff;
+	};
+
+	struct LightSource
+	{
+		glm::vec3 color = glm::vec3(1.0f);
+		glm::vec3 rotation = glm::vec3(75.0f, 40.0f, 0.0f);
+	}; 
+
+	float fpsTimer = 0.0f;
+	float frameTimer = 1.0f;
+	uint32_t frameCounter = 0;
+	uint32_t lastFPS = 0;
+
+	uint32_t destWidth;
+	uint32_t destHeight;
+	bool resizing = false;
+	bool prepared = false;
+	bool paused = false;
+
+	glm::vec2 mousePos;
+	MouseButtons mouseButtons;
+	bool rotateModel = false;
+	glm::vec3 modelrot = glm::vec3(0.0f);
+	glm::vec3 modelPos = glm::vec3(0.0f);
+	Camera camera;
+
+	Textures textures;
+	Models models;
+	UBOMatrices shaderValuesScene, shaderValuesSkybox;
+	ShaderValuesParams shaderValuesParams;
+	Pipelines pipelines;
+	DescriptorSetLayouts descriptorSetLayouts;
+	PushConstBlockMaterial pushConstBlockMaterial;
+	LightSource lightSource;
+
+	Settings _settings;
+	Debug _debug;
+	Instance _instance;
+	PhysicalDevice _physDevice;
+
+	VkDevice device = VK_NULL_HANDLE;
+	VulkanDevice* vulkanDevice = nullptr;
+
+	VkQueue queue = VK_NULL_HANDLE;
+
+	VkFormat depthFormat = VK_FORMAT_UNDEFINED;
+
+	CommandPool _cmdPool;
+
+	RenderPass _renderPass;
+
+	uint32_t currentBuffer = 0;
+	VkDescriptorPool descriptorPool;
+	VkPipelineCache pipelineCache;
+	VulkanSwapChain swapChain;
+	VkPipelineLayout pipelineLayout;
+
 	std::vector<DescriptorSets> descriptorSets;
 
 	std::vector<VkCommandBuffer> commandBuffers;
@@ -156,157 +183,37 @@ namespace Vk
 
 	bool displayBackground = true;
 
-	struct LightSource {
-		glm::vec3 color = glm::vec3(1.0f);
-		glm::vec3 rotation = glm::vec3(75.0f, 40.0f, 0.0f);
-	} lightSource;
-
 	std::map<std::string, std::string> environments;
 	std::string selectedEnvironment = "papermill";
 
-	struct PushConstBlockMaterial {
-		glm::vec4 baseColorFactor;
-		glm::vec4 emissiveFactor;
-		glm::vec4 diffuseFactor;
-		glm::vec4 specularFactor;
-		float workflow;
-		int colorTextureSet;
-		int PhysicalDescriptorTextureSet;
-		int normalTextureSet;
-		int occlusionTextureSet;
-		int emissiveTextureSet;
-		float metallicFactor;
-		float roughnessFactor;
-		float alphaMask;
-		float alphaMaskCutoff;
-	} pushConstBlockMaterial;
-
-	enum PBRWorkflows { PBR_WORKFLOW_METALLIC_ROUGHNESS = 0, PBR_WORKFLOW_SPECULAR_GLOSINESS = 1 };
-
-	bool rotateModel = false;
-	glm::vec3 modelrot = glm::vec3(0.0f);
-	glm::vec3 modelPos = glm::vec3(0.0f);
-
-	VKAPI_ATTR VkBool32 VKAPI_CALL debugMessageCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t srcObject, size_t location, int32_t msgCode, const char * pLayerPrefix, const char * pMsg, void * pUserData)
+	Settings& GetSettings()
 	{
-		std::string prefix("");
-		if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
-			prefix += "ERROR:";
-		};
-		if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT) {
-			prefix += "WARNING:";
-		};
-		if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT) {
-			prefix += "DEBUG:";
-		}
-		std::stringstream debugMessage;
-		debugMessage << prefix << " [" << pLayerPrefix << "] Code " << msgCode << " : " << pMsg << "\n";
-		std::cout << debugMessage.str() << "\n";
-
-		fflush(stdout);
-		return VK_FALSE;
-	}
-
-	VkResult createInstance(bool enableValidation)
-	{
-		validation = enableValidation;
-
-		VkApplicationInfo appInfo = {};
-		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.pApplicationName = "New Framework";
-		appInfo.pEngineName = "Paradise";
-		appInfo.apiVersion = VK_API_VERSION_1_0;
-
-		std::vector<const char*> instanceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME };
-
-		// Enable surface extensions depending on os
-		instanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-
-		VkInstanceCreateInfo instanceCreateInfo = {};
-		instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		instanceCreateInfo.pNext = NULL;
-		instanceCreateInfo.pApplicationInfo = &appInfo;
-		if (instanceExtensions.size() > 0)
-		{
-			if (validation)
-			{
-				instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-			}
-			instanceCreateInfo.enabledExtensionCount = (uint32_t)instanceExtensions.size();
-			instanceCreateInfo.ppEnabledExtensionNames = instanceExtensions.data();
-		}
-		if (validation)
-		{
-			instanceCreateInfo.enabledLayerCount = 1;
-			const char *validationLayerNames[] =
-			{
-				"VK_LAYER_LUNARG_standard_validation"
-			};
-			instanceCreateInfo.ppEnabledLayerNames = validationLayerNames;
-		}
-		return vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
+		return _settings;
 	}
 
 	bool Initialize()
 	{
-#if defined(_DEBUG)
-		bool isValidate = true;
-#else
-		bool isValidate = false;
-#endif
-
-		if (VK_SUCCESS != createInstance(isValidate))
+		if (false == _instance.Initialize(_settings))
 			return false;
 
-		if (validation)
-		{
-			AllocConsole();
-			AttachConsole(GetCurrentProcessId());
-			FILE *stream;
-			freopen_s(&stream, "CONOUT$", "w+", stdout);
-			freopen_s(&stream, "CONOUT$", "w+", stderr);
-			SetConsoleTitle(TEXT("Vulkan validation output"));
+		if (true == _settings.validation)
+			_debug.Initialize(_instance.Get());
 
-			vkCreateDebugReportCallback = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT"));
-			vkDestroyDebugReportCallback = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT"));
-			VkDebugReportCallbackCreateInfoEXT debugCreateInfo{};
-			debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
-			debugCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)debugMessageCallback;
-			debugCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
-			VK_CHECK_RESULT(vkCreateDebugReportCallback(instance, &debugCreateInfo, nullptr, &debugReportCallback));
-		}
-
-		VkResult err = VK_SUCCESS;
-
-		uint32_t gpuCount = 0;
-		VK_CHECK_RESULT(vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr));
-		assert(gpuCount > 0);
-
-		std::vector<VkPhysicalDevice> physicalDevices(gpuCount);
-		err = vkEnumeratePhysicalDevices(instance, &gpuCount, physicalDevices.data());
-		if (err) {
-			std::cerr << "Could not enumerate physical devices!" << std::endl;
-			exit(err);
-		}
-
-		uint32_t selectedDevice = 0;
-		physicalDevice = physicalDevices[selectedDevice];
-
-		vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-		vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
-		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);
+		_physDevice.Initialize(_instance.Get());
 
 		/*
 			Device creation
 		*/
-		vulkanDevice = new VulkanDevice(physicalDevice);
+		vulkanDevice = new VulkanDevice(_physDevice.Get());
+
 		VkPhysicalDeviceFeatures enabledFeatures{};
-		if (deviceFeatures.samplerAnisotropy) {
+		if (_physDevice.GetFeatures().samplerAnisotropy)
 			enabledFeatures.samplerAnisotropy = VK_TRUE;
-		}
-		std::vector<const char*> enabledExtensions{};
+
+		const std::vector<const char*> enabledExtensions{};
 		VkResult res = vulkanDevice->createLogicalDevice(enabledFeatures, enabledExtensions);
-		if (res != VK_SUCCESS) {
+		if (res != VK_SUCCESS)
+		{
 			std::cerr << "Could not create Vulkan device!" << std::endl;
 			exit(res);
 		}
@@ -320,12 +227,15 @@ namespace Vk
 		/*
 			Suitable depth format
 		*/
-		std::vector<VkFormat> depthFormats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D16_UNORM };
+		const std::vector<VkFormat> depthFormats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D16_UNORM };
 		VkBool32 validDepthFormat = false;
-		for (auto& format : depthFormats) {
-			VkFormatProperties formatProps;
-			vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProps);
-			if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+		for (auto& format : depthFormats)
+		{
+			VkFormatProperties formatProps{};
+			vkGetPhysicalDeviceFormatProperties(_physDevice.Get(), format, &formatProps);
+
+			if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+			{
 				depthFormat = format;
 				validDepthFormat = true;
 				break;
@@ -333,7 +243,7 @@ namespace Vk
 		}
 		assert(validDepthFormat);
 
-		swapChain.connect(instance, physicalDevice, device);
+		swapChain.connect(_instance.Get(), _physDevice.Get(), device);
 
 		return true;
 	}
@@ -378,303 +288,17 @@ namespace Vk
 		// Clean up Vulkan resources
 		swapChain.cleanup();
 		vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-		vkDestroyRenderPass(device, renderPass, nullptr);
-		for (uint32_t i = 0; i < frameBuffers.size(); i++) {
-			vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
-		}
-		vkDestroyImageView(device, depthStencil.view, nullptr);
-		vkDestroyImage(device, depthStencil.image, nullptr);
-		vkFreeMemory(device, depthStencil.mem, nullptr);
+		_renderPass.Release(device);
+		ReleaseFrameBuffers(_settings, device);
 		vkDestroyPipelineCache(device, pipelineCache, nullptr);
-		vkDestroyCommandPool(device, cmdPool, nullptr);
-		if (settings.multiSampling) {
-			vkDestroyImage(device, multisampleTarget.color.image, nullptr);
-			vkDestroyImageView(device, multisampleTarget.color.view, nullptr);
-			vkFreeMemory(device, multisampleTarget.color.memory, nullptr);
-			vkDestroyImage(device, multisampleTarget.depth.image, nullptr);
-			vkDestroyImageView(device, multisampleTarget.depth.view, nullptr);
-			vkFreeMemory(device, multisampleTarget.depth.memory, nullptr);
-		}
+		_cmdPool.Release(device);
 		delete vulkanDevice;
-		if (settings.validation) {
-			vkDestroyDebugReportCallback(instance, debugReportCallback, nullptr);
+		if (_settings.validation) {
+			_debug.Release(_instance.Get());
 		}
-		vkDestroyInstance(instance, nullptr);
+		vkDestroyInstance(_instance.Get(), nullptr);
 	}
 
-	HWND SetupWindow(HINSTANCE instance, WNDPROC wndProc)
-	{
-		windowInstance = instance;
-
-		WNDCLASSEXA wndClass;
-		wndClass.cbSize = sizeof(WNDCLASSEXA);
-		wndClass.style = CS_HREDRAW | CS_VREDRAW;
-		wndClass.lpfnWndProc = wndProc;
-		wndClass.cbClsExtra = 0;
-		wndClass.cbWndExtra = 0;
-		wndClass.hInstance = instance;
-		wndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-		wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wndClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-		wndClass.lpszMenuName = NULL;
-		wndClass.lpszClassName = "NEW_FRAMEWORK";
-		wndClass.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
-
-		if (!RegisterClassExA(&wndClass)) {
-			std::cout << "Could not register window class!\n";
-			fflush(stdout);
-			exit(1);
-		}
-
-		int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-		int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
-		if (settings.fullscreen) {
-			DEVMODE dmScreenSettings;
-			memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
-			dmScreenSettings.dmSize = sizeof(dmScreenSettings);
-			dmScreenSettings.dmPelsWidth = screenWidth;
-			dmScreenSettings.dmPelsHeight = screenHeight;
-			dmScreenSettings.dmBitsPerPel = 32;
-			dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-			if ((width != (uint32_t)screenWidth) && (height != (uint32_t)screenHeight)) {
-				if (ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL) {
-					if (MessageBoxA(NULL, "Fullscreen Mode not supported!\n Switch to window mode?", "Error", MB_YESNO | MB_ICONEXCLAMATION) == IDYES) {
-						settings.fullscreen = false;
-					}
-					else {
-						return nullptr;
-					}
-				}
-			}
-		}
-
-		DWORD dwExStyle;
-		DWORD dwStyle;
-
-		if (settings.fullscreen) {
-			dwExStyle = WS_EX_APPWINDOW;
-			dwStyle = WS_POPUP | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-		}
-		else {
-			dwExStyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
-			dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-		}
-
-		RECT windowRect;
-		windowRect.left = 0L;
-		windowRect.top = 0L;
-		windowRect.right = settings.fullscreen ? (long)screenWidth : (long)width;
-		windowRect.bottom = settings.fullscreen ? (long)screenHeight : (long)height;
-
-		AdjustWindowRectEx(&windowRect, dwStyle, FALSE, dwExStyle);
-
-		window = CreateWindowExA(0,
-			"NEW_FRAMEWORK",
-			"New Framework",
-			dwStyle | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-			0,
-			0,
-			windowRect.right - windowRect.left,
-			windowRect.bottom - windowRect.top,
-			NULL,
-			NULL,
-			instance,
-			NULL);
-
-		if (!settings.fullscreen) {
-			uint32_t x = (GetSystemMetrics(SM_CXSCREEN) - windowRect.right) / 2;
-			uint32_t y = (GetSystemMetrics(SM_CYSCREEN) - windowRect.bottom) / 2;
-			SetWindowPos(window, 0, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
-		}
-
-		if (!window) {
-			printf("Could not create window!\n");
-			fflush(stdout);
-			return nullptr;
-			exit(1);
-		}
-
-		ShowWindow(window, SW_SHOW);
-		SetForegroundWindow(window);
-		SetFocus(window);
-
-		return window;
-	}
-
-	void SetupFrameBuffer()
-	{
-		/*
-		MSAA
-		*/
-		if (settings.multiSampling) {
-			// Check if device supports requested sample count for color and depth frame buffer
-			//assert((deviceProperties.limits.framebufferColorSampleCounts >= sampleCount) && (deviceProperties.limits.framebufferDepthSampleCounts >= sampleCount));
-
-			VkImageCreateInfo imageCI{};
-			imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-			imageCI.imageType = VK_IMAGE_TYPE_2D;
-			imageCI.format = swapChain.colorFormat;
-			imageCI.extent.width = width;
-			imageCI.extent.height = height;
-			imageCI.extent.depth = 1;
-			imageCI.mipLevels = 1;
-			imageCI.arrayLayers = 1;
-			imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-			imageCI.samples = settings.sampleCount;
-			imageCI.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-			imageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			VK_CHECK_RESULT(vkCreateImage(device, &imageCI, nullptr, &multisampleTarget.color.image));
-
-			VkMemoryRequirements memReqs;
-			vkGetImageMemoryRequirements(device, multisampleTarget.color.image, &memReqs);
-			VkMemoryAllocateInfo memAllocInfo{};
-			memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			memAllocInfo.allocationSize = memReqs.size;
-			VkBool32 lazyMemTypePresent;
-			memAllocInfo.memoryTypeIndex = vulkanDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT, &lazyMemTypePresent);
-			if (!lazyMemTypePresent) {
-				memAllocInfo.memoryTypeIndex = vulkanDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			}
-			VK_CHECK_RESULT(vkAllocateMemory(device, &memAllocInfo, nullptr, &multisampleTarget.color.memory));
-			vkBindImageMemory(device, multisampleTarget.color.image, multisampleTarget.color.memory, 0);
-
-			// Create image view for the MSAA target
-			VkImageViewCreateInfo imageViewCI{};
-			imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			imageViewCI.image = multisampleTarget.color.image;
-			imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			imageViewCI.format = swapChain.colorFormat;
-			imageViewCI.components.r = VK_COMPONENT_SWIZZLE_R;
-			imageViewCI.components.g = VK_COMPONENT_SWIZZLE_G;
-			imageViewCI.components.b = VK_COMPONENT_SWIZZLE_B;
-			imageViewCI.components.a = VK_COMPONENT_SWIZZLE_A;
-			imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageViewCI.subresourceRange.levelCount = 1;
-			imageViewCI.subresourceRange.layerCount = 1;
-			VK_CHECK_RESULT(vkCreateImageView(device, &imageViewCI, nullptr, &multisampleTarget.color.view));
-
-			// Depth target
-			imageCI.imageType = VK_IMAGE_TYPE_2D;
-			imageCI.format = depthFormat;
-			imageCI.extent.width = width;
-			imageCI.extent.height = height;
-			imageCI.extent.depth = 1;
-			imageCI.mipLevels = 1;
-			imageCI.arrayLayers = 1;
-			imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-			imageCI.samples = settings.sampleCount;
-			imageCI.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-			imageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			VK_CHECK_RESULT(vkCreateImage(device, &imageCI, nullptr, &multisampleTarget.depth.image));
-
-			vkGetImageMemoryRequirements(device, multisampleTarget.depth.image, &memReqs);
-			memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			memAllocInfo.allocationSize = memReqs.size;
-			memAllocInfo.memoryTypeIndex = vulkanDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT, &lazyMemTypePresent);
-			if (!lazyMemTypePresent) {
-				memAllocInfo.memoryTypeIndex = vulkanDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			}
-			VK_CHECK_RESULT(vkAllocateMemory(device, &memAllocInfo, nullptr, &multisampleTarget.depth.memory));
-			vkBindImageMemory(device, multisampleTarget.depth.image, multisampleTarget.depth.memory, 0);
-
-			// Create image view for the MSAA target
-			imageViewCI.image = multisampleTarget.depth.image;
-			imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			imageViewCI.format = depthFormat;
-			imageViewCI.components.r = VK_COMPONENT_SWIZZLE_R;
-			imageViewCI.components.g = VK_COMPONENT_SWIZZLE_G;
-			imageViewCI.components.b = VK_COMPONENT_SWIZZLE_B;
-			imageViewCI.components.a = VK_COMPONENT_SWIZZLE_A;
-			imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-			imageViewCI.subresourceRange.levelCount = 1;
-			imageViewCI.subresourceRange.layerCount = 1;
-			VK_CHECK_RESULT(vkCreateImageView(device, &imageViewCI, nullptr, &multisampleTarget.depth.view));
-		}
-
-
-		// Depth/Stencil attachment is the same for all frame buffers
-
-		VkImageCreateInfo image = {};
-		image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		image.pNext = NULL;
-		image.imageType = VK_IMAGE_TYPE_2D;
-		image.format = depthFormat;
-		image.extent = { width, height, 1 };
-		image.mipLevels = 1;
-		image.arrayLayers = 1;
-		image.samples = VK_SAMPLE_COUNT_1_BIT;
-		image.tiling = VK_IMAGE_TILING_OPTIMAL;
-		image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		image.flags = 0;
-
-		VkMemoryAllocateInfo mem_alloc = {};
-		mem_alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		mem_alloc.pNext = NULL;
-		mem_alloc.allocationSize = 0;
-		mem_alloc.memoryTypeIndex = 0;
-
-		VkImageViewCreateInfo depthStencilView = {};
-		depthStencilView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		depthStencilView.pNext = NULL;
-		depthStencilView.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		depthStencilView.format = depthFormat;
-		depthStencilView.flags = 0;
-		depthStencilView.subresourceRange = {};
-		depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-		depthStencilView.subresourceRange.baseMipLevel = 0;
-		depthStencilView.subresourceRange.levelCount = 1;
-		depthStencilView.subresourceRange.baseArrayLayer = 0;
-		depthStencilView.subresourceRange.layerCount = 1;
-
-		VkMemoryRequirements memReqs;
-		VK_CHECK_RESULT(vkCreateImage(device, &image, nullptr, &depthStencil.image));
-		vkGetImageMemoryRequirements(device, depthStencil.image, &memReqs);
-		mem_alloc.allocationSize = memReqs.size;
-		mem_alloc.memoryTypeIndex = vulkanDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		VK_CHECK_RESULT(vkAllocateMemory(device, &mem_alloc, nullptr, &depthStencil.mem));
-		VK_CHECK_RESULT(vkBindImageMemory(device, depthStencil.image, depthStencil.mem, 0));
-
-		depthStencilView.image = depthStencil.image;
-		VK_CHECK_RESULT(vkCreateImageView(device, &depthStencilView, nullptr, &depthStencil.view));
-
-		//
-
-		VkImageView attachments[4];
-
-		if (settings.multiSampling) {
-			attachments[0] = multisampleTarget.color.view;
-			attachments[2] = multisampleTarget.depth.view;
-			attachments[3] = depthStencil.view;
-		}
-		else {
-			attachments[1] = depthStencil.view;
-		}
-
-		VkFramebufferCreateInfo frameBufferCI{};
-		frameBufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		frameBufferCI.pNext = NULL;
-		frameBufferCI.renderPass = renderPass;
-		frameBufferCI.attachmentCount = settings.multiSampling ? 4 : 2;
-		frameBufferCI.pAttachments = attachments;
-		frameBufferCI.width = width;
-		frameBufferCI.height = height;
-		frameBufferCI.layers = 1;
-
-		// Create frame buffers for every swap chain image
-		frameBuffers.resize(swapChain.imageCount);
-		for (uint32_t i = 0; i < frameBuffers.size(); i++) {
-			if (settings.multiSampling) {
-				attachments[1] = swapChain.buffers[i].view;
-			}
-			else {
-				attachments[0] = swapChain.buffers[i].view;
-			}
-			VK_CHECK_RESULT(vkCreateFramebuffer(device, &frameBufferCI, nullptr, &frameBuffers[i]));
-		}
-	}
 	/*
 		Offline generation for the cube maps used for PBR lighting
 		- Irradiance cube map
@@ -1872,8 +1496,8 @@ namespace Vk
 		VkPipelineMultisampleStateCreateInfo multisampleStateCI{};
 		multisampleStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 
-		if (settings.multiSampling) {
-			multisampleStateCI.rasterizationSamples = settings.sampleCount;
+		if (_settings.multiSampling) {
+			multisampleStateCI.rasterizationSamples = _settings.sampleCount;
 		}
 
 		std::vector<VkDynamicState> dynamicStateEnables = {
@@ -1923,7 +1547,7 @@ namespace Vk
 		VkGraphicsPipelineCreateInfo pipelineCI{};
 		pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipelineCI.layout = pipelineLayout;
-		pipelineCI.renderPass = renderPass;
+		pipelineCI.renderPass = _renderPass.Get();
 		pipelineCI.pInputAssemblyState = &inputAssemblyStateCI;
 		pipelineCI.pVertexInputState = &vertexInputStateCI;
 		pipelineCI.pRasterizationState = &rasterizationStateCI;
@@ -1935,8 +1559,8 @@ namespace Vk
 		pipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
 		pipelineCI.pStages = shaderStages.data();
 
-		if (settings.multiSampling) {
-			multisampleStateCI.rasterizationSamples = settings.sampleCount;
+		if (_settings.multiSampling) {
+			multisampleStateCI.rasterizationSamples = _settings.sampleCount;
 		}
 
 		// Skybox pipeline (background cube)
@@ -2044,7 +1668,7 @@ namespace Vk
 		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		VkClearValue clearValues[3];
-		if (settings.multiSampling) {
+		if (_settings.multiSampling) {
 			clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 			clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 			clearValues[2].depthStencil = { 1.0f, 0 };
@@ -2056,16 +1680,16 @@ namespace Vk
 
 		VkRenderPassBeginInfo renderPassBeginInfo{};
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassBeginInfo.renderPass = renderPass;
+		renderPassBeginInfo.renderPass = _renderPass.Get();
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
-		renderPassBeginInfo.renderArea.extent.width = width;
-		renderPassBeginInfo.renderArea.extent.height = height;
-		renderPassBeginInfo.clearValueCount = settings.multiSampling ? 3 : 2;
+		renderPassBeginInfo.renderArea.extent.width = _settings.width;
+		renderPassBeginInfo.renderArea.extent.height = _settings.height;
+		renderPassBeginInfo.clearValueCount = _settings.multiSampling ? 3 : 2;
 		renderPassBeginInfo.pClearValues = clearValues;
 
 		for (size_t i = 0; i < commandBuffers.size(); ++i) {
-			renderPassBeginInfo.framebuffer = frameBuffers[i];
+			renderPassBeginInfo.framebuffer = GetFrameBuffer(static_cast<uint32_t>(i));
 
 			VkCommandBuffer currentCB = commandBuffers[i];
 
@@ -2073,14 +1697,14 @@ namespace Vk
 			vkCmdBeginRenderPass(currentCB, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 			VkViewport viewport{};
-			viewport.width = (float)width;
-			viewport.height = (float)height;
+			viewport.width = (float)_settings.width;
+			viewport.height = (float)_settings.height;
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
 			vkCmdSetViewport(currentCB, 0, 1, &viewport);
 
 			VkRect2D scissor{};
-			scissor.extent = { width, height };
+			scissor.extent = { _settings.width, _settings.height };
 			vkCmdSetScissor(currentCB, 0, 1, &scissor);
 
 			VkDeviceSize offsets[1] = { 0 };
@@ -2123,189 +1747,23 @@ namespace Vk
 		}
 	}
 
-	void Prepare()
+	void Prepare(HINSTANCE windowInstance, HWND window)
 	{
 		/*
 		Swapchain
 		*/
 		swapChain.initSurface(windowInstance, window);
-		swapChain.create(&width, &height, settings.vsync);
+		swapChain.create(&_settings.width, &_settings.height, _settings.vsync);
 
 		/*
 			Command pool
 		*/
-		VkCommandPoolCreateInfo cmdPoolInfo = {};
-		cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		cmdPoolInfo.queueFamilyIndex = swapChain.queueNodeIndex;
-		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		VK_CHECK_RESULT(vkCreateCommandPool(device, &cmdPoolInfo, nullptr, &cmdPool));
+		_cmdPool.Initialize(swapChain.queueNodeIndex, device);
 
 		/*
 			Render pass
 		*/
-
-		if (settings.multiSampling) {
-			std::array<VkAttachmentDescription, 4> attachments = {};
-
-			// Multisampled attachment that we render to
-			attachments[0].format = swapChain.colorFormat;
-			attachments[0].samples = settings.sampleCount;
-			attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-			// This is the frame buffer attachment to where the multisampled image
-			// will be resolved to and which will be presented to the swapchain
-			attachments[1].format = swapChain.colorFormat;
-			attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-			attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachments[1].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-			// Multisampled depth attachment we render to
-			attachments[2].format = depthFormat;
-			attachments[2].samples = settings.sampleCount;
-			attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachments[2].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-			// Depth resolve attachment
-			attachments[3].format = depthFormat;
-			attachments[3].samples = VK_SAMPLE_COUNT_1_BIT;
-			attachments[3].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachments[3].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			attachments[3].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachments[3].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[3].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachments[3].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-			VkAttachmentReference colorReference = {};
-			colorReference.attachment = 0;
-			colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-			VkAttachmentReference depthReference = {};
-			depthReference.attachment = 2;
-			depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-			// Resolve attachment reference for the color attachment
-			VkAttachmentReference resolveReference = {};
-			resolveReference.attachment = 1;
-			resolveReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-			VkSubpassDescription subpass = {};
-			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.colorAttachmentCount = 1;
-			subpass.pColorAttachments = &colorReference;
-			// Pass our resolve attachments to the sub pass
-			subpass.pResolveAttachments = &resolveReference;
-			subpass.pDepthStencilAttachment = &depthReference;
-
-			std::array<VkSubpassDependency, 2> dependencies;
-
-			dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-			dependencies[0].dstSubpass = 0;
-			dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-			dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-			dependencies[1].srcSubpass = 0;
-			dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-			dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-			dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-			VkRenderPassCreateInfo renderPassCI = {};
-			renderPassCI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-			renderPassCI.attachmentCount = static_cast<uint32_t>(attachments.size());
-			renderPassCI.pAttachments = attachments.data();
-			renderPassCI.subpassCount = 1;
-			renderPassCI.pSubpasses = &subpass;
-			renderPassCI.dependencyCount = 2;
-			renderPassCI.pDependencies = dependencies.data();
-			VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassCI, nullptr, &renderPass));
-		}
-		else {
-			std::array<VkAttachmentDescription, 2> attachments = {};
-			// Color attachment
-			attachments[0].format = swapChain.colorFormat;
-			attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-			attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-			// Depth attachment
-			attachments[1].format = depthFormat;
-			attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-			attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-			VkAttachmentReference colorReference = {};
-			colorReference.attachment = 0;
-			colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-			VkAttachmentReference depthReference = {};
-			depthReference.attachment = 1;
-			depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-			VkSubpassDescription subpassDescription = {};
-			subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpassDescription.colorAttachmentCount = 1;
-			subpassDescription.pColorAttachments = &colorReference;
-			subpassDescription.pDepthStencilAttachment = &depthReference;
-			subpassDescription.inputAttachmentCount = 0;
-			subpassDescription.pInputAttachments = nullptr;
-			subpassDescription.preserveAttachmentCount = 0;
-			subpassDescription.pPreserveAttachments = nullptr;
-			subpassDescription.pResolveAttachments = nullptr;
-
-			// Subpass dependencies for layout transitions
-			std::array<VkSubpassDependency, 2> dependencies;
-
-			dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-			dependencies[0].dstSubpass = 0;
-			dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-			dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-			dependencies[1].srcSubpass = 0;
-			dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-			dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-			dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-			VkRenderPassCreateInfo renderPassCI{};
-			renderPassCI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-			renderPassCI.attachmentCount = static_cast<uint32_t>(attachments.size());
-			renderPassCI.pAttachments = attachments.data();
-			renderPassCI.subpassCount = 1;
-			renderPassCI.pSubpasses = &subpassDescription;
-			renderPassCI.dependencyCount = static_cast<uint32_t>(dependencies.size());
-			renderPassCI.pDependencies = dependencies.data();
-			VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassCI, nullptr, &renderPass));
-		}
+		_renderPass.Initialize(_settings, swapChain.colorFormat, depthFormat, device);
 
 		/*
 			Pipeline cache
@@ -2317,15 +1775,7 @@ namespace Vk
 		/*
 			Frame buffer
 		*/
-		SetupFrameBuffer();
-
-		camera.type = Camera::CameraType::lookat;
-
-		camera.setPerspective(45.0f, (float)width / (float)height, 0.1f, 256.0f);
-		camera.rotationSpeed = 0.25f;
-		camera.movementSpeed = 0.1f;
-		camera.setPosition({ 0.0f, 0.0f, 1.0f });
-		camera.setRotation({ 0.0f, 0.0f, 0.0f });
+		SetupFrameBuffers(_settings, *vulkanDevice, swapChain, depthFormat, _renderPass.Get());
 
 		waitFences.resize(renderAhead);
 		presentCompleteSemaphores.resize(renderAhead);
@@ -2351,7 +1801,7 @@ namespace Vk
 		{
 			VkCommandBufferAllocateInfo cmdBufAllocateInfo{};
 			cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			cmdBufAllocateInfo.commandPool = cmdPool;
+			cmdBufAllocateInfo.commandPool = _cmdPool.Get();
 			cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 			cmdBufAllocateInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 			VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &cmdBufAllocateInfo, commandBuffers.data()));
@@ -2370,6 +1820,13 @@ namespace Vk
 		recordCommandBuffers();
 
 		prepared = true;
+
+		camera.type = Camera::CameraType::lookat;
+		camera.setPerspective(45.0f, (float)_settings.width / (float)_settings.height, 0.1f, 256.0f);
+		camera.rotationSpeed = 0.25f;
+		camera.movementSpeed = 0.1f;
+		camera.setPosition({ 0.0f, 0.0f, 1.0f });
+		camera.setRotation({ 0.0f, 0.0f, 0.0f });
 	}
 
 	void WindowResized() {}
@@ -2382,27 +1839,14 @@ namespace Vk
 		prepared = false;
 
 		vkDeviceWaitIdle(device);
-		width = destWidth;
-		height = destHeight;
-		swapChain.create(&width, &height, settings.vsync);
-		if (settings.multiSampling) {
-			vkDestroyImageView(device, multisampleTarget.color.view, nullptr);
-			vkDestroyImage(device, multisampleTarget.color.image, nullptr);
-			vkFreeMemory(device, multisampleTarget.color.memory, nullptr);
-			vkDestroyImageView(device, multisampleTarget.depth.view, nullptr);
-			vkDestroyImage(device, multisampleTarget.depth.image, nullptr);
-			vkFreeMemory(device, multisampleTarget.depth.memory, nullptr);
-		}
-		vkDestroyImageView(device, depthStencil.view, nullptr);
-		vkDestroyImage(device, depthStencil.image, nullptr);
-		vkFreeMemory(device, depthStencil.mem, nullptr);
-		for (uint32_t i = 0; i < frameBuffers.size(); i++) {
-			vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
-		}
-		SetupFrameBuffer();
+		_settings.width = destWidth;
+		_settings.height = destHeight;
+		swapChain.create(&_settings.width, &_settings.height, _settings.vsync);
+		ReleaseFrameBuffers(_settings, device);
+		SetupFrameBuffers(_settings, *vulkanDevice, swapChain, depthFormat, _renderPass.Get());
 		vkDeviceWaitIdle(device);
 
-		camera.updateAspectRatio((float)width / (float)height);
+		camera.updateAspectRatio((float)_settings.width / (float)_settings.height);
 		WindowResized();
 
 		prepared = true;
@@ -2511,10 +1955,10 @@ namespace Vk
 		}
 	}
 
-	void RenderLoop()
+	void RenderLoop(HWND window)
 	{
-		destWidth = width;
-		destHeight = height;
+		destWidth = _settings.width;
+		destHeight = _settings.height;
 
 		MSG msg = {};
 		bool quitMessageReceived = false;
@@ -2565,7 +2009,7 @@ namespace Vk
 
 	void HandleMessage(HWND handle, uint32_t msg, WPARAM wParam, LPARAM lParam)
 	{
-		if (VK_NULL_HANDLE == instance)
+		if (VK_NULL_HANDLE == device)
 			return;
 
 		switch (msg)
