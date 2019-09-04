@@ -31,6 +31,8 @@ obj
 *.exe
 *.out
 *.app
+bin/x64_Debug
+bin/x64_Release
 
 # Ignore folders
 .vs
