@@ -11,6 +11,7 @@
 #include "VkRenderPass.h"
 #include "VkCommand.h"
 #include "VkFrameBuffer.h"
+#include "VkPipelineCache.h"
 #include "VkCamera.h"
 #include "VkTexture.h"
 #include "VkModel.h"
@@ -158,16 +159,17 @@ namespace Vk
 	CommandPool _cmdPool;
 
 	RenderPass _renderPass;
+	PipelineCache _pipelineCache;
 
 	uint32_t currentBuffer = 0;
 	VkDescriptorPool descriptorPool;
-	VkPipelineCache pipelineCache;
 	VulkanSwapChain swapChain;
 	VkPipelineLayout pipelineLayout;
 
 	std::vector<DescriptorSets> descriptorSets;
 
-	std::vector<VkCommandBuffer> commandBuffers;
+	//std::vector<VkCommandBuffer> commandBuffers;
+	CommandBuffer _cmdBuffers;
 	std::vector<UniformBufferSet> uniformBuffers;
 
 	std::vector<VkFence> waitFences;
@@ -267,6 +269,7 @@ namespace Vk
 			buffer.scene.destroy();
 			buffer.skybox.destroy();
 		}
+		_cmdBuffers.Release(device, _cmdPool.Get());
 		for (auto fence : waitFences) {
 			vkDestroyFence(device, fence, nullptr);
 		}
@@ -290,7 +293,7 @@ namespace Vk
 		vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 		_renderPass.Release(device);
 		ReleaseFrameBuffers(_settings, device);
-		vkDestroyPipelineCache(device, pipelineCache, nullptr);
+		vkDestroyPipelineCache(device, _pipelineCache.Get(), nullptr);
 		_cmdPool.Release(device);
 		delete vulkanDevice;
 		if (_settings.validation) {
@@ -657,7 +660,7 @@ namespace Vk
 				break;
 			};
 			VkPipeline pipeline;
-			VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipeline));
+			VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, _pipelineCache.Get(), 1, &pipelineCI, nullptr, &pipeline));
 			for (auto shaderStage : shaderStages) {
 				vkDestroyShaderModule(device, shaderStage.module, nullptr);
 			}
@@ -1110,7 +1113,7 @@ namespace Vk
 			loadShader(device, "genbrdflut.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
 		};
 		VkPipeline pipeline;
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipeline));
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, _pipelineCache.Get(), 1, &pipelineCI, nullptr, &pipeline));
 		for (auto shaderStage : shaderStages) {
 			vkDestroyShaderModule(device, shaderStage.module, nullptr);
 		}
@@ -1222,6 +1225,8 @@ namespace Vk
 
 	void setupDescriptors()
 	{
+		descriptorSets.resize(swapChain.imageCount);
+
 		/*
 			Descriptor Pool
 		*/
@@ -1450,6 +1455,8 @@ namespace Vk
 	*/
 	void prepareUniformBuffers()
 	{
+		uniformBuffers.resize(swapChain.imageCount);
+
 		for (auto &uniformBuffer : uniformBuffers) {
 			uniformBuffer.scene.create(vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(shaderValuesScene));
 			uniformBuffer.skybox.create(vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(shaderValuesSkybox));
@@ -1568,7 +1575,7 @@ namespace Vk
 			loadShader(device, "skybox.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
 			loadShader(device, "skybox.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
 		};
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipelines.skybox));
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, _pipelineCache.Get(), 1, &pipelineCI, nullptr, &pipelines.skybox));
 		for (auto shaderStage : shaderStages) {
 			vkDestroyShaderModule(device, shaderStage.module, nullptr);
 		}
@@ -1580,7 +1587,7 @@ namespace Vk
 		};
 		depthStencilStateCI.depthWriteEnable = VK_TRUE;
 		depthStencilStateCI.depthTestEnable = VK_TRUE;
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipelines.pbr));
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, _pipelineCache.Get(), 1, &pipelineCI, nullptr, &pipelines.pbr));
 
 		rasterizationStateCI.cullMode = VK_CULL_MODE_NONE;
 		blendAttachmentState.blendEnable = VK_TRUE;
@@ -1591,7 +1598,7 @@ namespace Vk
 		blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 		blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipelines.pbrAlphaBlend));
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, _pipelineCache.Get(), 1, &pipelineCI, nullptr, &pipelines.pbrAlphaBlend));
 
 		for (auto shaderStage : shaderStages) {
 			vkDestroyShaderModule(device, shaderStage.module, nullptr);
@@ -1610,7 +1617,7 @@ namespace Vk
 						primitive->material.descriptorSet,
 						node->mesh->uniformBuffer.descriptorSet,
 					};
-					vkCmdBindDescriptorSets(commandBuffers[cbIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
+					vkCmdBindDescriptorSets(_cmdBuffers.Get(cbIndex), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
 
 					// Pass material parameters as push constants
 					PushConstBlockMaterial pushConstBlockMaterial{};
@@ -1645,13 +1652,13 @@ namespace Vk
 						pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
 					}
 
-					vkCmdPushConstants(commandBuffers[cbIndex], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstBlockMaterial), &pushConstBlockMaterial);
+					vkCmdPushConstants(_cmdBuffers.Get(cbIndex), pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstBlockMaterial), &pushConstBlockMaterial);
 
 					if (primitive->hasIndices) {
-						vkCmdDrawIndexed(commandBuffers[cbIndex], primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+						vkCmdDrawIndexed(_cmdBuffers.Get(cbIndex), primitive->indexCount, 1, primitive->firstIndex, 0, 0);
 					}
 					else {
-						vkCmdDraw(commandBuffers[cbIndex], primitive->vertexCount, 1, 0, 0);
+						vkCmdDraw(_cmdBuffers.Get(cbIndex), primitive->vertexCount, 1, 0, 0);
 					}
 				}
 			}
@@ -1688,10 +1695,10 @@ namespace Vk
 		renderPassBeginInfo.clearValueCount = _settings.multiSampling ? 3 : 2;
 		renderPassBeginInfo.pClearValues = clearValues;
 
-		for (size_t i = 0; i < commandBuffers.size(); ++i) {
+		for (decltype(_cmdBuffers.Count()) i = 0; i < _cmdBuffers.Count(); ++i) {
 			renderPassBeginInfo.framebuffer = GetFrameBuffer(static_cast<uint32_t>(i));
 
-			VkCommandBuffer currentCB = commandBuffers[i];
+			VkCommandBuffer currentCB = _cmdBuffers.Get(i);
 
 			VK_CHECK_RESULT(vkBeginCommandBuffer(currentCB, &cmdBufferBeginInfo));
 			vkCmdBeginRenderPass(currentCB, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -1768,44 +1775,35 @@ namespace Vk
 		/*
 			Pipeline cache
 		*/
-		VkPipelineCacheCreateInfo pipelineCacheCreateInfo{};
-		pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-		VK_CHECK_RESULT(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache));
+		_pipelineCache.Initialize(device);
 
 		/*
 			Frame buffer
 		*/
 		SetupFrameBuffers(_settings, *vulkanDevice, swapChain, depthFormat, _renderPass.Get());
 
-		waitFences.resize(renderAhead);
-		presentCompleteSemaphores.resize(renderAhead);
-		renderCompleteSemaphores.resize(renderAhead);
-		commandBuffers.resize(swapChain.imageCount);
-		uniformBuffers.resize(swapChain.imageCount);
-		descriptorSets.resize(swapChain.imageCount);
 		// Command buffer execution fences
+		waitFences.resize(renderAhead);
 		for (auto &waitFence : waitFences) {
 			VkFenceCreateInfo fenceCI{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT };
 			VK_CHECK_RESULT(vkCreateFence(device, &fenceCI, nullptr, &waitFence));
 		}
+
 		// Queue ordering semaphores
+		presentCompleteSemaphores.resize(renderAhead);
 		for (auto &semaphore : presentCompleteSemaphores) {
 			VkSemaphoreCreateInfo semaphoreCI{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
 			VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCI, nullptr, &semaphore));
 		}
+
+		renderCompleteSemaphores.resize(renderAhead);
 		for (auto &semaphore : renderCompleteSemaphores) {
 			VkSemaphoreCreateInfo semaphoreCI{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
 			VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCI, nullptr, &semaphore));
 		}
+
 		// Command buffers
-		{
-			VkCommandBufferAllocateInfo cmdBufAllocateInfo{};
-			cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			cmdBufAllocateInfo.commandPool = _cmdPool.Get();
-			cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			cmdBufAllocateInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
-			VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &cmdBufAllocateInfo, commandBuffers.data()));
-		}
+		_cmdBuffers.Initialize(device, _cmdPool.Get(), swapChain.imageCount);
 
 		loadAssets();
 		generateBRDFLUT();
@@ -1895,7 +1893,7 @@ namespace Vk
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = &renderCompleteSemaphores[frameIndex];
 		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffers[currentBuffer];
+		submitInfo.pCommandBuffers = &_cmdBuffers.GetPtr()[currentBuffer];
 		submitInfo.commandBufferCount = 1;
 		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, waitFences[frameIndex]));
 

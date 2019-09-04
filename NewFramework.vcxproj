@@ -169,6 +169,7 @@
     <ClInclude Include="VkInstance.h" />
     <ClInclude Include="VkModel.h" />
     <ClInclude Include="VkPhysicalDevice.h" />
+    <ClInclude Include="VkPipelineCache.h" />
     <ClInclude Include="VkRenderPass.h" />
     <ClInclude Include="VkSwapChain.h" />
     <ClInclude Include="VkTexture.h" />
@@ -189,6 +190,7 @@
     <ClCompile Include="VkFrameBuffer.cpp" />
     <ClCompile Include="VkInstance.cpp" />
     <ClCompile Include="VkPhysicalDevice.cpp" />
+    <ClCompile Include="VkPipelineCache.cpp" />
     <ClCompile Include="VkRenderPass.cpp" />
     <ClCompile Include="VkWin.cpp" />
   </ItemGroup>

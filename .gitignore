@@ -6,6 +6,7 @@
 *.lo
 *.o
 *.obj
+obj
 
 # Precompiled Headers
 *.gch
@@ -33,3 +34,6 @@
 
 # Ignore folders
 .vs
+
+# User files
+*.user

@@ -7,6 +7,7 @@
 
 namespace Vk
 {
+	// Command pool
 	bool CommandPool::Initialize(uint32_t queueNodeIdx, VkDevice device)
 	{
 		VkCommandPoolCreateInfo info{};
@@ -26,5 +27,30 @@ namespace Vk
 
 		vkDestroyCommandPool(device, _cmdPool, nullptr);
 		_cmdPool = VK_NULL_HANDLE;
+	}
+
+	// Command buffer
+	bool CommandBuffer::Initialize(VkDevice device, VkCommandPool cmdPool, uint32_t count)
+	{
+		VkCommandBufferAllocateInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		info.commandPool = cmdPool;
+		info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		info.commandBufferCount = count;
+
+		_cmdBufs.resize(count, VK_NULL_HANDLE);
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &info, _cmdBufs.data()));
+
+		return true;
+	}
+
+	void CommandBuffer::Release(VkDevice device, VkCommandPool cmdPool)
+	{
+		const uint32_t count = static_cast<uint32_t>(_cmdBufs.size());
+		if (0 == count)
+			return;
+
+		vkFreeCommandBuffers(device, cmdPool, count, _cmdBufs.data());
+		_cmdBufs.clear();
 	}
 }
