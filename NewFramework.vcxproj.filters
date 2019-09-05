@@ -51,6 +51,12 @@
     <ClInclude Include="VkPipelineCache.h">
       <Filter>vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="VkScene.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="VkMain.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -76,10 +82,16 @@
     <ClCompile Include="VkCommand.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="VkFrameBuffer.cpp" />
     <ClCompile Include="VkPipelineCache.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="VkFrameBuffer.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkScene.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="vulkan">

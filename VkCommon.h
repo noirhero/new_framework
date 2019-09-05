@@ -1,4 +1,4 @@
-// Copyright 2012-2019 GameParadiso, Inc. All Rights Reserved.
+// Copyright 2018-2019 TAP, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -60,7 +60,7 @@ namespace Vk
 		bool vsync = false;
 		bool multiSampling = true;
 		VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_4_BIT;
-		uint32_t width = 1280;
-		uint32_t height = 720;
+		uint32_t width = 100;
+		uint32_t height = 100;
 	};
 }

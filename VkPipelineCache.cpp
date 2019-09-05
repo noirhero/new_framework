@@ -1,4 +1,4 @@
-// Copyright 2012-2019 GameParadiso, Inc. All Rights Reserved.
+// Copyright 2018-2019 TAP, Inc. All Rights Reserved.
 
 #include "stdafx.h"
 #include "VkPipelineCache.h"
@@ -18,7 +18,7 @@ namespace Vk
 
 	void PipelineCache::Release(VkDevice device)
 	{
-		if (VK_NULL_HANDLE != _pipelineCache)
+		if (VK_NULL_HANDLE == _pipelineCache)
 			return;
 
 		vkDestroyPipelineCache(device, _pipelineCache, nullptr);

@@ -1,4 +1,4 @@
-﻿// Copyright 2012-2019 GameParadiso, Inc. All Rights Reserved.
+﻿// Copyright 2018-2019 TAP, Inc. All Rights Reserved.
 
 #include "stdafx.h"
 
