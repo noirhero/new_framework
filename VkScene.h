@@ -10,6 +10,12 @@ namespace Vk
 	class CommandBuffer;
 	class FrameBuffer;
 
+	enum class PBRWorkflow : uint8_t
+	{
+		METALLIC_ROUGHNESS = 0,
+		SPECULAR_GLOSINESS = 1
+	};
+
 	class Scene
 	{
 	public:

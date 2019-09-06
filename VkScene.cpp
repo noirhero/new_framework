@@ -9,24 +9,16 @@
 #include "VkTexture.h"
 #include "VkModel.h"
 #include "VkUtils.h"
+#include "VkBuffer.h"
 
 namespace Vk
 {
-	enum class PBRWorkflow : uint8_t
-	{
-		METALLIC_ROUGHNESS = 0,
-		SPECULAR_GLOSINESS = 1
-	};
-
-	bool displayBackground = true;
-
-	std::string assetpath = "./../data/";
-	std::map<std::string, std::string> environments;
+	const bool displayBackground = true;
+	const std::string assetpath = "./../data/";
 
 	Texture2D empty;
-
-	VkModel::Model scene;
-	VkModel::Model skybox; // This is really box.
+	Model scene;
+	Model skybox;
 
 	enum class CubeMapTarget : uint8_t
 	{
@@ -37,7 +29,6 @@ namespace Vk
 	TextureCubeMap environmentCube;
 	TextureCubeMap irradianceCube;
 	TextureCubeMap prefilteredCube;
-
 	Texture2D lutBrdf;
 
 	struct ShaderValuesParams
@@ -117,7 +108,7 @@ namespace Vk
 	};
 	Pipelines pipelines;
 
-	bool InitializePath()
+	void CheckToDataPath()
 	{
 		struct stat info;
 		if (0 != stat(assetpath.c_str(), &info))
@@ -126,10 +117,6 @@ namespace Vk
 			std::cerr << msg << std::endl;
 			exit(-1);
 		}
-
-		readDirectory(assetpath + "environments", "*.ktx", environments, false);
-
-		return true;
 	}
 
 	void GenerateCubeMap(Main& main, CubeMapTarget target)
@@ -458,7 +445,7 @@ namespace Vk
 		dynamicStateCI.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
 
 		// Vertex input state
-		VkVertexInputBindingDescription vertexInputBinding = { 0, sizeof(VkModel::Model::Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
+		VkVertexInputBindingDescription vertexInputBinding = { 0, sizeof(Model::Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
 		VkVertexInputAttributeDescription vertexInputAttribute = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 };
 
 		VkPipelineVertexInputStateCreateInfo vertexInputStateCI{};
@@ -1014,7 +1001,7 @@ namespace Vk
 		}
 	}
 
-	void SetupNodeDescriptorSet(VkModel::Node *node, VkDevice device)
+	void SetupNodeDescriptorSet(Node *node, VkDevice device)
 	{
 		if (node->mesh)
 		{
@@ -1057,7 +1044,7 @@ namespace Vk
 		// Environment samplers (radiance, irradiance, brdf lut)
 		imageSamplerCount += 3;
 
-		const std::vector<VkModel::Model*> modellist = { &skybox, &scene };
+		const std::vector<Model*> modellist = { &skybox, &scene };
 		for (auto &model : modellist)
 		{
 			for (auto &material : model->materials)
@@ -1360,7 +1347,7 @@ namespace Vk
 		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &pipelineLayout));
 
 		// Vertex bindings an attributes
-		const VkVertexInputBindingDescription vertexInputBinding = { 0, sizeof(VkModel::Model::Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
+		const VkVertexInputBindingDescription vertexInputBinding = { 0, sizeof(Model::Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
 		const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes =
 		{
 			{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 },
@@ -1435,12 +1422,12 @@ namespace Vk
 			vkDestroyShaderModule(device, shaderStage.module, nullptr);
 	}
 
-	void RenderNode(VkModel::Node *node, uint32_t cbIndex, VkModel::Material::AlphaMode alphaMode, CommandBuffer& cmdBuffers)
+	void RenderNode(Node *node, uint32_t cbIndex, Material::AlphaMode alphaMode, CommandBuffer& cmdBuffers)
 	{
 		if (node->mesh)
 		{
 			// Render mesh primitives
-			for (VkModel::Primitive * primitive : node->mesh->primitives)
+			for (Primitive * primitive : node->mesh->primitives)
 			{
 				if (primitive->material.alphaMode == alphaMode)
 				{
@@ -1462,7 +1449,7 @@ namespace Vk
 					pushConstBlockMaterial.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
 					pushConstBlockMaterial.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
 					pushConstBlockMaterial.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
-					pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == VkModel::Material::ALPHAMODE_MASK);
+					pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
 					pushConstBlockMaterial.alphaMaskCutoff = primitive->material.alphaCutoff;
 
 					// TODO: glTF specs states that metallic roughness should be preferred, even if specular glosiness is present
@@ -1505,8 +1492,7 @@ namespace Vk
 
 	bool Scene::Initialize(Main& main, const Settings& settings)
 	{
-		if (true == environments.empty())
-			InitializePath();
+		CheckToDataPath();
 
 		if(VK_NULL_HANDLE == empty.image)
 			empty.loadFromFile(assetpath + "textures/empty.ktx", VK_FORMAT_R8G8B8A8_UNORM, &main.GetVulkanDevice(), main.GetGPUQueue());
@@ -1643,7 +1629,7 @@ namespace Vk
 
 			vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.pbr);
 
-			VkModel::Model &model = scene;
+			Model &model = scene;
 
 			vkCmdBindVertexBuffers(currentCB, 0, 1, &model.vertices.buffer, offsets);
 			if (model.indices.buffer != VK_NULL_HANDLE)
@@ -1651,17 +1637,17 @@ namespace Vk
 
 			// Opaque primitives first
 			for (auto node : model.nodes)
-				RenderNode(node, static_cast<uint32_t>(i), VkModel::Material::ALPHAMODE_OPAQUE, cmdBuffers);
+				RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_OPAQUE, cmdBuffers);
 
 			// Alpha masked primitives
 			for (auto node : model.nodes)
-				RenderNode(node, static_cast<uint32_t>(i), VkModel::Material::ALPHAMODE_MASK, cmdBuffers);
+				RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_MASK, cmdBuffers);
 
 			// Transparent primitives
 			// TODO: Correct depth sorting
 			vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.pbrAlphaBlend);
 			for (auto node : model.nodes)
-				RenderNode(node, static_cast<uint32_t>(i), VkModel::Material::ALPHAMODE_BLEND, cmdBuffers);
+				RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_BLEND, cmdBuffers);
 
 			// User interface
 			//ui->draw(currentCB);

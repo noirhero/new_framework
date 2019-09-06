@@ -59,7 +59,6 @@ namespace Vk
 		vkDeviceWaitIdle(_main.GetDevice());
 
 		_scene.Release(_main.GetDevice());
-
 		_main.Release(_settings);
 	}
 

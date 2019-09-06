@@ -54,6 +54,9 @@
     <ClInclude Include="VkFramework.h">
       <Filter>vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="VkBuffer.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -86,6 +89,24 @@
       <Filter>vulkan</Filter>
     </ClCompile>
     <ClCompile Include="VkFramework.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkTexture.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkBuffer.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkUtils.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkDevice.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkSwapChain.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkModel.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
   </ItemGroup>
