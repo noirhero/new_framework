@@ -103,7 +103,8 @@ namespace Vk
 			renderPassCI.pDependencies = dependencies.data();
 			VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassCI, nullptr, &_renderPass));
 		}
-		else {
+		else
+        {
 			std::array<VkAttachmentDescription, 2> attachments = {};
 			// Color attachment
 			attachments[0].format = colorFormat;

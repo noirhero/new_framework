@@ -108,6 +108,7 @@ namespace Vk
 		_settings.width = destWidth;
 		_settings.height = destHeight;
 		_main.RecreateSwapChain(_settings);
+        _scene.RecordBuffers(_main, _settings, _main.GetCommandBuffer(), _main.GetFrameBuffer());
 
 		vkDeviceWaitIdle(_main.GetDevice());
 

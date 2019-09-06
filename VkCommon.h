@@ -60,8 +60,8 @@ namespace Vk
 		bool vsync = false;
 		bool multiSampling = true;
 		VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_4_BIT;
-		uint32_t width = 100;
-		uint32_t height = 100;
+		uint32_t width = 1280;
+		uint32_t height = 800;
 		uint32_t renderAhead = 2;
 	};
 }

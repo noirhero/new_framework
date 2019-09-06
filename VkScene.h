@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include "VkModel.h"
+#include "VkCubeMap.h"
+
 namespace Vk
 {
 	struct Settings;
@@ -25,5 +28,9 @@ namespace Vk
 		void RecordBuffers(Main& main, const Settings& settings, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers);
 
 		void OnUniformBufferSets(uint32_t currentBuffer);
+
+    private:
+        Model   _scene;
+        CubeMap _cubeMap;
 	};
 }
