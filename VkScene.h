@@ -9,6 +9,7 @@ namespace Vk
 	struct VulkanDevice;
 	class VulkanSwapChain;
 	class CommandBuffer;
+	class FrameBuffer;
 
 	void loadAssets(VulkanDevice& vulkanDevice, VkQueue queue, VkPipelineCache pipelineCache);
 	void releaseAssets(VkDevice device);
@@ -18,7 +19,7 @@ namespace Vk
 	void PrepreSceneUniformBuffes(VulkanDevice& vulkanDevice, VulkanSwapChain& swapChain);
 	void setupDescriptors(VkDevice device, VulkanSwapChain& swapChain);
 	void preparePipelines(const Settings& settings, VkDevice device, VkRenderPass renderPass, VkPipelineCache pipelineCache);
-	void recordCommandBuffers(const Settings& settings, VkRenderPass renderPass, CommandBuffer& cmdBuffers);
+	void recordCommandBuffers(const Settings& settings, VkRenderPass renderPass, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers);
 	void UpdateLightSourceDirection(const glm::vec4& lightDir);
 	void UpdateUniformBuffetSet(uint32_t currentBuffer);
 }

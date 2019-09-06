@@ -2,21 +2,48 @@
 
 #pragma once
 
+#include "VkCommon.h"
+
+using VkCommandBuffers = std::vector<VkCommandBuffer>;
+using VkFrameBuffers = std::vector<VkFramebuffer>;
+
 namespace Vk
 {
+	struct VulkanDevice;
+	class VulkanSwapChain;
+
+	struct Target
+	{
+		VkImage image = VK_NULL_HANDLE;
+		VkImageView view = VK_NULL_HANDLE;
+		VkDeviceMemory memory = VK_NULL_HANDLE;
+	};
+
+	struct DepthStencil
+	{
+		VkImage image = VK_NULL_HANDLE;
+		VkDeviceMemory mem = VK_NULL_HANDLE;
+		VkImageView view = VK_NULL_HANDLE;
+	};
+
+	struct MultisampleTarget
+	{
+		Target color;
+		Target depth;
+	};
+
 	class CommandPool
 	{
 	public:
-		bool				Initialize(uint32_t queueNodeIdx, VkDevice device);
-		void				Release(VkDevice device);
+		bool					Initialize(uint32_t queueNodeIdx, VkDevice device);
+		void					Release(VkDevice device);
 
-		VkCommandPool		Get() const { return _cmdPool; }
+		VkCommandPool			Get() const { return _cmdPool; }
 
 	private:
-		VkCommandPool		_cmdPool = VK_NULL_HANDLE;
+		VkCommandPool			_cmdPool = VK_NULL_HANDLE;
 	};
 
-	using VkCommandBuffers = std::vector<VkCommandBuffer>;
 	class CommandBuffer
 	{
 	public:
@@ -29,5 +56,19 @@ namespace Vk
 
 	private:
 		VkCommandBuffers		_cmdBufs;
+	};
+
+	class FrameBuffer
+	{
+	public:
+		bool					Initialize(const Settings& settings, VulkanDevice& vulkanDevice, VulkanSwapChain& swapChain, VkFormat depthFormat, VkRenderPass renderPass);
+		void					Release(const Settings& settings, VkDevice device);
+
+		VkFramebuffer			Get(uint32_t i) const { return _frameBufs[i]; }
+
+	private:
+		MultisampleTarget		_multiSampleTarget;
+		DepthStencil			_depthStencil;
+		VkFrameBuffers			_frameBufs;
 	};
 }

@@ -165,7 +165,6 @@
     <ClInclude Include="VkCommon.h" />
     <ClInclude Include="VkDebug.h" />
     <ClInclude Include="VkDevice.h" />
-    <ClInclude Include="VkFrameBuffer.h" />
     <ClInclude Include="VkInstance.h" />
     <ClInclude Include="VkMain.h" />
     <ClInclude Include="VkModel.h" />
@@ -189,7 +188,6 @@
     <ClCompile Include="Vk.cpp" />
     <ClCompile Include="VkCommand.cpp" />
     <ClCompile Include="VkDebug.cpp" />
-    <ClCompile Include="VkFrameBuffer.cpp" />
     <ClCompile Include="VkInstance.cpp" />
     <ClCompile Include="VkMain.cpp" />
     <ClCompile Include="VkPhysicalDevice.cpp" />

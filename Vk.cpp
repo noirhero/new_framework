@@ -3,15 +3,7 @@
 #include "stdafx.h"
 #include "Vk.h"
 
-//#include "VkDebug.h"
-//#include "VkInstance.h"
-//#include "VkPhysicalDevice.h"
-//#include "VkDevice.h"
-//#include "VkSwapChain.h"
-//#include "VkRenderPass.h"
-//#include "VkCommand.h"
 #include "VkMain.h"
-#include "VkFrameBuffer.h"
 #include "VkPipelineCache.h"
 #include "VkScene.h"
 #include "VkCamera.h"
@@ -57,6 +49,7 @@ namespace Vk
 
 	uint32_t currentBuffer = 0;
 	CommandBuffer _cmdBuffers;
+	FrameBuffer _frameBuffers;
 
 	std::vector<VkFence> waitFences;
 	std::vector<VkSemaphore> renderCompleteSemaphores;
@@ -99,7 +92,7 @@ namespace Vk
 		//delete ui;
 
 		// Clean up Vulkan resources
-		ReleaseFrameBuffers(_settings, _main.GetDevice());
+		_frameBuffers.Release(_settings, _main.GetDevice());
 
 		_main.Release();
 	}
@@ -127,10 +120,7 @@ namespace Vk
 	{
 		_main.Prepare(_settings, windowInstance, window);
 
-		/*
-			Frame buffer
-		*/
-		SetupFrameBuffers(_settings, _main.GetVulkanDevice(), _main.GetVulkanSwapChain(), _main.GetDepthFormat(), _main.GetRenderPass());
+		_frameBuffers.Initialize(_settings, _main.GetVulkanDevice(), _main.GetVulkanSwapChain(), _main.GetDepthFormat(), _main.GetRenderPass());
 
 		// Command buffer execution fences
 		waitFences.resize(renderAhead);
@@ -160,7 +150,6 @@ namespace Vk
 
 		loadAssets(_main.GetVulkanDevice(), _main.GetGPUQueue(), _main.GetPipelineCache());
 		generateBRDFLUT(_main.GetVulkanDevice(), _main.GetGPUQueue(), _main.GetPipelineCache());
-		//generateCubemaps(*vulkanDevice, queue, _pipelineCache.Get());
 		prepareUniformBuffers();
 		setupDescriptors(_main.GetDevice(), _main.GetVulkanSwapChain());
 		preparePipelines(_settings, _main.GetDevice(), _main.GetRenderPass(), _main.GetPipelineCache());
@@ -168,7 +157,7 @@ namespace Vk
 		//ui = new UI(vulkanDevice, renderPass, queue, pipelineCache, settings.sampleCount);
 		//updateOverlay();
 
-		recordCommandBuffers(_settings, _main.GetRenderPass(), _cmdBuffers);
+		recordCommandBuffers(_settings, _main.GetRenderPass(), _cmdBuffers, _frameBuffers);
 
 		prepared = true;
 
@@ -194,8 +183,8 @@ namespace Vk
 
 		_main.RecreateSwapChain(_settings);
 
-		ReleaseFrameBuffers(_settings, _main.GetDevice());
-		SetupFrameBuffers(_settings, _main.GetVulkanDevice(), _main.GetVulkanSwapChain(), _main.GetDepthFormat(), _main.GetRenderPass());
+		_frameBuffers.Release(_settings, _main.GetDevice());
+		_frameBuffers.Initialize(_settings, _main.GetVulkanDevice(), _main.GetVulkanSwapChain(), _main.GetDepthFormat(), _main.GetRenderPass());
 
 		vkDeviceWaitIdle(_main.GetDevice());
 
@@ -223,13 +212,11 @@ namespace Vk
 		VK_CHECK_RESULT(vkWaitForFences(_main.GetDevice(), 1, &waitFences[frameIndex], VK_TRUE, UINT64_MAX));
 		VK_CHECK_RESULT(vkResetFences(_main.GetDevice(), 1, &waitFences[frameIndex]));
 
-		VkResult acquire = _main.AcquireNextImage(currentBuffer, presentCompleteSemaphores[frameIndex]);
-		if ((acquire == VK_ERROR_OUT_OF_DATE_KHR) || (acquire == VK_SUBOPTIMAL_KHR)) {
+		const auto acquire = _main.AcquireNextImage(currentBuffer, presentCompleteSemaphores[frameIndex]);
+		if (VK_ERROR_OUT_OF_DATE_KHR == acquire || VK_SUBOPTIMAL_KHR == acquire)
 			WindowResize();
-		}
-		else {
+		else
 			VK_CHECK_RESULT(acquire);
-		}
 
 		// Update UBOs
 		updateUniformBuffers();
@@ -247,10 +234,10 @@ namespace Vk
 		submitInfo.commandBufferCount = 1;
 		VK_CHECK_RESULT(vkQueueSubmit(_main.GetGPUQueue(), 1, &submitInfo, waitFences[frameIndex]));
 
-		VkResult present = _main.QueuePresent(currentBuffer, renderCompleteSemaphores[frameIndex]);
-		if (!((present == VK_SUCCESS) || (present == VK_SUBOPTIMAL_KHR)))
+		const auto present = _main.QueuePresent(currentBuffer, renderCompleteSemaphores[frameIndex]);
+		if (false == (VK_SUCCESS == present || VK_SUBOPTIMAL_KHR == present))
 		{
-			if (present == VK_ERROR_OUT_OF_DATE_KHR)
+			if (VK_ERROR_OUT_OF_DATE_KHR == present)
 			{
 				WindowResize();
 				return;
@@ -281,7 +268,9 @@ namespace Vk
 			//	}
 			//	models.scene.updateAnimation(animationIndex, animationTimer);
 			//}
+
 			updateParams();
+
 			if (rotateModel)
 			{
 				updateUniformBuffers();
@@ -293,58 +282,50 @@ namespace Vk
 		}
 	}
 
-	void renderFrame()
-	{
-		auto tStart = std::chrono::high_resolution_clock::now();
-
-		render();
-		frameCounter++;
-
-		auto tEnd = std::chrono::high_resolution_clock::now();
-		auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-		frameTimer = (float)tDiff / 1000.0f;
-
-		camera.update(frameTimer);
-
-		fpsTimer += (float)tDiff;
-		if (fpsTimer > 1000.0f)
-		{
-			lastFPS = static_cast<uint32_t>((float)frameCounter * (1000.0f / fpsTimer));
-			fpsTimer = 0.0f;
-			frameCounter = 0;
-		}
-	}
-
 	void RenderLoop(HWND window)
 	{
 		destWidth = _settings.width;
 		destHeight = _settings.height;
 
 		MSG msg = {};
-		bool quitMessageReceived = false;
-		while (!quitMessageReceived)
+		while (WM_QUIT != msg.message)
 		{
-			while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+			if (TRUE == PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 			{
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
-				if (msg.message == WM_QUIT)
-				{
-					quitMessageReceived = true;
-					break;
-				}
 			}
-			if (!IsIconic(window))
+			else
 			{
-				renderFrame();
+				const auto tStart = std::chrono::high_resolution_clock::now();
+
+				if (FALSE == IsIconic(window))
+				{
+					render();
+				}
+				++frameCounter;
+
+				const auto tEnd = std::chrono::high_resolution_clock::now();
+				const auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+				frameTimer = static_cast<float>(tDiff) / 1000.0f;
+
+				camera.update(frameTimer);
+
+				fpsTimer += (float)tDiff;
+				if (fpsTimer > 1000.0f)
+				{
+					lastFPS = static_cast<uint32_t>((float)frameCounter * (1000.0f / fpsTimer));
+					fpsTimer = 0.0f;
+					frameCounter = 0;
+				}
 			}
 		}
 	}
 
 	void HandleMouseMove(int32_t x, int32_t y)
 	{
-		int32_t dx = (int32_t)mousePos.x - x;
-		int32_t dy = (int32_t)mousePos.y - y;
+		const auto dx = static_cast<int32_t>(mousePos.x - x);
+		const auto dy = static_cast<int32_t>(mousePos.y - y);
 
 		//ImGuiIO& io = ImGui::GetIO();
 		//bool handled = io.WantCaptureMouse;
@@ -359,16 +340,16 @@ namespace Vk
 		//	return;
 		//}
 
-		if (mouseButtons.left) {
+		if (true == mouseButtons.left)
 			camera.rotate(glm::vec3(dy * camera.rotationSpeed, -dx * camera.rotationSpeed, 0.0f));
-		}
-		if (mouseButtons.right) {
+
+		if (mouseButtons.right)
 			camera.translate(glm::vec3(-0.0f, 0.0f, dy * .005f * camera.movementSpeed));
-		}
-		if (mouseButtons.middle) {
+
+		if (mouseButtons.middle)
 			camera.translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
-		}
-		mousePos = glm::vec2((float)x, (float)y);
+
+		mousePos = glm::vec2(static_cast<float>(x), static_cast<float>(y));
 	}
 
 	void HandleMessage(HWND handle, uint32_t msg, WPARAM wParam, LPARAM lParam)
@@ -380,7 +361,7 @@ namespace Vk
 		{
 		case WM_CLOSE:
 			prepared = false;
-			//DestroyWindow(handle);
+			DestroyWindow(handle);
 			PostQuitMessage(0);
 			break;
 		case WM_PAINT:

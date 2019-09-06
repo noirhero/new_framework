@@ -8,7 +8,7 @@
 #include "VkTexture.h"
 #include "VkModel.h"
 #include "VkCommand.h"
-#include "VkFrameBuffer.h"
+//#include "VkFrameBuffer.h"
 #include "VkUtils.h"
 
 namespace Vk
@@ -1540,7 +1540,7 @@ namespace Vk
 		}
 	}
 
-	void recordCommandBuffers(const Settings& settings, VkRenderPass renderPass, CommandBuffer& cmdBuffers)
+	void recordCommandBuffers(const Settings& settings, VkRenderPass renderPass, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers)
 	{
 		VkCommandBufferBeginInfo cmdBufferBeginInfo{};
 		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1568,7 +1568,7 @@ namespace Vk
 		renderPassBeginInfo.pClearValues = clearValues;
 
 		for (decltype(cmdBuffers.Count()) i = 0; i < cmdBuffers.Count(); ++i) {
-			renderPassBeginInfo.framebuffer = GetFrameBuffer(static_cast<uint32_t>(i));
+			renderPassBeginInfo.framebuffer = frameBuffers.Get(static_cast<uint32_t>(i));
 
 			VkCommandBuffer currentCB = cmdBuffers.Get(i);
 

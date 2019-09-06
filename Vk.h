@@ -6,13 +6,13 @@
 
 namespace Vk
 {
-	Settings& GetSettings();
+	Settings&	GetSettings();
 
-	bool Initialize();
-	void Release();
+	bool		Initialize();
+	void		Release();
 
-	void Prepare(HINSTANCE windowInstance, HWND window);
-	void RenderLoop(HWND window);
+	void		Prepare(HINSTANCE windowInstance, HWND window);
+	void		RenderLoop(HWND window);
 
-	void HandleMessage(HWND handle, uint32_t msg, WPARAM wParam, LPARAM lParam);
+	void		HandleMessage(HWND handle, uint32_t msg, WPARAM wParam, LPARAM lParam);
 }
