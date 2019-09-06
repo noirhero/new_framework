@@ -4,7 +4,7 @@
 #include "Vk.h"
 
 #include "VkMain.h"
-#include "VkMesh.h"
+#include "VkScene.h"
 #include "VkCamera.h"
 
 namespace Vk

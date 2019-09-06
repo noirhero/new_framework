@@ -167,7 +167,7 @@
     <ClInclude Include="VkDevice.h" />
     <ClInclude Include="VkInstance.h" />
     <ClInclude Include="VkMain.h" />
-    <ClInclude Include="VkMesh.h" />
+    <ClInclude Include="VkScene.h" />
     <ClInclude Include="VkModel.h" />
     <ClInclude Include="VkPhysicalDevice.h" />
     <ClInclude Include="VkPipelineCache.h" />
@@ -190,7 +190,7 @@
     <ClCompile Include="VkDebug.cpp" />
     <ClCompile Include="VkInstance.cpp" />
     <ClCompile Include="VkMain.cpp" />
-    <ClCompile Include="VkMesh.cpp" />
+    <ClCompile Include="VkScene.cpp" />
     <ClCompile Include="VkPhysicalDevice.cpp" />
     <ClCompile Include="VkPipelineCache.cpp" />
     <ClCompile Include="VkRenderPass.cpp" />

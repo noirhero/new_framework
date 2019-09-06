@@ -51,7 +51,7 @@
     <ClInclude Include="VkMain.h">
       <Filter>vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="VkMesh.h">
+    <ClInclude Include="VkScene.h">
       <Filter>vulkan</Filter>
     </ClInclude>
   </ItemGroup>
@@ -85,7 +85,7 @@
     <ClCompile Include="VkMain.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="VkMesh.cpp">
+    <ClCompile Include="VkScene.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
   </ItemGroup>
