@@ -11,8 +11,8 @@ namespace Vk
 	bool		Initialize();
 	void		Release();
 
-	void		Prepare(HINSTANCE windowInstance, HWND window);
+	void		Prepare(HINSTANCE instance, HWND window);
 	void		RenderLoop(HWND window);
 
-	void		HandleMessage(HWND handle, uint32_t msg, WPARAM wParam, LPARAM lParam);
+	void		HandleMessage(HWND window, uint32_t msg, WPARAM wParam, LPARAM lParam);
 }

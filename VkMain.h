@@ -17,7 +17,7 @@ namespace Vk
 	class Main
 	{
 	public:
-		bool					Initialize(Settings& settings);
+		bool					Initialize(const Settings& settings);
 		void					Prepare(Settings& settings, HINSTANCE instance, HWND window);
 		void					Release();
 
@@ -26,7 +26,6 @@ namespace Vk
 		VkResult				QueuePresent(uint32_t currentBuffer, VkSemaphore semaphore = VK_NULL_HANDLE);
 
 		VulkanDevice&			GetVulkanDevice() const { return *_device; }
-
 		VulkanSwapChain&		GetVulkanSwapChain() const { return *_swapChain; }
 		uint32_t				GetSwapChainImageCount() const;
 
@@ -40,7 +39,7 @@ namespace Vk
 		VkPipelineCache			GetPipelineCache() const { return _pipelineCache.Get(); }
 
 	private:
-		bool					InitializePhysicalGroup(Settings& settings);
+		bool					InitializePhysicalGroup(const Settings& settings);
 		void					ReleasePhysicalGroup();
 
 		bool					InitializeLogicalGroup();

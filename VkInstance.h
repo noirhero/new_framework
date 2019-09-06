@@ -9,7 +9,7 @@ namespace Vk
 	class Instance
 	{
 	public:
-		bool		Initialize(Settings& settings);
+		bool		Initialize(const Settings& settings);
 		void		Release();
 
 		VkInstance	Get() const { return _instance; }

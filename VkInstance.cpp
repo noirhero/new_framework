@@ -5,7 +5,7 @@
 
 namespace Vk
 {
-	bool Instance::Initialize(Settings& settings)
+	bool Instance::Initialize(const Settings& settings)
 	{
 		const VkApplicationInfo appInfo
 		{

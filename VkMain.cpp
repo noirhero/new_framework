@@ -39,7 +39,7 @@ namespace Vk
 		return VK_FORMAT_UNDEFINED;
 	}
 
-	bool Main::Initialize(Settings & settings)
+	bool Main::Initialize(const Settings & settings)
 	{
 		if (false == InitializePhysicalGroup(settings))
 			return false;
@@ -92,7 +92,7 @@ namespace Vk
 		return _swapChain->imageCount;
 	}
 
-	bool Main::InitializePhysicalGroup(Settings& settings)
+	bool Main::InitializePhysicalGroup(const Settings& settings)
 	{
 		if (false == _inst.Initialize(settings))
 			return false;

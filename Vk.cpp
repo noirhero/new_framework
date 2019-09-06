@@ -27,23 +27,19 @@ namespace Vk
 	uint32_t frameCounter = 0;
 	uint32_t lastFPS = 0;
 
-	uint32_t destWidth;
-	uint32_t destHeight;
+	uint32_t destWidth = 0;
+	uint32_t destHeight = 0;
 	bool resizing = false;
 	bool prepared = false;
 	bool paused = false;
 
-	glm::vec2 mousePos;
+	glm::vec2 mousePos = { 0.0f, 0.0f };
 	MouseButtons mouseButtons;
-	bool rotateModel = false;
-	glm::vec3 modelrot = glm::vec3(0.0f);
-	glm::vec3 modelPos = glm::vec3(0.0f);
-	Camera camera;
 
-	LightSource lightSource;
+	Camera _camera;
+	LightSource _lightSource;
 
 	Settings _settings;
-
 	Main _main;
 	Scene _scene;
 
@@ -51,76 +47,20 @@ namespace Vk
 	CommandBuffer _cmdBuffers;
 	FrameBuffer _frameBuffers;
 
-	std::vector<VkFence> waitFences;
+	std::vector<VkFence> waitFences; // Command buffer execution fences
 	std::vector<VkSemaphore> renderCompleteSemaphores;
-	std::vector<VkSemaphore> presentCompleteSemaphores;
+	std::vector<VkSemaphore> presentCompleteSemaphores; // Queue ordering semaphores
 
 	const uint32_t renderAhead = 2;
 	uint32_t frameIndex = 0;
-
-	int32_t animationIndex = 0;
-	float animationTimer = 0.0f;
-	bool animate = true;
 
 	Settings& GetSettings()
 	{
 		return _settings;
 	}
 
-	bool Initialize()
+	void CreateFences()
 	{
-		return _main.Initialize(_settings);
-	}
-
-	void Release()
-	{
-		vkDeviceWaitIdle(_main.GetDevice());
-
-		_scene.Release(_main.GetDevice());
-
-		_cmdBuffers.Release(_main.GetDevice(), _main.GetCommandPool());
-
-		for (auto fence : waitFences)
-			vkDestroyFence(_main.GetDevice(), fence, nullptr);
-
-		for (auto semaphore : renderCompleteSemaphores)
-			vkDestroySemaphore(_main.GetDevice(), semaphore, nullptr);
-
-		for (auto semaphore : presentCompleteSemaphores)
-			vkDestroySemaphore(_main.GetDevice(), semaphore, nullptr);
-
-		//delete ui;
-
-		// Clean up Vulkan resources
-		_frameBuffers.Release(_settings, _main.GetDevice());
-
-		_main.Release();
-	}
-
-	void updateUniformBuffers()
-	{
-		_scene.UpdateUniformDatas(
-			camera.matrices.view,
-			camera.matrices.perspective,
-			glm::vec3(
-			-camera.position.z * sin(glm::radians(camera.rotation.y)) * cos(glm::radians(camera.rotation.x)),
-			-camera.position.z * sin(glm::radians(camera.rotation.x)),
-			camera.position.z * cos(glm::radians(camera.rotation.y)) * cos(glm::radians(camera.rotation.x))),
-			glm::vec4(
-				sin(glm::radians(lightSource.rotation.x)) * cos(glm::radians(lightSource.rotation.y)),
-				sin(glm::radians(lightSource.rotation.y)),
-				cos(glm::radians(lightSource.rotation.x)) * cos(glm::radians(lightSource.rotation.y)),
-				0.0f)
-		);
-	}
-
-	void Prepare(HINSTANCE windowInstance, HWND window)
-	{
-		_main.Prepare(_settings, windowInstance, window);
-
-		_frameBuffers.Initialize(_settings, _main.GetVulkanDevice(), _main.GetVulkanSwapChain(), _main.GetDepthFormat(), _main.GetRenderPass());
-
-		// Command buffer execution fences
 		waitFences.resize(renderAhead);
 		for (auto &waitFence : waitFences)
 		{
@@ -128,7 +68,6 @@ namespace Vk
 			VK_CHECK_RESULT(vkCreateFence(_main.GetDevice(), &fenceCI, nullptr, &waitFence));
 		}
 
-		// Queue ordering semaphores
 		presentCompleteSemaphores.resize(renderAhead);
 		for (auto &semaphore : presentCompleteSemaphores)
 		{
@@ -142,41 +81,87 @@ namespace Vk
 			VkSemaphoreCreateInfo semaphoreCI{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
 			VK_CHECK_RESULT(vkCreateSemaphore(_main.GetDevice(), &semaphoreCI, nullptr, &semaphore));
 		}
+	}
 
-		// Command buffers
+	void ReleaseFences()
+	{
+		for (auto fence : waitFences)
+			vkDestroyFence(_main.GetDevice(), fence, nullptr);
+
+		for (auto semaphore : renderCompleteSemaphores)
+			vkDestroySemaphore(_main.GetDevice(), semaphore, nullptr);
+
+		for (auto semaphore : presentCompleteSemaphores)
+			vkDestroySemaphore(_main.GetDevice(), semaphore, nullptr);
+	}
+
+	bool Initialize()
+	{
+		return _main.Initialize(_settings);
+	}
+
+	void Release()
+	{
+		vkDeviceWaitIdle(_main.GetDevice());
+
+		_scene.Release(_main.GetDevice());
+		_frameBuffers.Release(_settings, _main.GetDevice());
+		_cmdBuffers.Release(_main.GetDevice(), _main.GetCommandPool());
+
+		ReleaseFences();
+
+		_main.Release();
+	}
+
+	void UpdateUniformBuffers()
+	{
+		_scene.UpdateUniformDatas(
+			_camera.matrices.view,
+			_camera.matrices.perspective,
+			glm::vec3(
+			-_camera.position.z * glm::sin(glm::radians(_camera.rotation.y)) * glm::cos(glm::radians(_camera.rotation.x)),
+			-_camera.position.z * glm::sin(glm::radians(_camera.rotation.x)),
+			_camera.position.z * glm::cos(glm::radians(_camera.rotation.y)) * glm::cos(glm::radians(_camera.rotation.x))),
+			glm::vec4(
+				glm::sin(glm::radians(_lightSource.rotation.x)) * glm::cos(glm::radians(_lightSource.rotation.y)),
+				glm::sin(glm::radians(_lightSource.rotation.y)),
+				glm::cos(glm::radians(_lightSource.rotation.x)) * glm::cos(glm::radians(_lightSource.rotation.y)),
+				0.0f)
+		);
+	}
+
+	void Prepare(HINSTANCE instance, HWND window)
+	{
+		CreateFences();
+
+		_main.Prepare(_settings, instance, window);
+
+		_frameBuffers.Initialize(_settings, _main.GetVulkanDevice(), _main.GetVulkanSwapChain(), _main.GetDepthFormat(), _main.GetRenderPass());
 		_cmdBuffers.Initialize(_main.GetDevice(), _main.GetCommandPool(), _main.GetSwapChainImageCount());
 
 		_scene.Initialize(_main, _settings);
-
-		updateUniformBuffers();
-
-		//ui = new UI(vulkanDevice, renderPass, queue, pipelineCache, settings.sampleCount);
-		//updateOverlay();
-
 		_scene.RecordBuffers(_main, _settings, _cmdBuffers, _frameBuffers);
 
 		prepared = true;
 
-		camera.type = Camera::CameraType::lookat;
-		camera.setPerspective(45.0f, (float)_settings.width / (float)_settings.height, 0.1f, 256.0f);
-		camera.rotationSpeed = 0.25f;
-		camera.movementSpeed = 0.1f;
-		camera.setPosition({ 0.0f, 0.0f, 1.0f });
-		camera.setRotation({ 0.0f, 0.0f, 0.0f });
+		_camera.type = Camera::CameraType::lookat;
+		_camera.setPerspective(45.0f, _settings.width / static_cast<float>(_settings.height), 0.1f, 256.0f);
+		_camera.rotationSpeed = 0.25f;
+		_camera.movementSpeed = 0.1f;
+		_camera.setPosition({ 0.0f, 0.0f, 1.0f });
+		_camera.setRotation({ 0.0f, 0.0f, 0.0f });
 	}
 
 	void WindowResize()
 	{
-		if (!prepared)
+		if (false == prepared)
 			return;
 
 		prepared = false;
-
 		vkDeviceWaitIdle(_main.GetDevice());
 
 		_settings.width = destWidth;
 		_settings.height = destHeight;
-
 		_main.RecreateSwapChain(_settings);
 
 		_frameBuffers.Release(_settings, _main.GetDevice());
@@ -184,17 +169,16 @@ namespace Vk
 
 		vkDeviceWaitIdle(_main.GetDevice());
 
-		camera.updateAspectRatio((float)_settings.width / (float)_settings.height);
+		const auto aspect = _settings.width / static_cast<float>(_settings.height);
+		_camera.updateAspectRatio(aspect);
 
 		prepared = true;
 	}
 
 	void render()
 	{
-		if (!prepared)
+		if (false == prepared)
 			return;
-
-		//updateOverlay();
 
 		VK_CHECK_RESULT(vkWaitForFences(_main.GetDevice(), 1, &waitFences[frameIndex], VK_TRUE, UINT64_MAX));
 		VK_CHECK_RESULT(vkResetFences(_main.GetDevice(), 1, &waitFences[frameIndex]));
@@ -205,8 +189,7 @@ namespace Vk
 		else
 			VK_CHECK_RESULT(acquire);
 
-		// Update UBOs
-		updateUniformBuffers();
+		UpdateUniformBuffers();
 		_scene.OnUniformBufferSets(currentBuffer);
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -237,34 +220,6 @@ namespace Vk
 
 		frameIndex += 1;
 		frameIndex %= renderAhead;
-
-		if (!paused)
-		{
-			if (rotateModel)
-			{
-				modelrot.y += frameTimer * 35.0f;
-				if (modelrot.y > 360.0f)
-				{
-					modelrot.y -= 360.0f;
-				}
-			}
-			//if ((animate) && (models.scene.animations.size() > 0)) {
-			//	animationTimer += frameTimer * 0.75f;
-			//	if (animationTimer > models.scene.animations[animationIndex].end) {
-			//		animationTimer -= models.scene.animations[animationIndex].end;
-			//	}
-			//	models.scene.updateAnimation(animationIndex, animationTimer);
-			//};
-
-			//if (rotateModel)
-			//{
-			//	updateUniformBuffers();
-			//}
-		}
-		//if (camera.updated)
-		//{
-		//	updateUniformBuffers();
-		//}
 	}
 
 	void RenderLoop(HWND window)
@@ -294,7 +249,7 @@ namespace Vk
 				const auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
 				frameTimer = static_cast<float>(tDiff) / 1000.0f;
 
-				camera.update(frameTimer);
+				_camera.update(frameTimer);
 
 				fpsTimer += (float)tDiff;
 				if (fpsTimer > 1000.0f)
@@ -312,32 +267,19 @@ namespace Vk
 		const auto dx = static_cast<int32_t>(mousePos.x - x);
 		const auto dy = static_cast<int32_t>(mousePos.y - y);
 
-		//ImGuiIO& io = ImGui::GetIO();
-		//bool handled = io.WantCaptureMouse;
-
-		//if (handled) {
-		//	mousePos = glm::vec2((float)x, (float)y);
-		//	return;
-		//}
-
-		//if (handled) {
-		//	mousePos = glm::vec2((float)x, (float)y);
-		//	return;
-		//}
-
 		if (true == mouseButtons.left)
-			camera.rotate(glm::vec3(dy * camera.rotationSpeed, -dx * camera.rotationSpeed, 0.0f));
+			_camera.rotate(glm::vec3(dy * _camera.rotationSpeed, -dx * _camera.rotationSpeed, 0.0f));
 
-		if (mouseButtons.right)
-			camera.translate(glm::vec3(-0.0f, 0.0f, dy * .005f * camera.movementSpeed));
+		if (true == mouseButtons.right)
+			_camera.translate(glm::vec3(-0.0f, 0.0f, dy * .005f * _camera.movementSpeed));
 
-		if (mouseButtons.middle)
-			camera.translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
+		if (true == mouseButtons.middle)
+			_camera.translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
 
 		mousePos = glm::vec2(static_cast<float>(x), static_cast<float>(y));
 	}
 
-	void HandleMessage(HWND handle, uint32_t msg, WPARAM wParam, LPARAM lParam)
+	void HandleMessage(HWND window, uint32_t msg, WPARAM wParam, LPARAM lParam)
 	{
 		if (VK_NULL_HANDLE == _main.GetDevice())
 			return;
@@ -346,11 +288,11 @@ namespace Vk
 		{
 		case WM_CLOSE:
 			prepared = false;
-			DestroyWindow(handle);
+			DestroyWindow(window);
 			PostQuitMessage(0);
 			break;
 		case WM_PAINT:
-			ValidateRect(handle, NULL);
+			ValidateRect(window, NULL);
 			break;
 		case WM_KEYDOWN:
 			switch (wParam)
@@ -363,42 +305,42 @@ namespace Vk
 				break;
 			}
 
-			if (camera.firstperson)
+			if (_camera.firstperson)
 			{
 				switch (wParam)
 				{
 				case KEY_W:
-					camera.keys.up = true;
+					_camera.keys.up = true;
 					break;
 				case KEY_S:
-					camera.keys.down = true;
+					_camera.keys.down = true;
 					break;
 				case KEY_A:
-					camera.keys.left = true;
+					_camera.keys.left = true;
 					break;
 				case KEY_D:
-					camera.keys.right = true;
+					_camera.keys.right = true;
 					break;
 				}
 			}
 
 			break;
 		case WM_KEYUP:
-			if (camera.firstperson)
+			if (_camera.firstperson)
 			{
 				switch (wParam)
 				{
 				case KEY_W:
-					camera.keys.up = false;
+					_camera.keys.up = false;
 					break;
 				case KEY_S:
-					camera.keys.down = false;
+					_camera.keys.down = false;
 					break;
 				case KEY_A:
-					camera.keys.left = false;
+					_camera.keys.left = false;
 					break;
 				case KEY_D:
-					camera.keys.right = false;
+					_camera.keys.right = false;
 					break;
 				}
 			}
@@ -427,7 +369,7 @@ namespace Vk
 		case WM_MOUSEWHEEL:
 		{
 			short wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-			camera.translate(glm::vec3(0.0f, 0.0f, -(float)wheelDelta * 0.005f * camera.movementSpeed));
+			_camera.translate(glm::vec3(0.0f, 0.0f, -(float)wheelDelta * 0.005f * _camera.movementSpeed));
 			break;
 		}
 		case WM_MOUSEMOVE:
