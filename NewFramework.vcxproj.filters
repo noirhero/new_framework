@@ -48,10 +48,10 @@
     <ClInclude Include="VkPipelineCache.h">
       <Filter>vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="VkScene.h">
+    <ClInclude Include="VkMain.h">
       <Filter>vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="VkMain.h">
+    <ClInclude Include="VkMesh.h">
       <Filter>vulkan</Filter>
     </ClInclude>
   </ItemGroup>
@@ -82,10 +82,12 @@
     <ClCompile Include="VkPipelineCache.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="VkScene.cpp">
+    <ClCompile Include="VkMain.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="VkMain.cpp" />
+    <ClCompile Include="VkMesh.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="vulkan">

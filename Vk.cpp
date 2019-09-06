@@ -4,8 +4,7 @@
 #include "Vk.h"
 
 #include "VkMain.h"
-#include "VkPipelineCache.h"
-#include "VkScene.h"
+#include "VkMesh.h"
 #include "VkCamera.h"
 
 namespace Vk
@@ -46,6 +45,7 @@ namespace Vk
 	Settings _settings;
 
 	Main _main;
+	Scene _scene;
 
 	uint32_t currentBuffer = 0;
 	CommandBuffer _cmdBuffers;
@@ -76,7 +76,7 @@ namespace Vk
 	{
 		vkDeviceWaitIdle(_main.GetDevice());
 
-		releaseAssets(_main.GetDevice());
+		_scene.Release(_main.GetDevice());
 
 		_cmdBuffers.Release(_main.GetDevice(), _main.GetCommandPool());
 
@@ -99,21 +99,19 @@ namespace Vk
 
 	void updateUniformBuffers()
 	{
-		UpdateSceneUniformBuffer(camera.matrices.view, camera.matrices.perspective, glm::vec3(
+		_scene.UpdateUniformDatas(
+			camera.matrices.view,
+			camera.matrices.perspective,
+			glm::vec3(
 			-camera.position.z * sin(glm::radians(camera.rotation.y)) * cos(glm::radians(camera.rotation.x)),
 			-camera.position.z * sin(glm::radians(camera.rotation.x)),
-			camera.position.z * cos(glm::radians(camera.rotation.y)) * cos(glm::radians(camera.rotation.x))
-		));
-	}
-
-	/*
-		Prepare and initialize uniform buffers containing shader parameters
-	*/
-	void prepareUniformBuffers()
-	{
-		PrepreSceneUniformBuffes(_main.GetVulkanDevice(), _main.GetVulkanSwapChain());
-
-		updateUniformBuffers();
+			camera.position.z * cos(glm::radians(camera.rotation.y)) * cos(glm::radians(camera.rotation.x))),
+			glm::vec4(
+				sin(glm::radians(lightSource.rotation.x)) * cos(glm::radians(lightSource.rotation.y)),
+				sin(glm::radians(lightSource.rotation.y)),
+				cos(glm::radians(lightSource.rotation.x)) * cos(glm::radians(lightSource.rotation.y)),
+				0.0f)
+		);
 	}
 
 	void Prepare(HINSTANCE windowInstance, HWND window)
@@ -148,16 +146,14 @@ namespace Vk
 		// Command buffers
 		_cmdBuffers.Initialize(_main.GetDevice(), _main.GetCommandPool(), _main.GetSwapChainImageCount());
 
-		loadAssets(_main.GetVulkanDevice(), _main.GetGPUQueue(), _main.GetPipelineCache());
-		generateBRDFLUT(_main.GetVulkanDevice(), _main.GetGPUQueue(), _main.GetPipelineCache());
-		prepareUniformBuffers();
-		setupDescriptors(_main.GetDevice(), _main.GetVulkanSwapChain());
-		preparePipelines(_settings, _main.GetDevice(), _main.GetRenderPass(), _main.GetPipelineCache());
+		_scene.Initialize(_main, _settings);
+
+		updateUniformBuffers();
 
 		//ui = new UI(vulkanDevice, renderPass, queue, pipelineCache, settings.sampleCount);
 		//updateOverlay();
 
-		recordCommandBuffers(_settings, _main.GetRenderPass(), _cmdBuffers, _frameBuffers);
+		_scene.RecordBuffers(_main, _settings, _cmdBuffers, _frameBuffers);
 
 		prepared = true;
 
@@ -193,15 +189,6 @@ namespace Vk
 		prepared = true;
 	}
 
-	void updateParams()
-	{
-		UpdateLightSourceDirection(glm::vec4(
-			sin(glm::radians(lightSource.rotation.x)) * cos(glm::radians(lightSource.rotation.y)),
-			sin(glm::radians(lightSource.rotation.y)),
-			cos(glm::radians(lightSource.rotation.x)) * cos(glm::radians(lightSource.rotation.y)),
-			0.0f));
-	}
-
 	void render()
 	{
 		if (!prepared)
@@ -220,7 +207,7 @@ namespace Vk
 
 		// Update UBOs
 		updateUniformBuffers();
-		UpdateUniformBuffetSet(currentBuffer);
+		_scene.OnUniformBufferSets(currentBuffer);
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		VkSubmitInfo submitInfo{};
@@ -267,19 +254,17 @@ namespace Vk
 			//		animationTimer -= models.scene.animations[animationIndex].end;
 			//	}
 			//	models.scene.updateAnimation(animationIndex, animationTimer);
+			//};
+
+			//if (rotateModel)
+			//{
+			//	updateUniformBuffers();
 			//}
-
-			updateParams();
-
-			if (rotateModel)
-			{
-				updateUniformBuffers();
-			}
 		}
-		if (camera.updated)
-		{
-			updateUniformBuffers();
-		}
+		//if (camera.updated)
+		//{
+		//	updateUniformBuffers();
+		//}
 	}
 
 	void RenderLoop(HWND window)
