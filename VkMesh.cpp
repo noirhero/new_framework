@@ -1558,7 +1558,7 @@ namespace Vk
 		empty.destroy();
 	}
 
-	void Scene::UpdateUniformDatas(const glm::mat4 & view, const glm::mat4 & perspective, const glm::vec3 cameraPos, const glm::vec4& lightDir)
+	void Scene::UpdateUniformDatas(const glm::mat4 & view, const glm::mat4 & perspective, const glm::vec3& cameraPos, const glm::vec4& lightDir)
 	{
 		// Scene
 		shaderValuesScene.projection = perspective;

@@ -14,16 +14,19 @@ namespace Vk
 	struct VulkanDevice;
 	class VulkanSwapChain;
 
+	using VkFences = std::vector<VkFence>;
+	using VkSemaphores = std::vector<VkSemaphore>;
+
 	class Main
 	{
 	public:
 		bool					Initialize(const Settings& settings);
 		void					Prepare(Settings& settings, HINSTANCE instance, HWND window);
-		void					Release();
+		void					Release(const Settings& settings);
 
 		void					RecreateSwapChain(Settings& settings);
-		VkResult				AcquireNextImage(uint32_t& currentBuffer, VkSemaphore semaphore = VK_NULL_HANDLE);
-		VkResult				QueuePresent(uint32_t currentBuffer, VkSemaphore semaphore = VK_NULL_HANDLE);
+		VkResult				AcquireNextImage(uint32_t& currentBuffer, uint32_t frameIndex);
+		VkResult				QueuePresent(uint32_t currentBuffer, uint32_t frameIndex);
 
 		VulkanDevice&			GetVulkanDevice() const { return *_device; }
 		VulkanSwapChain&		GetVulkanSwapChain() const { return *_swapChain; }
@@ -38,12 +41,18 @@ namespace Vk
 		VkRenderPass			GetRenderPass() const { return _renderPass.Get(); }
 		VkPipelineCache			GetPipelineCache() const { return _pipelineCache.Get(); }
 
+		CommandBuffer&			GetCommandBuffer() { return _cmdBufs; }
+		FrameBuffer&			GetFrameBuffer() { return _frameBufs; }
+
 	private:
 		bool					InitializePhysicalGroup(const Settings& settings);
 		void					ReleasePhysicalGroup();
 
 		bool					InitializeLogicalGroup();
 		void					ReleaseLogicalGroup();
+
+		void					CreateFences(const Settings& settings);
+		void					ReleaseFences();
 
 		Instance				_inst;
 		VkInstance				_instanceHandle = VK_NULL_HANDLE;
@@ -63,5 +72,12 @@ namespace Vk
 		CommandPool				_cmdPool;
 		RenderPass				_renderPass;
 		PipelineCache			_pipelineCache;
+
+		CommandBuffer			_cmdBufs;
+		FrameBuffer				_frameBufs;
+
+		VkFences				_waitFences;
+		VkSemaphores			_renderCompleteSemaphores;
+		VkSemaphores			_presentCompleteSemaphores;
 	};
 }

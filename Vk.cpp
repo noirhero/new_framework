@@ -26,6 +26,8 @@ namespace Vk
 	float frameTimer = 1.0f;
 	uint32_t frameCounter = 0;
 	uint32_t lastFPS = 0;
+	uint32_t currentBuffer = 0;
+	uint32_t frameIndex = 0;
 
 	uint32_t destWidth = 0;
 	uint32_t destHeight = 0;
@@ -38,61 +40,13 @@ namespace Vk
 
 	Camera _camera;
 	LightSource _lightSource;
-
 	Settings _settings;
 	Main _main;
 	Scene _scene;
 
-	uint32_t currentBuffer = 0;
-	CommandBuffer _cmdBuffers;
-	FrameBuffer _frameBuffers;
-
-	std::vector<VkFence> waitFences; // Command buffer execution fences
-	std::vector<VkSemaphore> renderCompleteSemaphores;
-	std::vector<VkSemaphore> presentCompleteSemaphores; // Queue ordering semaphores
-
-	const uint32_t renderAhead = 2;
-	uint32_t frameIndex = 0;
-
 	Settings& GetSettings()
 	{
 		return _settings;
-	}
-
-	void CreateFences()
-	{
-		waitFences.resize(renderAhead);
-		for (auto &waitFence : waitFences)
-		{
-			VkFenceCreateInfo fenceCI{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT };
-			VK_CHECK_RESULT(vkCreateFence(_main.GetDevice(), &fenceCI, nullptr, &waitFence));
-		}
-
-		presentCompleteSemaphores.resize(renderAhead);
-		for (auto &semaphore : presentCompleteSemaphores)
-		{
-			VkSemaphoreCreateInfo semaphoreCI{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
-			VK_CHECK_RESULT(vkCreateSemaphore(_main.GetDevice(), &semaphoreCI, nullptr, &semaphore));
-		}
-
-		renderCompleteSemaphores.resize(renderAhead);
-		for (auto &semaphore : renderCompleteSemaphores)
-		{
-			VkSemaphoreCreateInfo semaphoreCI{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
-			VK_CHECK_RESULT(vkCreateSemaphore(_main.GetDevice(), &semaphoreCI, nullptr, &semaphore));
-		}
-	}
-
-	void ReleaseFences()
-	{
-		for (auto fence : waitFences)
-			vkDestroyFence(_main.GetDevice(), fence, nullptr);
-
-		for (auto semaphore : renderCompleteSemaphores)
-			vkDestroySemaphore(_main.GetDevice(), semaphore, nullptr);
-
-		for (auto semaphore : presentCompleteSemaphores)
-			vkDestroySemaphore(_main.GetDevice(), semaphore, nullptr);
 	}
 
 	bool Initialize()
@@ -105,12 +59,8 @@ namespace Vk
 		vkDeviceWaitIdle(_main.GetDevice());
 
 		_scene.Release(_main.GetDevice());
-		_frameBuffers.Release(_settings, _main.GetDevice());
-		_cmdBuffers.Release(_main.GetDevice(), _main.GetCommandPool());
 
-		ReleaseFences();
-
-		_main.Release();
+		_main.Release(_settings);
 	}
 
 	void UpdateUniformBuffers()
@@ -132,15 +82,10 @@ namespace Vk
 
 	void Prepare(HINSTANCE instance, HWND window)
 	{
-		CreateFences();
-
 		_main.Prepare(_settings, instance, window);
 
-		_frameBuffers.Initialize(_settings, _main.GetVulkanDevice(), _main.GetVulkanSwapChain(), _main.GetDepthFormat(), _main.GetRenderPass());
-		_cmdBuffers.Initialize(_main.GetDevice(), _main.GetCommandPool(), _main.GetSwapChainImageCount());
-
 		_scene.Initialize(_main, _settings);
-		_scene.RecordBuffers(_main, _settings, _cmdBuffers, _frameBuffers);
+		_scene.RecordBuffers(_main, _settings, _main.GetCommandBuffer(), _main.GetFrameBuffer());
 
 		prepared = true;
 
@@ -164,9 +109,6 @@ namespace Vk
 		_settings.height = destHeight;
 		_main.RecreateSwapChain(_settings);
 
-		_frameBuffers.Release(_settings, _main.GetDevice());
-		_frameBuffers.Initialize(_settings, _main.GetVulkanDevice(), _main.GetVulkanSwapChain(), _main.GetDepthFormat(), _main.GetRenderPass());
-
 		vkDeviceWaitIdle(_main.GetDevice());
 
 		const auto aspect = _settings.width / static_cast<float>(_settings.height);
@@ -180,10 +122,7 @@ namespace Vk
 		if (false == prepared)
 			return;
 
-		VK_CHECK_RESULT(vkWaitForFences(_main.GetDevice(), 1, &waitFences[frameIndex], VK_TRUE, UINT64_MAX));
-		VK_CHECK_RESULT(vkResetFences(_main.GetDevice(), 1, &waitFences[frameIndex]));
-
-		const auto acquire = _main.AcquireNextImage(currentBuffer, presentCompleteSemaphores[frameIndex]);
+		const auto acquire = _main.AcquireNextImage(currentBuffer, frameIndex);
 		if (VK_ERROR_OUT_OF_DATE_KHR == acquire || VK_SUBOPTIMAL_KHR == acquire)
 			WindowResize();
 		else
@@ -192,19 +131,7 @@ namespace Vk
 		UpdateUniformBuffers();
 		_scene.OnUniformBufferSets(currentBuffer);
 
-		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pWaitDstStageMask = &waitDstStageMask;
-		submitInfo.pWaitSemaphores = &presentCompleteSemaphores[frameIndex];
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &renderCompleteSemaphores[frameIndex];
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pCommandBuffers = &_cmdBuffers.GetPtr()[currentBuffer];
-		submitInfo.commandBufferCount = 1;
-		VK_CHECK_RESULT(vkQueueSubmit(_main.GetGPUQueue(), 1, &submitInfo, waitFences[frameIndex]));
-
-		const auto present = _main.QueuePresent(currentBuffer, renderCompleteSemaphores[frameIndex]);
+		const auto present = _main.QueuePresent(currentBuffer, frameIndex);
 		if (false == (VK_SUCCESS == present || VK_SUBOPTIMAL_KHR == present))
 		{
 			if (VK_ERROR_OUT_OF_DATE_KHR == present)
@@ -219,7 +146,7 @@ namespace Vk
 		}
 
 		frameIndex += 1;
-		frameIndex %= renderAhead;
+		frameIndex %= _settings.renderAhead;
 	}
 
 	void RenderLoop(HWND window)
@@ -368,8 +295,8 @@ namespace Vk
 			break;
 		case WM_MOUSEWHEEL:
 		{
-			short wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-			_camera.translate(glm::vec3(0.0f, 0.0f, -(float)wheelDelta * 0.005f * _camera.movementSpeed));
+			const auto wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+			_camera.translate(glm::vec3(0.0f, 0.0f, -static_cast<float>(wheelDelta) * 0.005f * _camera.movementSpeed));
 			break;
 		}
 		case WM_MOUSEMOVE:
@@ -378,9 +305,10 @@ namespace Vk
 			break;
 		}
 		case WM_SIZE:
-			if ((prepared) && (wParam != SIZE_MINIMIZED))
+			if (true == prepared && SIZE_MINIMIZED != wParam)
 			{
-				if ((resizing) || ((wParam == SIZE_MAXIMIZED) || (wParam == SIZE_RESTORED))) {
+				if (true == resizing || SIZE_MAXIMIZED == wParam || SIZE_RESTORED == wParam)
+				{
 					destWidth = LOWORD(lParam);
 					destHeight = HIWORD(lParam);
 					WindowResize();

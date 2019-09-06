@@ -8,12 +8,6 @@
 
 namespace Vk
 {
-	void CleanupSwapChain(VulkanSwapChain* ptr)
-	{
-		ptr->cleanup();
-		delete ptr;
-	}
-
 	VkFormat FindDepthFormat(VkPhysicalDevice selectDevice)
 	{
 		const std::vector<VkFormat> depthFormats =
@@ -60,10 +54,20 @@ namespace Vk
 		_renderPass.Initialize(settings, _swapChain->colorFormat, _depthFormat, _logicalDevice);
 
 		_pipelineCache.Initialize(_logicalDevice);
+
+		_frameBufs.Initialize(settings, *_device, *_swapChain, _depthFormat, _renderPass.Get());
+		_cmdBufs.Initialize(_logicalDevice, _cmdPool.Get(), _swapChain->imageCount);
+
+		CreateFences(settings);
 	}
 
-	void Main::Release()
+	void Main::Release(const Settings& settings)
 	{
+		ReleaseFences();
+
+		_cmdBufs.Release(_logicalDevice, _cmdPool.Get());
+		_frameBufs.Release(settings, _logicalDevice);
+
 		_pipelineCache.Release(_logicalDevice);
 		_renderPass.Release(_logicalDevice);
 		_cmdPool.Release(_logicalDevice);
@@ -75,16 +79,35 @@ namespace Vk
 	void Main::RecreateSwapChain(Settings & settings)
 	{
 		_swapChain->create(&settings.width, &settings.height, settings.vsync);
+
+		_frameBufs.Release(settings, _logicalDevice);
+		_frameBufs.Initialize(settings, *_device, *_swapChain, _depthFormat, _renderPass.Get());
 	}
 
-	VkResult Main::AcquireNextImage(uint32_t & currentBuffer, VkSemaphore semaphore)
+	VkResult Main::AcquireNextImage(uint32_t & currentBuffer, uint32_t frameIndex)
 	{
-		return _swapChain->acquireNextImage(semaphore, &currentBuffer);
+		VK_CHECK_RESULT(vkWaitForFences(_logicalDevice, 1, &_waitFences[frameIndex], VK_TRUE, UINT64_MAX));
+		VK_CHECK_RESULT(vkResetFences(_logicalDevice, 1, &_waitFences[frameIndex]));
+
+		return _swapChain->acquireNextImage(_presentCompleteSemaphores[frameIndex], &currentBuffer);
 	}
 
-	VkResult Main::QueuePresent(uint32_t currentBuffer, VkSemaphore semaphore)
+	VkResult Main::QueuePresent(uint32_t currentBuffer, uint32_t frameIndex)
 	{
-		return _swapChain->queuePresent(_gpuQueue, currentBuffer, semaphore);
+		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitDstStageMask = &waitDstStageMask;
+		submitInfo.pWaitSemaphores = &_presentCompleteSemaphores[frameIndex];
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &_renderCompleteSemaphores[frameIndex];
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pCommandBuffers = &_cmdBufs.GetPtr()[currentBuffer];
+		submitInfo.commandBufferCount = 1;
+		VK_CHECK_RESULT(vkQueueSubmit(_gpuQueue, 1, &submitInfo, _waitFences[frameIndex]));
+
+		return _swapChain->queuePresent(_gpuQueue, currentBuffer, _renderCompleteSemaphores[frameIndex]);
 	}
 
 	uint32_t Main::GetSwapChainImageCount() const
@@ -166,5 +189,41 @@ namespace Vk
 			delete _device;
 			_device = nullptr;
 		}
+	}
+
+	void Main::CreateFences(const Settings& settings)
+	{
+		_waitFences.resize(settings.renderAhead);
+		for (auto &waitFence : _waitFences)
+		{
+			VkFenceCreateInfo fenceCI{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT };
+			VK_CHECK_RESULT(vkCreateFence(_logicalDevice, &fenceCI, nullptr, &waitFence));
+		}
+
+		_presentCompleteSemaphores.resize(settings.renderAhead);
+		for (auto &semaphore : _presentCompleteSemaphores)
+		{
+			VkSemaphoreCreateInfo semaphoreCI{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
+			VK_CHECK_RESULT(vkCreateSemaphore(_logicalDevice, &semaphoreCI, nullptr, &semaphore));
+		}
+
+		_renderCompleteSemaphores.resize(settings.renderAhead);
+		for (auto &semaphore : _renderCompleteSemaphores)
+		{
+			VkSemaphoreCreateInfo semaphoreCI{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
+			VK_CHECK_RESULT(vkCreateSemaphore(_logicalDevice, &semaphoreCI, nullptr, &semaphore));
+		}
+	}
+
+	void Main::ReleaseFences()
+	{
+		for (auto fence : _waitFences)
+			vkDestroyFence(_logicalDevice, fence, nullptr);
+
+		for (auto semaphore : _renderCompleteSemaphores)
+			vkDestroySemaphore(_logicalDevice, semaphore, nullptr);
+
+		for (auto semaphore : _presentCompleteSemaphores)
+			vkDestroySemaphore(_logicalDevice, semaphore, nullptr);
 	}
 }
