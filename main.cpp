@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 
-#include "Vk.h"
+#include "VkFramework.h"
 #include "VkWin.h"
 
 LRESULT CALLBACK WndProc(HWND handle, UINT msg, WPARAM wParam, LPARAM lParam)

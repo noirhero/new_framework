@@ -3,9 +3,6 @@
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="Vk.h">
-      <Filter>vulkan</Filter>
-    </ClInclude>
     <ClInclude Include="VkDevice.h">
       <Filter>vulkan</Filter>
     </ClInclude>
@@ -54,13 +51,13 @@
     <ClInclude Include="VkScene.h">
       <Filter>vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="VkFramework.h">
+      <Filter>vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Vk.cpp">
-      <Filter>vulkan</Filter>
-    </ClCompile>
     <ClCompile Include="VkWin.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
@@ -86,6 +83,9 @@
       <Filter>vulkan</Filter>
     </ClCompile>
     <ClCompile Include="VkScene.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VkFramework.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
   </ItemGroup>

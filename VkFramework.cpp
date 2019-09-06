@@ -1,7 +1,7 @@
 // Copyright 2018-2019 TAP, Inc. All Rights Reserved.
 
 #include "stdafx.h"
-#include "Vk.h"
+#include "VkFramework.h"
 
 #include "VkMain.h"
 #include "VkScene.h"

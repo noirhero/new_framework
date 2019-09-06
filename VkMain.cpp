@@ -110,11 +110,6 @@ namespace Vk
 		return _swapChain->queuePresent(_gpuQueue, currentBuffer, _renderCompleteSemaphores[frameIndex]);
 	}
 
-	uint32_t Main::GetSwapChainImageCount() const
-	{
-		return _swapChain->imageCount;
-	}
-
 	bool Main::InitializePhysicalGroup(const Settings& settings)
 	{
 		if (false == _inst.Initialize(settings))

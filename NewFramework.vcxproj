@@ -159,7 +159,7 @@
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="Vk.h" />
+    <ClInclude Include="VkFramework.h" />
     <ClInclude Include="VkCamera.h" />
     <ClInclude Include="VkCommand.h" />
     <ClInclude Include="VkCommon.h" />
@@ -185,7 +185,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Vk.cpp" />
+    <ClCompile Include="VkFramework.cpp" />
     <ClCompile Include="VkCommand.cpp" />
     <ClCompile Include="VkDebug.cpp" />
     <ClCompile Include="VkInstance.cpp" />

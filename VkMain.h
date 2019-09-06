@@ -30,14 +30,9 @@ namespace Vk
 
 		VulkanDevice&			GetVulkanDevice() const { return *_device; }
 		VulkanSwapChain&		GetVulkanSwapChain() const { return *_swapChain; }
-		uint32_t				GetSwapChainImageCount() const;
 
-		VkInstance				GetInst() const { return _instanceHandle; }
-		VkPhysicalDevice		GetPhysicalDevice() const { return _selectDevice; }
 		VkDevice				GetDevice() const { return _logicalDevice; }
 		VkQueue					GetGPUQueue() const { return _gpuQueue; }
-		VkFormat				GetDepthFormat() const { return _depthFormat; }
-		VkCommandPool			GetCommandPool() const { return _cmdPool.Get(); }
 		VkRenderPass			GetRenderPass() const { return _renderPass.Get(); }
 		VkPipelineCache			GetPipelineCache() const { return _pipelineCache.Get(); }
 
