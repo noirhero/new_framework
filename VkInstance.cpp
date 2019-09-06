@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include "VkInstance.h"
 
+#include "VkCommon.h"
+
 namespace Vk
 {
 	bool Instance::Initialize(const Settings& settings)

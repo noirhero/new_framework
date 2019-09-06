@@ -109,6 +109,9 @@
     <ClCompile Include="VkModel.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="VkCamera.cpp">
+      <Filter>vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="vulkan">

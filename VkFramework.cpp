@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "VkFramework.h"
 
+#include "VkCommon.h"
 #include "VkMain.h"
 #include "VkScene.h"
 #include "VkCamera.h"

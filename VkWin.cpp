@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include "VkWin.h"
 
+#include "VkCommon.h"
+
 namespace Vk
 {
 	namespace Win

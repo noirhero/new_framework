@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include "VkCommon.h"
-
 namespace Vk
 {
+	struct Settings;
 	class Main;
 	class CommandBuffer;
 	class FrameBuffer;

@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "VkCommand.h"
 
+#include "VkCommon.h"
 #include "VkDevice.h"
 #include "VkSwapChain.h"
 

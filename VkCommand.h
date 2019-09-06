@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "VkCommon.h"
-
 using VkCommandBuffers = std::vector<VkCommandBuffer>;
 using VkFrameBuffers = std::vector<VkFramebuffer>;
 
@@ -11,6 +9,8 @@ namespace Vk
 {
 	struct VulkanDevice;
 	class VulkanSwapChain;
+
+	struct Settings;
 
 	struct Target
 	{

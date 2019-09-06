@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "VkCommon.h"
-
 namespace Vk
 {
+	struct Settings;
+
 	namespace Win
 	{
 		HINSTANCE	GetInstance();

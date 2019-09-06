@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "VkCommon.h"
-
 namespace Vk
 {
+	struct Settings;
+
 	class Instance
 	{
 	public:

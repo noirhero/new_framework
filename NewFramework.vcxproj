@@ -187,6 +187,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="VkBuffer.cpp" />
+    <ClCompile Include="VkCamera.cpp" />
     <ClCompile Include="VkDevice.cpp" />
     <ClCompile Include="VkFramework.cpp" />
     <ClCompile Include="VkCommand.cpp" />
