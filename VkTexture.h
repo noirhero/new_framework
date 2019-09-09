@@ -35,6 +35,7 @@ namespace Vk
 			VkQueue copyQueue,
 			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 		void loadFromBuffer(
 			void* buffer,
 			VkDeviceSize bufferSize,

@@ -45,19 +45,6 @@ namespace Vk
         glm::vec3 camPos;
     };
 
-    struct DescriptorSets
-    {
-        VkDescriptorSet scene = VK_NULL_HANDLE;
-        VkDescriptorSet skybox = VK_NULL_HANDLE;
-    };
-
-    struct DescriptorSetLayouts
-    {
-        VkDescriptorSetLayout scene = VK_NULL_HANDLE;
-        VkDescriptorSetLayout material = VK_NULL_HANDLE;
-        VkDescriptorSetLayout node = VK_NULL_HANDLE;
-    };
-
     struct PushConstBlockMaterial
     {
         glm::vec4 baseColorFactor;
@@ -74,6 +61,19 @@ namespace Vk
         float roughnessFactor = 0.0f;
         float alphaMask = 0.0f;
         float alphaMaskCutoff = 0.0f;
+    };
+
+    struct DescriptorSets
+    {
+        VkDescriptorSet scene = VK_NULL_HANDLE;
+        VkDescriptorSet skybox = VK_NULL_HANDLE;
+    };
+
+    struct DescriptorSetLayouts
+    {
+        VkDescriptorSetLayout scene = VK_NULL_HANDLE;
+        VkDescriptorSetLayout material = VK_NULL_HANDLE;
+        VkDescriptorSetLayout node = VK_NULL_HANDLE;
     };
 
     struct Pipelines

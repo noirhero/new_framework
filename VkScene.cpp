@@ -28,16 +28,19 @@ namespace Vk
         }
     }
 
-    void LoadScene(Model& scene, Main& main, std::string&& filename)
+    void LoadEmptyTexture(Main& main, std::string&& filename)
     {
-        std::cout << "Loading scene from " << filename << std::endl;
+        if(VK_NULL_HANDLE != empty.image)
+            empty.destroy();
 
-        scene.destroy(main.GetDevice());
-        scene.loadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
+        empty.loadFromFile(filename, VK_FORMAT_R8G8B8A8_UNORM, &main.GetVulkanDevice(), main.GetGPUQueue());
     }
 
     void GenerateBRDFLUT(Main& main)
     {
+        if (VK_NULL_HANDLE != lutBrdf.image)
+            lutBrdf.destroy();
+
         VkDevice device = main.GetDevice();
         VkQueue queue = main.GetGPUQueue();
         VkPipelineCache pipelineCache = main.GetPipelineCache();
@@ -45,11 +48,19 @@ namespace Vk
 
         const auto tStart = std::chrono::high_resolution_clock::now();
 
-		lutBrdf = GenerateBRDFLUT(device, queue, pipelineCache, vulkanDevice);
+        lutBrdf = GenerateBRDFLUT(device, queue, pipelineCache, vulkanDevice);
 
         const auto tEnd = std::chrono::high_resolution_clock::now();
         const auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
         std::cout << "Generating BRDF LUT took " << tDiff << " ms" << std::endl;
+    }
+
+    void LoadScene(Model& scene, Main& main, std::string&& filename)
+    {
+        std::cout << "Loading scene from " << filename << std::endl;
+
+        scene.destroy(main.GetDevice());
+        scene.loadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
     }
 
     void SetupNodeDescriptorSet(Node* node, VkDevice device, VkDescriptorPool& descriptorPool, DescriptorSetLayouts& descriptorSetLayouts)
@@ -545,12 +556,7 @@ namespace Vk
     {
         CheckToDataPath();
 
-        if (VK_NULL_HANDLE != empty.image)
-            empty.destroy();
-        empty.loadFromFile(assetpath + "textures/empty.ktx", VK_FORMAT_R8G8B8A8_UNORM, &main.GetVulkanDevice(), main.GetGPUQueue());
-
-        if (VK_NULL_HANDLE != lutBrdf.image)
-            lutBrdf.destroy();
+        LoadEmptyTexture(main, assetpath + "textures/empty.ktx");
         GenerateBRDFLUT(main);
 
         LoadScene(_scene, main, assetpath + "models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
