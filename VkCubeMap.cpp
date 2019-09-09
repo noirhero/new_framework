@@ -6,33 +6,46 @@
 #include "VkCommon.h"
 #include "VkMain.h"
 #include "VkDevice.h"
+#include "VkSwapChain.h"
 #include "VkModel.h"
 #include "VkUtils.h"
 
-namespace Vk
-{
-    enum class CubeMapTarget : uint8_t
-    {
+namespace Vk {
+    enum class CubeMapTarget : uint8_t {
         IRRADIANCE = 0,
         PREFILTEREDENV = 1,
         COUNT,
     };
 
-    Model skybox;
+    struct SkyboxUniformData {
+        glm::mat4 projection{ glm::identity<glm::mat4>() };
+        glm::mat4 model{ glm::identity<glm::mat4>() };
+        glm::mat4 view{ glm::identity<glm::mat4>() };
+        glm::vec3 camPos{};
+    };
 
-    void LoadSkybox(Main& main, std::string&& filename)
-    {
+    Model                           skybox;
+    Buffers                         skyboxUniBufs;
+    SkyboxUniformData               skyboxUniData;
+    std::vector<VkDescriptorSet>    skyboxDescSets;
+
+    void LoadSkybox(Main& main, std::string&& filename) {
+        // model
         skybox.destroy(main.GetDevice());
         skybox.loadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
+
+        // uniform buffer
+        skyboxUniBufs.resize(main.GetVulkanSwapChain().imageCount);
+        for (auto& uniformBuffer : skyboxUniBufs) {
+            uniformBuffer.create(&main.GetVulkanDevice(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(SkyboxUniformData));
+        }
     }
 
-    TextureCubeMap GenerateCubeMap(float& prefilteredCubeMipLevels, TextureCubeMap& environmentCube, Main& main, CubeMapTarget target)
-    {
+    TextureCubeMap GenerateCubeMap(float& prefilteredCubeMipLevels, TextureCubeMap& environmentCube, Main& main, CubeMapTarget target) {
         VkFormat format = VK_FORMAT_UNDEFINED;
         int32_t dim = 0;
 
-        switch (target)
-        {
+        switch (target) {
         case CubeMapTarget::IRRADIANCE:
             format = VK_FORMAT_R32G32B32A32_SFLOAT;
             dim = 64;
@@ -159,8 +172,7 @@ namespace Vk
         VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassCI, nullptr, &renderpass));
 
         // Create offscreen framebuffer
-        struct Offscreen
-        {
+        struct Offscreen {
             VkImage image;
             VkImageView view;
             VkDeviceMemory memory;
@@ -268,15 +280,13 @@ namespace Vk
         writeDescriptorSet.pImageInfo = &environmentCube.descriptor;
         vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 
-        struct PushBlockIrradiance
-        {
+        struct PushBlockIrradiance {
             glm::mat4 mvp;
             float deltaPhi = (2.0f * float(M_PI)) / 180.0f;
             float deltaTheta = (0.5f * float(M_PI)) / 64.0f;
         } pushBlockIrradiance;
 
-        struct PushBlockPrefilterEnv
-        {
+        struct PushBlockPrefilterEnv {
             glm::mat4 mvp;
             float roughness;
             uint32_t numSamples = 32u;
@@ -287,8 +297,7 @@ namespace Vk
         VkPushConstantRange pushConstantRange{};
         pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        switch (target)
-        {
+        switch (target) {
         case CubeMapTarget::IRRADIANCE:
             pushConstantRange.size = sizeof(PushBlockIrradiance);
             break;
@@ -379,8 +388,7 @@ namespace Vk
         pipelineCI.renderPass = renderpass;
 
         shaderStages[0] = loadShader(device, "filtercube.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-        switch (target)
-        {
+        switch (target) {
         case CubeMapTarget::IRRADIANCE:
             shaderStages[1] = loadShader(device, "irradiancecube.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
             break;
@@ -453,10 +461,8 @@ namespace Vk
             vulkanDevice.flushCommandBuffer(cmdBuf, queue, false);
         }
 
-        for (uint32_t m = 0; m < numMips; m++)
-        {
-            for (uint32_t f = 0; f < 6; f++)
-            {
+        for (uint32_t m = 0; m < numMips; m++) {
+            for (uint32_t f = 0; f < 6; f++) {
 
                 vulkanDevice.beginCommandBuffer(cmdBuf);
 
@@ -469,8 +475,7 @@ namespace Vk
                 vkCmdBeginRenderPass(cmdBuf, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
                 // Pass parameters for current pass using a push constant block
-                switch (target)
-                {
+                switch (target) {
                 case CubeMapTarget::IRRADIANCE:
                     pushBlockIrradiance.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
                     vkCmdPushConstants(cmdBuf, pipelinelayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlockIrradiance), &pushBlockIrradiance);
@@ -575,8 +580,7 @@ namespace Vk
         cubemap.descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         cubemap.device = &vulkanDevice;
 
-        switch (target)
-        {
+        switch (target) {
         case CubeMapTarget::PREFILTEREDENV:
             prefilteredCubeMipLevels = static_cast<float>(numMips);
             break;
@@ -589,8 +593,7 @@ namespace Vk
         return cubemap;
     }
 
-    bool CubeMap::Initialize(Main& main, const std::string& assetpath)
-    {
+    bool CubeMap::Initialize(Main& main, const std::string& assetpath) {
         LoadSkybox(main, assetpath + "models/Box/glTF-Embedded/Box.gltf");
 
         _environmentCube.loadFromFile(assetpath + "environments/papermill.ktx", VK_FORMAT_R16G16B16A16_SFLOAT, &main.GetVulkanDevice(), main.GetGPUQueue());
@@ -600,12 +603,9 @@ namespace Vk
         return true;
     }
 
-    void CubeMap::Release(VkDevice device)
-    {
-        const auto safeDeleteFn = [](TextureCubeMap& src)
-        {
-            if (VK_NULL_HANDLE != src.image)
-            {
+    void CubeMap::Release(VkDevice device) {
+        const auto safeDeleteFn = [](TextureCubeMap& src) {
+            if (VK_NULL_HANDLE != src.image) {
                 src.destroy();
                 src.image = VK_NULL_HANDLE;
             }
@@ -615,11 +615,75 @@ namespace Vk
         safeDeleteFn(_irradianceCube);
         safeDeleteFn(_environmentCube);
 
+        for (auto& buffer : skyboxUniBufs) {
+            buffer.destroy();
+        }
+        skyboxUniBufs.clear();
+
         skybox.destroy(device);
     }
 
-    Model& CubeMap::GetSkybox() const
-    {
+    void CubeMap::CreateAndSetupSkyboxDescriptorSet(Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout) {
+        VkDevice device = main.GetDevice();
+
+        const auto imageCount = main.GetVulkanSwapChain().imageCount;
+        skyboxDescSets.resize(imageCount);
+
+        for (std::remove_const<decltype(imageCount)>::type i = 0; i < imageCount; ++i) {
+            VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
+            descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            descriptorSetAllocInfo.descriptorPool = descPool;
+            descriptorSetAllocInfo.pSetLayouts = &descSetLayout;
+            descriptorSetAllocInfo.descriptorSetCount = 1;
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &skyboxDescSets[i]));
+
+            std::array<VkWriteDescriptorSet, 3> writeDescriptorSets{};
+
+            writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            writeDescriptorSets[0].descriptorCount = 1;
+            writeDescriptorSets[0].dstSet = skyboxDescSets[i];
+            writeDescriptorSets[0].dstBinding = 0;
+            writeDescriptorSets[0].pBufferInfo = &skyboxUniBufs[i].descriptor;
+
+            writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            writeDescriptorSets[1].descriptorCount = 1;
+            writeDescriptorSets[1].dstSet = skyboxDescSets[i];
+            writeDescriptorSets[1].dstBinding = 1;
+            writeDescriptorSets[1].pBufferInfo = &shaderParamUniBufs[i].descriptor;
+
+            writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            writeDescriptorSets[2].descriptorCount = 1;
+            writeDescriptorSets[2].dstSet = skyboxDescSets[i];
+            writeDescriptorSets[2].dstBinding = 2;
+            writeDescriptorSets[2].pImageInfo = &_prefilteredCube.descriptor;
+
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+        }
+    }
+
+    void CubeMap::UpdateSkyboxUniformData(const glm::mat4& view, const glm::mat4& perspective) {
+        skyboxUniData.projection = perspective;
+        skyboxUniData.view = view;
+        skyboxUniData.model = glm::mat4(glm::mat3(view));
+    }
+
+    void CubeMap::OnSkyboxUniformBuffrSet(uint32_t currentBuffer) {
+        constexpr auto skyboxUniDataSize = sizeof(SkyboxUniformData);
+        memcpy_s(skyboxUniBufs[currentBuffer].mapped, skyboxUniDataSize, &skyboxUniData, skyboxUniDataSize);
+    }
+
+    Model& CubeMap::GetSkybox() const {
         return skybox;
+    }
+
+    Buffers& CubeMap::GetSkyboxUniformBuffers() const {
+        return skyboxUniBufs;
+    }
+
+    VkDescriptorSet* CubeMap::GetSkyboxDescSets() const {
+        return skyboxDescSets.data();
     }
 }

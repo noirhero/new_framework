@@ -3,6 +3,7 @@
 #pragma once
 
 #include "VkTexture.h"
+#include "VkBuffer.h"
 
 namespace Vk
 {
@@ -15,7 +16,14 @@ namespace Vk
         bool                        Initialize(Main& main, const std::string& assetpath);
         void                        Release(VkDevice device);
 
+        void                        CreateAndSetupSkyboxDescriptorSet(Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout);
+        void                        UpdateSkyboxUniformData(const glm::mat4& view, const glm::mat4& perspective);
+        void                        OnSkyboxUniformBuffrSet(uint32_t currentBuffer);
+
         Model&                      GetSkybox() const;
+        Buffers&                    GetSkyboxUniformBuffers() const;
+        VkDescriptorSet*            GetSkyboxDescSets() const;
+
         constexpr TextureCubeMap&   GetEnvironment() { return _environmentCube; }
         constexpr TextureCubeMap&   GetIrradiance() { return _irradianceCube; }
         constexpr TextureCubeMap&   GetPrefiltered() { return _prefilteredCube; }

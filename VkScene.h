@@ -6,22 +6,14 @@
 #include "VkCubeMap.h"
 #include "VkBuffer.h"
 
-namespace Vk
-{
+namespace Vk {
     struct Settings;
     class Main;
     class CommandBuffer;
     class FrameBuffer;
 
-    enum class PBRWorkflow : uint8_t
-    {
-        METALLIC_ROUGHNESS = 0,
-        SPECULAR_GLOSINESS = 1
-    };
-
-    struct ShaderValuesParams
-    {
-        glm::vec4 lightDir = {};
+    struct SceneShaderValues {
+        glm::vec4 lightDir{};
         float exposure = 4.5f;
         float gamma = 2.2f;
         float prefilteredCubeMipLevels = 0.0f;
@@ -30,27 +22,18 @@ namespace Vk
         float debugViewEquation = 0;
     };
 
-    struct UniformBufferSet
-    {
-        Buffer scene;
-        Buffer skybox;
-        Buffer params;
+    struct SceneUniformData {
+        glm::mat4 projection{ glm::identity<glm::mat4>() };
+        glm::mat4 model{ glm::identity<glm::mat4>() };
+        glm::mat4 view{ glm::identity<glm::mat4>() };
+        glm::vec3 camPos{};
     };
 
-    struct UBOMatrices
-    {
-        glm::mat4 projection;
-        glm::mat4 model;
-        glm::mat4 view;
-        glm::vec3 camPos;
-    };
-
-    struct PushConstBlockMaterial
-    {
-        glm::vec4 baseColorFactor;
-        glm::vec4 emissiveFactor;
-        glm::vec4 diffuseFactor;
-        glm::vec4 specularFactor;
+    struct PushConstBlockMaterial {
+        glm::vec4 baseColorFactor{};
+        glm::vec4 emissiveFactor{};
+        glm::vec4 diffuseFactor{};
+        glm::vec4 specularFactor{};
         float workflow = 0.0f;
         int colorTextureSet = 0;
         int PhysicalDescriptorTextureSet = 0;
@@ -63,31 +46,21 @@ namespace Vk
         float alphaMaskCutoff = 0.0f;
     };
 
-    struct DescriptorSets
-    {
-        VkDescriptorSet scene = VK_NULL_HANDLE;
-        VkDescriptorSet skybox = VK_NULL_HANDLE;
-    };
-
-    struct DescriptorSetLayouts
-    {
+    struct DescriptorSetLayouts {
         VkDescriptorSetLayout scene = VK_NULL_HANDLE;
         VkDescriptorSetLayout material = VK_NULL_HANDLE;
         VkDescriptorSetLayout node = VK_NULL_HANDLE;
     };
 
-    struct Pipelines
-    {
+    struct Pipelines {
         VkPipeline skybox = VK_NULL_HANDLE;
         VkPipeline pbr = VK_NULL_HANDLE;
         VkPipeline pbrAlphaBlend = VK_NULL_HANDLE;
     };
 
-    using UniformBufferSets = std::vector<UniformBufferSet>;
-    using DescriptorSetsArr = std::vector<DescriptorSets>;
+    using VkDescriptorSets = std::vector<VkDescriptorSet>;
 
-    class Scene
-    {
+    class Scene {
     public:
         bool                        Initialize(Main& main, const Settings& settings);
         void                        Release(VkDevice device);
@@ -98,15 +71,19 @@ namespace Vk
         void                        OnUniformBufferSets(uint32_t currentBuffer);
 
     private:
-        Model                       _scene;
         CubeMap                     _cubeMap;
-        UniformBufferSets           _uniformBuffers;
-        ShaderValuesParams          _shaderValuesParams;
-        UBOMatrices                 _shaderValuesScene;
-        UBOMatrices                 _shaderValuesSkybox;
-        DescriptorSetsArr           _descriptorSets;
+        Model                       _scene;
+
+        Buffers                     _sceneUniBufs;
+        Buffers                     _sceneShaderValueUniBufs;
+
+        SceneShaderValues           _sceneShaderValue;
+        SceneUniformData            _sceneUniData;
+
         VkDescriptorPool            _descriptorPool = VK_NULL_HANDLE;
         DescriptorSetLayouts        _descriptorSetLayouts;
+        VkDescriptorSets            _sceneDescSets;
+
         PushConstBlockMaterial      _pushConstBlockMaterial;
         VkPipelineLayout            _pipelineLayout = VK_NULL_HANDLE;
         Pipelines                   _pipelines;

@@ -9,35 +9,36 @@
 #include "VkSwapChain.h"
 #include "VkUtils.h"
 
-namespace Vk
-{
+namespace Vk {
+    enum class PBRWorkflow : uint8_t {
+        METALLIC_ROUGHNESS = 0,
+        SPECULAR_GLOSINESS = 1
+    };
+
     const bool displayBackground = true;
-    const std::string assetpath = "./../data/";
+    std::string assetpath = "./../data/";
 
     Texture2D empty;
     Texture2D lutBrdf;
 
-    void CheckToDataPath()
-    {
-        struct stat info;
-        if (0 != stat(assetpath.c_str(), &info))
-        {
+    void CheckToDataPath() {
+        struct stat info {};
+
+        if (0 != stat(assetpath.c_str(), &info)) {
             std::string msg = "Could not locate asset path in \"" + assetpath + "\".\nMake sure binary is run from correct relative directory!";
             std::cerr << msg << std::endl;
             exit(-1);
         }
     }
 
-    void LoadEmptyTexture(Main& main, std::string&& filename)
-    {
-        if(VK_NULL_HANDLE != empty.image)
+    void LoadEmptyTexture(Main& main, std::string&& filename) {
+        if (VK_NULL_HANDLE != empty.image)
             empty.destroy();
 
         empty.loadFromFile(filename, VK_FORMAT_R8G8B8A8_UNORM, &main.GetVulkanDevice(), main.GetGPUQueue());
     }
 
-    void GenerateBRDFLUT(Main& main)
-    {
+    void GenerateBRDFLUT(Main& main) {
         if (VK_NULL_HANDLE != lutBrdf.image)
             lutBrdf.destroy();
 
@@ -55,22 +56,19 @@ namespace Vk
         std::cout << "Generating BRDF LUT took " << tDiff << " ms" << std::endl;
     }
 
-    void LoadScene(Model& scene, Main& main, std::string&& filename)
-    {
+    void LoadScene(Model& scene, Main& main, std::string&& filename) {
         std::cout << "Loading scene from " << filename << std::endl;
 
         scene.destroy(main.GetDevice());
         scene.loadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
     }
 
-    void SetupNodeDescriptorSet(Node* node, VkDevice device, VkDescriptorPool& descriptorPool, DescriptorSetLayouts& descriptorSetLayouts)
-    {
-        if (node->mesh)
-        {
+    void SetupNodeDescriptorSet(Node* node, VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout nodeDescSetLayout) {
+        if (node->mesh) {
             VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
             descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             descriptorSetAllocInfo.descriptorPool = descriptorPool;
-            descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayouts.node;
+            descriptorSetAllocInfo.pSetLayouts = &nodeDescSetLayout;
             descriptorSetAllocInfo.descriptorSetCount = 1;
             VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &node->mesh->uniformBuffer.descriptorSet));
 
@@ -86,15 +84,16 @@ namespace Vk
         }
 
         for (auto& child : node->children)
-            SetupNodeDescriptorSet(child, device, descriptorPool, descriptorSetLayouts);
+            SetupNodeDescriptorSet(child, device, descriptorPool, nodeDescSetLayout);
     }
 
-    void SetupDescriptors(Model& scene, CubeMap& cubeMap, Main& main, DescriptorSetsArr& descriptorSets, VkDescriptorPool& descriptorPool, DescriptorSetLayouts& descriptorSetLayouts, UniformBufferSets& uniformBuffers)
-    {
+    void SetupDescriptors(Model& scene, CubeMap& cubeMap, Main& main, 
+                          VkDescriptorPool& descriptorPool, DescriptorSetLayouts& descriptorSetLayouts,
+                          VkDescriptorSets& sceneDescSets, Buffers& sceneUniBufs, Buffers& shaderParamUniBufs, Buffers& skyboxUniBufs) {
         VkDevice device = main.GetDevice();
         const auto imageCount = main.GetVulkanSwapChain().imageCount;
 
-        descriptorSets.resize(imageCount);
+        sceneDescSets.resize(imageCount);
 
         /*
             Descriptor Pool
@@ -107,17 +106,13 @@ namespace Vk
         imageSamplerCount += 3;
 
         const std::vector<Model*> modellist = { &cubeMap.GetSkybox(), &scene };
-        for (auto& model : modellist)
-        {
-            for (auto& material : model->materials)
-            {
+        for (auto& model : modellist) {
+            for (auto& material : model->materials) {
                 imageSamplerCount += 5;
                 materialCount++;
             }
-            for (auto node : model->linearNodes)
-            {
-                if (node->mesh)
-                {
+            for (auto node : model->linearNodes) {
+                if (node->mesh) {
                     meshCount++;
                 }
             }
@@ -155,52 +150,50 @@ namespace Vk
             descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
             descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
             descriptorSetLayoutCI.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
-
             VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.scene));
 
-            for (auto i = 0; i < descriptorSets.size(); i++)
-            {
+            for (auto i = 0; i < sceneDescSets.size(); i++) {
                 VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
                 descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
                 descriptorSetAllocInfo.descriptorPool = descriptorPool;
                 descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayouts.scene;
                 descriptorSetAllocInfo.descriptorSetCount = 1;
-                VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &descriptorSets[i].scene));
+                VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &sceneDescSets[i]));
 
                 std::array<VkWriteDescriptorSet, 5> writeDescriptorSets{};
 
                 writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                 writeDescriptorSets[0].descriptorCount = 1;
-                writeDescriptorSets[0].dstSet = descriptorSets[i].scene;
+                writeDescriptorSets[0].dstSet = sceneDescSets[i];
                 writeDescriptorSets[0].dstBinding = 0;
-                writeDescriptorSets[0].pBufferInfo = &uniformBuffers[i].scene.descriptor;
+                writeDescriptorSets[0].pBufferInfo = &sceneUniBufs[i].descriptor;
 
                 writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                 writeDescriptorSets[1].descriptorCount = 1;
-                writeDescriptorSets[1].dstSet = descriptorSets[i].scene;
+                writeDescriptorSets[1].dstSet = sceneDescSets[i];
                 writeDescriptorSets[1].dstBinding = 1;
-                writeDescriptorSets[1].pBufferInfo = &uniformBuffers[i].params.descriptor;
+                writeDescriptorSets[1].pBufferInfo = &shaderParamUniBufs[i].descriptor;
 
                 writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 writeDescriptorSets[2].descriptorCount = 1;
-                writeDescriptorSets[2].dstSet = descriptorSets[i].scene;
+                writeDescriptorSets[2].dstSet = sceneDescSets[i];
                 writeDescriptorSets[2].dstBinding = 2;
                 writeDescriptorSets[2].pImageInfo = &cubeMap.GetIrradiance().descriptor;
 
                 writeDescriptorSets[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 writeDescriptorSets[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 writeDescriptorSets[3].descriptorCount = 1;
-                writeDescriptorSets[3].dstSet = descriptorSets[i].scene;
+                writeDescriptorSets[3].dstSet = sceneDescSets[i];
                 writeDescriptorSets[3].dstBinding = 3;
                 writeDescriptorSets[3].pImageInfo = &cubeMap.GetPrefiltered().descriptor;
 
                 writeDescriptorSets[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 writeDescriptorSets[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 writeDescriptorSets[4].descriptorCount = 1;
-                writeDescriptorSets[4].dstSet = descriptorSets[i].scene;
+                writeDescriptorSets[4].dstSet = sceneDescSets[i];
                 writeDescriptorSets[4].dstBinding = 4;
                 writeDescriptorSets[4].pImageInfo = &lutBrdf.descriptor;
 
@@ -227,8 +220,7 @@ namespace Vk
             VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.material));
 
             // Per-Material descriptor sets
-            for (auto& material : scene.materials)
-            {
+            for (auto& material : scene.materials) {
                 VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
                 descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
                 descriptorSetAllocInfo.descriptorPool = descriptorPool;
@@ -247,8 +239,7 @@ namespace Vk
 
                 // TODO: glTF specs states that metallic roughness should be preferred, even if specular glosiness is present
 
-                if (material.pbrWorkflows.metallicRoughness)
-                {
+                if (material.pbrWorkflows.metallicRoughness) {
                     if (material.baseColorTexture)
                         imageDescriptors[0] = material.baseColorTexture->descriptor;
 
@@ -256,8 +247,7 @@ namespace Vk
                         imageDescriptors[1] = material.metallicRoughnessTexture->descriptor;
                 }
 
-                if (material.pbrWorkflows.specularGlossiness)
-                {
+                if (material.pbrWorkflows.specularGlossiness) {
                     if (material.extension.diffuseTexture)
                         imageDescriptors[0] = material.extension.diffuseTexture->descriptor;
 
@@ -266,8 +256,7 @@ namespace Vk
                 }
 
                 std::array<VkWriteDescriptorSet, 5> writeDescriptorSets{};
-                for (size_t i = 0; i < imageDescriptors.size(); i++)
-                {
+                for (size_t i = 0; i < imageDescriptors.size(); i++) {
                     writeDescriptorSets[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     writeDescriptorSets[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                     writeDescriptorSets[i].descriptorCount = 1;
@@ -295,50 +284,13 @@ namespace Vk
 
                 // Per-Node descriptor set
                 for (auto& node : scene.nodes)
-                    SetupNodeDescriptorSet(node, device, descriptorPool, descriptorSetLayouts);
+                    SetupNodeDescriptorSet(node, device, descriptorPool, descriptorSetLayouts.node);
             }
 
         }
-
-        // Skybox (fixed set)
-        for (auto i = 0; i < uniformBuffers.size(); i++)
-        {
-            VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
-            descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            descriptorSetAllocInfo.descriptorPool = descriptorPool;
-            descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayouts.scene;
-            descriptorSetAllocInfo.descriptorSetCount = 1;
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &descriptorSets[i].skybox));
-
-            std::array<VkWriteDescriptorSet, 3> writeDescriptorSets{};
-
-            writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            writeDescriptorSets[0].descriptorCount = 1;
-            writeDescriptorSets[0].dstSet = descriptorSets[i].skybox;
-            writeDescriptorSets[0].dstBinding = 0;
-            writeDescriptorSets[0].pBufferInfo = &uniformBuffers[i].skybox.descriptor;
-
-            writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            writeDescriptorSets[1].descriptorCount = 1;
-            writeDescriptorSets[1].dstSet = descriptorSets[i].skybox;
-            writeDescriptorSets[1].dstBinding = 1;
-            writeDescriptorSets[1].pBufferInfo = &uniformBuffers[i].params.descriptor;
-
-            writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            writeDescriptorSets[2].descriptorCount = 1;
-            writeDescriptorSets[2].dstSet = descriptorSets[i].skybox;
-            writeDescriptorSets[2].dstBinding = 2;
-            writeDescriptorSets[2].pImageInfo = &cubeMap.GetPrefiltered().descriptor;
-
-            vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
-        }
     }
 
-    void PreparePipelines(const Settings& settings, Main& main, DescriptorSetLayouts& descriptorSetLayouts, VkPipelineLayout& pipelineLayout, Pipelines& pipelines)
-    {
+    void PreparePipelines(const Settings& settings, Main& main, DescriptorSetLayouts& descriptorSetLayouts, VkPipelineLayout& pipelineLayout, Pipelines& pipelines) {
         VkDevice device = main.GetDevice();
         VkRenderPass renderPass = main.GetRenderPass();
         VkPipelineCache pipelineCache = main.GetPipelineCache();
@@ -484,19 +436,15 @@ namespace Vk
             vkDestroyShaderModule(device, shaderStage.module, nullptr);
     }
 
-    void RenderNode(Node* node, uint32_t cbIndex, Material::AlphaMode alphaMode, CommandBuffer& cmdBuffers, DescriptorSetsArr& descriptorSets, VkPipelineLayout& pipelineLayout)
-    {
-        if (node->mesh)
-        {
+    void RenderNode(Node* node, uint32_t cbIndex, Material::AlphaMode alphaMode, CommandBuffer& cmdBuffers, VkDescriptorSets& sceneDescSets, VkPipelineLayout& pipelineLayout) {
+        if (node->mesh) {
             // Render mesh primitives
-            for (Primitive* primitive : node->mesh->primitives)
-            {
-                if (primitive->material.alphaMode == alphaMode)
-                {
+            for (Primitive* primitive : node->mesh->primitives) {
+                if (primitive->material.alphaMode == alphaMode) {
 
                     const std::vector<VkDescriptorSet> descriptorsets =
                     {
-                        descriptorSets[cbIndex].scene,
+                        sceneDescSets[cbIndex],
                         primitive->material.descriptorSet,
                         node->mesh->uniformBuffer.descriptorSet,
                     };
@@ -516,8 +464,7 @@ namespace Vk
 
                     // TODO: glTF specs states that metallic roughness should be preferred, even if specular glosiness is present
 
-                    if (primitive->material.pbrWorkflows.metallicRoughness)
-                    {
+                    if (primitive->material.pbrWorkflows.metallicRoughness) {
                         // Metallic roughness workflow
                         pushConstBlockMaterial.workflow = static_cast<float>(PBRWorkflow::METALLIC_ROUGHNESS);
                         pushConstBlockMaterial.baseColorFactor = primitive->material.baseColorFactor;
@@ -527,8 +474,7 @@ namespace Vk
                         pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
                     }
 
-                    if (primitive->material.pbrWorkflows.specularGlossiness)
-                    {
+                    if (primitive->material.pbrWorkflows.specularGlossiness) {
                         // Specular glossiness workflow
                         pushConstBlockMaterial.workflow = static_cast<float>(PBRWorkflow::SPECULAR_GLOSINESS);
                         pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
@@ -548,39 +494,42 @@ namespace Vk
         };
 
         for (auto child : node->children) {
-            RenderNode(child, cbIndex, alphaMode, cmdBuffers, descriptorSets, pipelineLayout);
+            RenderNode(child, cbIndex, alphaMode, cmdBuffers, sceneDescSets, pipelineLayout);
         }
     }
 
-    bool Scene::Initialize(Main& main, const Settings& settings)
-    {
+    bool Scene::Initialize(Main& main, const Settings& settings) {
         CheckToDataPath();
+
+        VulkanDevice& vulkanDevice = main.GetVulkanDevice();
 
         LoadEmptyTexture(main, assetpath + "textures/empty.ktx");
         GenerateBRDFLUT(main);
 
         LoadScene(_scene, main, assetpath + "models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
-
-        _cubeMap.Initialize(main, assetpath);
-        _shaderValuesParams.prefilteredCubeMipLevels = _cubeMap.GetPrefilteredCubeMipLevels();
-
-        _uniformBuffers.resize(main.GetVulkanSwapChain().imageCount);
-        for (auto& uniformBuffer : _uniformBuffers)
-        {
-            VulkanDevice& vulkanDevice = main.GetVulkanDevice();
-            uniformBuffer.scene.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(_shaderValuesScene));
-            uniformBuffer.skybox.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(_shaderValuesSkybox));
-            uniformBuffer.params.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(_shaderValuesParams));
+        _sceneUniBufs.resize(main.GetVulkanSwapChain().imageCount);
+        for (auto& uniformBuffer : _sceneUniBufs) {
+            uniformBuffer.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(_sceneUniData));
         }
 
-        SetupDescriptors(_scene, _cubeMap, main, _descriptorSets, _descriptorPool, _descriptorSetLayouts, _uniformBuffers);
+        _sceneShaderValueUniBufs.resize(main.GetVulkanSwapChain().imageCount);
+        for (auto& uniformBuffer : _sceneShaderValueUniBufs) {
+            uniformBuffer.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(_sceneShaderValue));
+        }
+
+        _cubeMap.Initialize(main, assetpath);
+        _sceneShaderValue.prefilteredCubeMipLevels = _cubeMap.GetPrefilteredCubeMipLevels();
+
+        SetupDescriptors(_scene, _cubeMap, main, _descriptorPool, _descriptorSetLayouts, _sceneDescSets, _sceneUniBufs, _sceneShaderValueUniBufs, _cubeMap.GetSkyboxUniformBuffers());
+        _cubeMap.CreateAndSetupSkyboxDescriptorSet(main, _sceneShaderValueUniBufs, _descriptorPool, _descriptorSetLayouts.scene);
+
+
         PreparePipelines(settings, main, _descriptorSetLayouts, _pipelineLayout, _pipelines);
 
         return true;
     }
 
-    void Scene::Release(VkDevice device)
-    {
+    void Scene::Release(VkDevice device) {
         vkDestroyPipeline(device, _pipelines.skybox, nullptr);
         vkDestroyPipeline(device, _pipelines.pbr, nullptr);
         vkDestroyPipeline(device, _pipelines.pbrAlphaBlend, nullptr);
@@ -593,62 +542,58 @@ namespace Vk
 
         vkDestroyDescriptorPool(device, _descriptorPool, nullptr);
 
-        for (auto& buffer : _uniformBuffers)
-        {
-            buffer.params.destroy();
-            buffer.scene.destroy();
-            buffer.skybox.destroy();
+        for (auto& buffer : _cubeMap.GetSkyboxUniformBuffers()) {
+            buffer.destroy();
         }
-        _uniformBuffers.clear();
-
         _cubeMap.Release(device);
+
+        for (auto& buffer : _sceneShaderValueUniBufs) {
+            buffer.destroy();
+        }
+        for (auto& buffer : _sceneUniBufs) {
+            buffer.destroy();
+        }
         _scene.destroy(device);
 
         lutBrdf.destroy();
         empty.destroy();
     }
 
-    void Scene::UpdateUniformDatas(const glm::mat4& view, const glm::mat4& perspective, const glm::vec3& cameraPos, const glm::vec4& lightDir)
-    {
+    void Scene::UpdateUniformDatas(const glm::mat4& view, const glm::mat4& perspective, const glm::vec3& cameraPos, const glm::vec4& lightDir) {
         // Scene
-        _shaderValuesScene.projection = perspective;
-        _shaderValuesScene.view = view;
+        _sceneUniData.projection = perspective;
+        _sceneUniData.view = view;
 
         // Center and scale model
         const float scale = (1.0f / std::max(_scene.aabb[0][0], std::max(_scene.aabb[1][1], _scene.aabb[2][2]))) * 0.5f;
         glm::vec3 translate = -glm::vec3(_scene.aabb[3][0], _scene.aabb[3][1], _scene.aabb[3][2]);
         translate += -0.5f * glm::vec3(_scene.aabb[0][0], _scene.aabb[1][1], _scene.aabb[2][2]);
 
-        _shaderValuesScene.model = glm::mat4(1.0f);
-        _shaderValuesScene.model[0][0] = scale;
-        _shaderValuesScene.model[1][1] = scale;
-        _shaderValuesScene.model[2][2] = scale;
-        _shaderValuesScene.model = glm::translate(_shaderValuesScene.model, translate);
+        _sceneUniData.model = glm::mat4(1.0f);
+        _sceneUniData.model[0][0] = scale;
+        _sceneUniData.model[1][1] = scale;
+        _sceneUniData.model[2][2] = scale;
+        _sceneUniData.model = glm::translate(_sceneUniData.model, translate);
 
-        _shaderValuesScene.camPos = cameraPos;
+        _sceneUniData.camPos = cameraPos;
 
-        _shaderValuesParams.lightDir = lightDir;
+        _sceneShaderValue.lightDir = lightDir;
 
         // Skybox
-        _shaderValuesSkybox.projection = perspective;
-        _shaderValuesSkybox.view = view;
-        _shaderValuesSkybox.model = glm::mat4(glm::mat3(view));
+        _cubeMap.UpdateSkyboxUniformData(view, perspective);
     }
 
-    void Scene::RecordBuffers(Main& main, const Settings& settings, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers)
-    {
+    void Scene::RecordBuffers(Main& main, const Settings& settings, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers) {
         VkCommandBufferBeginInfo cmdBufferBeginInfo{};
         cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
         VkClearValue clearValues[3];
-        if (settings.multiSampling)
-        {
+        if (settings.multiSampling) {
             clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
             clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
             clearValues[2].depthStencil = { 1.0f, 0 };
         }
-        else
-        {
+        else {
             clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
             clearValues[1].depthStencil = { 1.0f, 0 };
         }
@@ -663,8 +608,7 @@ namespace Vk
         renderPassBeginInfo.clearValueCount = settings.multiSampling ? 3 : 2;
         renderPassBeginInfo.pClearValues = clearValues;
 
-        for (decltype(cmdBuffers.Count()) i = 0; i < cmdBuffers.Count(); ++i)
-        {
+        for (decltype(cmdBuffers.Count()) i = 0; i < cmdBuffers.Count(); ++i) {
             renderPassBeginInfo.framebuffer = frameBuffers.Get(static_cast<uint32_t>(i));
 
             VkCommandBuffer currentCB = cmdBuffers.Get(i);
@@ -685,9 +629,8 @@ namespace Vk
 
             VkDeviceSize offsets[1] = { 0 };
 
-            if (true == displayBackground)
-            {
-                vkCmdBindDescriptorSets(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[i].skybox, 0, nullptr);
+            if (true == displayBackground) {
+                vkCmdBindDescriptorSets(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_cubeMap.GetSkyboxDescSets()[i], 0, nullptr);
                 vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines.skybox);
                 _cubeMap.GetSkybox().draw(currentCB);
             }
@@ -702,34 +645,30 @@ namespace Vk
 
             // Opaque primitives first
             for (auto node : model.nodes)
-                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_OPAQUE, cmdBuffers, _descriptorSets, _pipelineLayout);
+                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_OPAQUE, cmdBuffers, _sceneDescSets, _pipelineLayout);
 
             // Alpha masked primitives
             for (auto node : model.nodes)
-                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_MASK, cmdBuffers, _descriptorSets, _pipelineLayout);
+                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_MASK, cmdBuffers, _sceneDescSets, _pipelineLayout);
 
             // Transparent primitives
             // TODO: Correct depth sorting
             vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines.pbrAlphaBlend);
             for (auto node : model.nodes)
-                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_BLEND, cmdBuffers, _descriptorSets, _pipelineLayout);
+                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_BLEND, cmdBuffers, _sceneDescSets, _pipelineLayout);
 
             vkCmdEndRenderPass(currentCB);
             VK_CHECK_RESULT(vkEndCommandBuffer(currentCB));
         }
     }
 
-    void Scene::OnUniformBufferSets(uint32_t currentBuffer)
-    {
-        UniformBufferSet currentUB = _uniformBuffers[currentBuffer];
+    void Scene::OnUniformBufferSets(uint32_t currentBuffer) {
+        constexpr auto uniDataSize = sizeof(SceneUniformData);
+        memcpy_s(_sceneUniBufs[currentBuffer].mapped, uniDataSize, &_sceneUniData, uniDataSize);
 
-        const auto sceneValuesSize = sizeof(_shaderValuesScene);
-        memcpy_s(currentUB.scene.mapped, sceneValuesSize, &_shaderValuesScene, sceneValuesSize);
+        constexpr auto shaderValueSize = sizeof(SceneShaderValues);
+        memcpy_s(_sceneShaderValueUniBufs[currentBuffer].mapped, shaderValueSize, &_sceneShaderValue, shaderValueSize);
 
-        const auto paramValuesSize = sizeof(_shaderValuesParams);
-        memcpy_s(currentUB.params.mapped, paramValuesSize, &_shaderValuesParams, paramValuesSize);
-
-        const auto skyboxValuesSize = sizeof(_shaderValuesSkybox);
-        memcpy_s(currentUB.skybox.mapped, skyboxValuesSize, &_shaderValuesSkybox, skyboxValuesSize);
+        _cubeMap.OnSkyboxUniformBuffrSet(currentBuffer);
     }
 }
