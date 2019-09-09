@@ -8,7 +8,6 @@
 #include "VkDevice.h"
 #include "VkSwapChain.h"
 #include "VkUtils.h"
-#include "VkBuffer.h"
 
 namespace Vk
 {
@@ -17,83 +16,6 @@ namespace Vk
 
     Texture2D empty;
     Texture2D lutBrdf;
-
-    struct ShaderValuesParams
-    {
-        glm::vec4 lightDir = {};
-        float exposure = 4.5f;
-        float gamma = 2.2f;
-        float prefilteredCubeMipLevels = 0.0f;
-        float scaleIBLAmbient = 1.0f;
-        float debugViewInputs = 0;
-        float debugViewEquation = 0;
-    };
-    ShaderValuesParams shaderValuesParams;
-
-    struct UniformBufferSet
-    {
-        Buffer scene;
-        Buffer skybox;
-        Buffer params;
-    };
-    std::vector<UniformBufferSet> uniformBuffers;
-
-    struct UBOMatrices
-    {
-        glm::mat4 projection;
-        glm::mat4 model;
-        glm::mat4 view;
-        glm::vec3 camPos;
-    };
-    UBOMatrices shaderValuesScene;
-    UBOMatrices shaderValuesSkybox;
-
-    struct DescriptorSets
-    {
-        VkDescriptorSet scene;
-        VkDescriptorSet skybox;
-    };
-    std::vector<DescriptorSets> descriptorSets;
-
-    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
-
-    struct DescriptorSetLayouts
-    {
-        VkDescriptorSetLayout scene;
-        VkDescriptorSetLayout material;
-        VkDescriptorSetLayout node;
-    };
-    DescriptorSetLayouts descriptorSetLayouts;
-
-    struct PushConstBlockMaterial
-    {
-        glm::vec4 baseColorFactor;
-        glm::vec4 emissiveFactor;
-        glm::vec4 diffuseFactor;
-        glm::vec4 specularFactor;
-        float workflow;
-        int colorTextureSet;
-        int PhysicalDescriptorTextureSet;
-        int normalTextureSet;
-        int occlusionTextureSet;
-        int emissiveTextureSet;
-        float metallicFactor;
-        float roughnessFactor;
-        float alphaMask;
-        float alphaMaskCutoff;
-    };
-    PushConstBlockMaterial pushConstBlockMaterial;
-
-
-    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-
-    struct Pipelines
-    {
-        VkPipeline skybox;
-        VkPipeline pbr;
-        VkPipeline pbrAlphaBlend;
-    };
-    Pipelines pipelines;
 
     void CheckToDataPath()
     {
@@ -123,277 +45,14 @@ namespace Vk
 
         const auto tStart = std::chrono::high_resolution_clock::now();
 
-        const VkFormat format = VK_FORMAT_R16G16_SFLOAT;
-        const int32_t dim = 512;
-
-        // Image
-        VkImageCreateInfo imageCI{};
-        imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageCI.imageType = VK_IMAGE_TYPE_2D;
-        imageCI.format = format;
-        imageCI.extent.width = dim;
-        imageCI.extent.height = dim;
-        imageCI.extent.depth = 1;
-        imageCI.mipLevels = 1;
-        imageCI.arrayLayers = 1;
-        imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-        imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        VK_CHECK_RESULT(vkCreateImage(device, &imageCI, nullptr, &lutBrdf.image));
-
-        VkMemoryRequirements memReqs;
-        vkGetImageMemoryRequirements(device, lutBrdf.image, &memReqs);
-
-        VkMemoryAllocateInfo memAllocInfo{};
-        memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        memAllocInfo.allocationSize = memReqs.size;
-        memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        VK_CHECK_RESULT(vkAllocateMemory(device, &memAllocInfo, nullptr, &lutBrdf.deviceMemory));
-        VK_CHECK_RESULT(vkBindImageMemory(device, lutBrdf.image, lutBrdf.deviceMemory, 0));
-
-        // View
-        VkImageViewCreateInfo viewCI{};
-        viewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewCI.format = format;
-        viewCI.subresourceRange = {};
-        viewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        viewCI.subresourceRange.levelCount = 1;
-        viewCI.subresourceRange.layerCount = 1;
-        viewCI.image = lutBrdf.image;
-        VK_CHECK_RESULT(vkCreateImageView(device, &viewCI, nullptr, &lutBrdf.view));
-
-        // Sampler
-        VkSamplerCreateInfo samplerCI{};
-        samplerCI.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerCI.magFilter = VK_FILTER_LINEAR;
-        samplerCI.minFilter = VK_FILTER_LINEAR;
-        samplerCI.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerCI.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerCI.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerCI.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerCI.minLod = 0.0f;
-        samplerCI.maxLod = 1.0f;
-        samplerCI.maxAnisotropy = 1.0f;
-        samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VK_CHECK_RESULT(vkCreateSampler(device, &samplerCI, nullptr, &lutBrdf.sampler));
-
-        // FB, Att, RP, Pipe, etc.
-        VkAttachmentDescription attDesc{};
-        // Color attachment
-        attDesc.format = format;
-        attDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-        attDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        attDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-
-        VkSubpassDescription subpassDescription{};
-        subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpassDescription.colorAttachmentCount = 1;
-        subpassDescription.pColorAttachments = &colorReference;
-
-        // Use subpass dependencies for layout transitions
-        std::array<VkSubpassDependency, 2> dependencies;
-        dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependencies[0].dstSubpass = 0;
-        dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-        dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-        dependencies[1].srcSubpass = 0;
-        dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-        dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-        dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-        // Create the actual renderpass
-        VkRenderPassCreateInfo renderPassCI{};
-        renderPassCI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassCI.attachmentCount = 1;
-        renderPassCI.pAttachments = &attDesc;
-        renderPassCI.subpassCount = 1;
-        renderPassCI.pSubpasses = &subpassDescription;
-        renderPassCI.dependencyCount = 2;
-        renderPassCI.pDependencies = dependencies.data();
-
-        VkRenderPass renderpass = VK_NULL_HANDLE;
-        VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassCI, nullptr, &renderpass));
-
-        VkFramebufferCreateInfo framebufferCI{};
-        framebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferCI.renderPass = renderpass;
-        framebufferCI.attachmentCount = 1;
-        framebufferCI.pAttachments = &lutBrdf.view;
-        framebufferCI.width = dim;
-        framebufferCI.height = dim;
-        framebufferCI.layers = 1;
-
-        VkFramebuffer framebuffer = VK_NULL_HANDLE;
-        VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferCI, nullptr, &framebuffer));
-
-        // Desriptors
-        VkDescriptorSetLayout descriptorsetlayout;
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI{};
-        descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorsetlayout));
-
-        // Pipeline layout
-        VkPipelineLayout pipelinelayout;
-        VkPipelineLayoutCreateInfo pipelineLayoutCI{};
-        pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutCI.setLayoutCount = 1;
-        pipelineLayoutCI.pSetLayouts = &descriptorsetlayout;
-        VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &pipelinelayout));
-
-        // Pipeline
-        VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI{};
-        inputAssemblyStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssemblyStateCI.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
-        VkPipelineRasterizationStateCreateInfo rasterizationStateCI{};
-        rasterizationStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizationStateCI.polygonMode = VK_POLYGON_MODE_FILL;
-        rasterizationStateCI.cullMode = VK_CULL_MODE_NONE;
-        rasterizationStateCI.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-        rasterizationStateCI.lineWidth = 1.0f;
-
-        VkPipelineColorBlendAttachmentState blendAttachmentState{};
-        blendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        blendAttachmentState.blendEnable = VK_FALSE;
-
-        VkPipelineColorBlendStateCreateInfo colorBlendStateCI{};
-        colorBlendStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlendStateCI.attachmentCount = 1;
-        colorBlendStateCI.pAttachments = &blendAttachmentState;
-
-        VkPipelineDepthStencilStateCreateInfo depthStencilStateCI{};
-        depthStencilStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencilStateCI.depthTestEnable = VK_FALSE;
-        depthStencilStateCI.depthWriteEnable = VK_FALSE;
-        depthStencilStateCI.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-        depthStencilStateCI.front = depthStencilStateCI.back;
-        depthStencilStateCI.back.compareOp = VK_COMPARE_OP_ALWAYS;
-
-        VkPipelineViewportStateCreateInfo viewportStateCI{};
-        viewportStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportStateCI.viewportCount = 1;
-        viewportStateCI.scissorCount = 1;
-
-        VkPipelineMultisampleStateCreateInfo multisampleStateCI{};
-        multisampleStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampleStateCI.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-        std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-        VkPipelineDynamicStateCreateInfo dynamicStateCI{};
-        dynamicStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        dynamicStateCI.pDynamicStates = dynamicStateEnables.data();
-        dynamicStateCI.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
-
-        VkPipelineVertexInputStateCreateInfo emptyInputStateCI{};
-        emptyInputStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
-
-        VkGraphicsPipelineCreateInfo pipelineCI{};
-        pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineCI.layout = pipelinelayout;
-        pipelineCI.renderPass = renderpass;
-        pipelineCI.pInputAssemblyState = &inputAssemblyStateCI;
-        pipelineCI.pVertexInputState = &emptyInputStateCI;
-        pipelineCI.pRasterizationState = &rasterizationStateCI;
-        pipelineCI.pColorBlendState = &colorBlendStateCI;
-        pipelineCI.pMultisampleState = &multisampleStateCI;
-        pipelineCI.pViewportState = &viewportStateCI;
-        pipelineCI.pDepthStencilState = &depthStencilStateCI;
-        pipelineCI.pDynamicState = &dynamicStateCI;
-        pipelineCI.stageCount = 2;
-        pipelineCI.pStages = shaderStages.data();
-
-        // Look-up-table (from BRDF) pipeline		
-        shaderStages =
-        {
-            loadShader(device, "genbrdflut.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-            loadShader(device, "genbrdflut.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-        };
-
-        VkPipeline pipeline = VK_NULL_HANDLE;
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipeline));
-
-        for (auto shaderStage : shaderStages)
-            vkDestroyShaderModule(device, shaderStage.module, nullptr);
-
-        // Render
-        VkClearValue clearValues[1];
-        clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-
-        VkRenderPassBeginInfo renderPassBeginInfo{};
-        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassBeginInfo.renderPass = renderpass;
-        renderPassBeginInfo.renderArea.extent.width = dim;
-        renderPassBeginInfo.renderArea.extent.height = dim;
-        renderPassBeginInfo.clearValueCount = 1;
-        renderPassBeginInfo.pClearValues = clearValues;
-        renderPassBeginInfo.framebuffer = framebuffer;
-
-        VkCommandBuffer cmdBuf = vulkanDevice.createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-        vkCmdBeginRenderPass(cmdBuf, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        VkViewport viewport{};
-        viewport.width = (float)dim;
-        viewport.height = (float)dim;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-
-        VkRect2D scissor{};
-        scissor.extent.width = dim;
-        scissor.extent.height = dim;
-
-        vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
-        vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
-        vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-        vkCmdDraw(cmdBuf, 3, 1, 0, 0);
-        vkCmdEndRenderPass(cmdBuf);
-        vulkanDevice.flushCommandBuffer(cmdBuf, queue);
-
-        vkQueueWaitIdle(queue);
-
-        vkDestroyPipeline(device, pipeline, nullptr);
-        vkDestroyPipelineLayout(device, pipelinelayout, nullptr);
-        vkDestroyRenderPass(device, renderpass, nullptr);
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
-        vkDestroyDescriptorSetLayout(device, descriptorsetlayout, nullptr);
-
-        lutBrdf.descriptor.imageView = lutBrdf.view;
-        lutBrdf.descriptor.sampler = lutBrdf.sampler;
-        lutBrdf.descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        lutBrdf.device = &vulkanDevice;
+		lutBrdf = GenerateBRDFLUT(device, queue, pipelineCache, vulkanDevice);
 
         const auto tEnd = std::chrono::high_resolution_clock::now();
         const auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
         std::cout << "Generating BRDF LUT took " << tDiff << " ms" << std::endl;
     }
 
-    void GenerateUniformBuffers(Main& main)
-    {
-        VulkanDevice* vulkanDevice = &main.GetVulkanDevice();
-
-        uniformBuffers.resize(main.GetVulkanSwapChain().imageCount);
-        for (auto& uniformBuffer : uniformBuffers)
-        {
-            uniformBuffer.scene.create(vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(shaderValuesScene));
-            uniformBuffer.skybox.create(vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(shaderValuesSkybox));
-            uniformBuffer.params.create(vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(shaderValuesParams));
-        }
-    }
-
-    void SetupNodeDescriptorSet(Node* node, VkDevice device)
+    void SetupNodeDescriptorSet(Node* node, VkDevice device, VkDescriptorPool& descriptorPool, DescriptorSetLayouts& descriptorSetLayouts)
     {
         if (node->mesh)
         {
@@ -416,10 +75,10 @@ namespace Vk
         }
 
         for (auto& child : node->children)
-            SetupNodeDescriptorSet(child, device);
+            SetupNodeDescriptorSet(child, device, descriptorPool, descriptorSetLayouts);
     }
 
-    void SetupDescriptors(Model& scene, CubeMap& cubeMap, Main& main)
+    void SetupDescriptors(Model& scene, CubeMap& cubeMap, Main& main, DescriptorSetsArr& descriptorSets, VkDescriptorPool& descriptorPool, DescriptorSetLayouts& descriptorSetLayouts, UniformBufferSets& uniformBuffers)
     {
         VkDevice device = main.GetDevice();
         const auto imageCount = main.GetVulkanSwapChain().imageCount;
@@ -625,7 +284,7 @@ namespace Vk
 
                 // Per-Node descriptor set
                 for (auto& node : scene.nodes)
-                    SetupNodeDescriptorSet(node, device);
+                    SetupNodeDescriptorSet(node, device, descriptorPool, descriptorSetLayouts);
             }
 
         }
@@ -667,7 +326,7 @@ namespace Vk
         }
     }
 
-    void PreparePipelines(const Settings& settings, Main& main)
+    void PreparePipelines(const Settings& settings, Main& main, DescriptorSetLayouts& descriptorSetLayouts, VkPipelineLayout& pipelineLayout, Pipelines& pipelines)
     {
         VkDevice device = main.GetDevice();
         VkRenderPass renderPass = main.GetRenderPass();
@@ -814,7 +473,7 @@ namespace Vk
             vkDestroyShaderModule(device, shaderStage.module, nullptr);
     }
 
-    void RenderNode(Node* node, uint32_t cbIndex, Material::AlphaMode alphaMode, CommandBuffer& cmdBuffers)
+    void RenderNode(Node* node, uint32_t cbIndex, Material::AlphaMode alphaMode, CommandBuffer& cmdBuffers, DescriptorSetsArr& descriptorSets, VkPipelineLayout& pipelineLayout)
     {
         if (node->mesh)
         {
@@ -878,7 +537,7 @@ namespace Vk
         };
 
         for (auto child : node->children) {
-            RenderNode(child, cbIndex, alphaMode, cmdBuffers);
+            RenderNode(child, cbIndex, alphaMode, cmdBuffers, descriptorSets, pipelineLayout);
         }
     }
 
@@ -897,69 +556,77 @@ namespace Vk
         LoadScene(_scene, main, assetpath + "models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
 
         _cubeMap.Initialize(main, assetpath);
-        shaderValuesParams.prefilteredCubeMipLevels = _cubeMap.GetPrefilteredCubeMipLevels();
+        _shaderValuesParams.prefilteredCubeMipLevels = _cubeMap.GetPrefilteredCubeMipLevels();
 
-        GenerateUniformBuffers(main);
-        SetupDescriptors(_scene, _cubeMap, main);
-        PreparePipelines(settings, main);
+        _uniformBuffers.resize(main.GetVulkanSwapChain().imageCount);
+        for (auto& uniformBuffer : _uniformBuffers)
+        {
+            VulkanDevice& vulkanDevice = main.GetVulkanDevice();
+            uniformBuffer.scene.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(_shaderValuesScene));
+            uniformBuffer.skybox.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(_shaderValuesSkybox));
+            uniformBuffer.params.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(_shaderValuesParams));
+        }
+
+        SetupDescriptors(_scene, _cubeMap, main, _descriptorSets, _descriptorPool, _descriptorSetLayouts, _uniformBuffers);
+        PreparePipelines(settings, main, _descriptorSetLayouts, _pipelineLayout, _pipelines);
 
         return true;
     }
 
     void Scene::Release(VkDevice device)
     {
-        vkDestroyPipeline(device, pipelines.skybox, nullptr);
-        vkDestroyPipeline(device, pipelines.pbr, nullptr);
-        vkDestroyPipeline(device, pipelines.pbrAlphaBlend, nullptr);
+        vkDestroyPipeline(device, _pipelines.skybox, nullptr);
+        vkDestroyPipeline(device, _pipelines.pbr, nullptr);
+        vkDestroyPipeline(device, _pipelines.pbrAlphaBlend, nullptr);
 
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(device, _pipelineLayout, nullptr);
 
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayouts.scene, nullptr);
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayouts.material, nullptr);
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayouts.node, nullptr);
+        vkDestroyDescriptorSetLayout(device, _descriptorSetLayouts.scene, nullptr);
+        vkDestroyDescriptorSetLayout(device, _descriptorSetLayouts.material, nullptr);
+        vkDestroyDescriptorSetLayout(device, _descriptorSetLayouts.node, nullptr);
 
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+        vkDestroyDescriptorPool(device, _descriptorPool, nullptr);
 
-        for (auto& buffer : uniformBuffers)
+        for (auto& buffer : _uniformBuffers)
         {
             buffer.params.destroy();
             buffer.scene.destroy();
             buffer.skybox.destroy();
         }
-        uniformBuffers.clear();
-
-        lutBrdf.destroy();
+        _uniformBuffers.clear();
 
         _cubeMap.Release(device);
         _scene.destroy(device);
 
+        lutBrdf.destroy();
         empty.destroy();
     }
 
     void Scene::UpdateUniformDatas(const glm::mat4& view, const glm::mat4& perspective, const glm::vec3& cameraPos, const glm::vec4& lightDir)
     {
         // Scene
-        shaderValuesScene.projection = perspective;
-        shaderValuesScene.view = view;
+        _shaderValuesScene.projection = perspective;
+        _shaderValuesScene.view = view;
 
         // Center and scale model
         const float scale = (1.0f / std::max(_scene.aabb[0][0], std::max(_scene.aabb[1][1], _scene.aabb[2][2]))) * 0.5f;
         glm::vec3 translate = -glm::vec3(_scene.aabb[3][0], _scene.aabb[3][1], _scene.aabb[3][2]);
         translate += -0.5f * glm::vec3(_scene.aabb[0][0], _scene.aabb[1][1], _scene.aabb[2][2]);
 
-        shaderValuesScene.model = glm::mat4(1.0f);
-        shaderValuesScene.model[0][0] = scale;
-        shaderValuesScene.model[1][1] = scale;
-        shaderValuesScene.model[2][2] = scale;
-        shaderValuesScene.model = glm::translate(shaderValuesScene.model, translate);
+        _shaderValuesScene.model = glm::mat4(1.0f);
+        _shaderValuesScene.model[0][0] = scale;
+        _shaderValuesScene.model[1][1] = scale;
+        _shaderValuesScene.model[2][2] = scale;
+        _shaderValuesScene.model = glm::translate(_shaderValuesScene.model, translate);
 
-        shaderValuesScene.camPos = cameraPos;
-        shaderValuesParams.lightDir = lightDir;
+        _shaderValuesScene.camPos = cameraPos;
+
+        _shaderValuesParams.lightDir = lightDir;
 
         // Skybox
-        shaderValuesSkybox.projection = perspective;
-        shaderValuesSkybox.view = view;
-        shaderValuesSkybox.model = glm::mat4(glm::mat3(view));
+        _shaderValuesSkybox.projection = perspective;
+        _shaderValuesSkybox.view = view;
+        _shaderValuesSkybox.model = glm::mat4(glm::mat3(view));
     }
 
     void Scene::RecordBuffers(Main& main, const Settings& settings, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers)
@@ -1014,12 +681,12 @@ namespace Vk
 
             if (true == displayBackground)
             {
-                vkCmdBindDescriptorSets(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i].skybox, 0, nullptr);
-                vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.skybox);
+                vkCmdBindDescriptorSets(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[i].skybox, 0, nullptr);
+                vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines.skybox);
                 _cubeMap.GetSkybox().draw(currentCB);
             }
 
-            vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.pbr);
+            vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines.pbr);
 
             Model& model = _scene;
 
@@ -1029,17 +696,17 @@ namespace Vk
 
             // Opaque primitives first
             for (auto node : model.nodes)
-                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_OPAQUE, cmdBuffers);
+                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_OPAQUE, cmdBuffers, _descriptorSets, _pipelineLayout);
 
             // Alpha masked primitives
             for (auto node : model.nodes)
-                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_MASK, cmdBuffers);
+                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_MASK, cmdBuffers, _descriptorSets, _pipelineLayout);
 
             // Transparent primitives
             // TODO: Correct depth sorting
-            vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.pbrAlphaBlend);
+            vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines.pbrAlphaBlend);
             for (auto node : model.nodes)
-                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_BLEND, cmdBuffers);
+                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_BLEND, cmdBuffers, _descriptorSets, _pipelineLayout);
 
             vkCmdEndRenderPass(currentCB);
             VK_CHECK_RESULT(vkEndCommandBuffer(currentCB));
@@ -1048,15 +715,15 @@ namespace Vk
 
     void Scene::OnUniformBufferSets(uint32_t currentBuffer)
     {
-        UniformBufferSet currentUB = uniformBuffers[currentBuffer];
+        UniformBufferSet currentUB = _uniformBuffers[currentBuffer];
 
-        const auto sceneValuesSize = sizeof(shaderValuesScene);
-        memcpy_s(currentUB.scene.mapped, sceneValuesSize, &shaderValuesScene, sceneValuesSize);
+        const auto sceneValuesSize = sizeof(_shaderValuesScene);
+        memcpy_s(currentUB.scene.mapped, sceneValuesSize, &_shaderValuesScene, sceneValuesSize);
 
-        const auto paramValuesSize = sizeof(shaderValuesParams);
-        memcpy_s(currentUB.params.mapped, paramValuesSize, &shaderValuesParams, paramValuesSize);
+        const auto paramValuesSize = sizeof(_shaderValuesParams);
+        memcpy_s(currentUB.params.mapped, paramValuesSize, &_shaderValuesParams, paramValuesSize);
 
-        const auto skyboxValuesSize = sizeof(shaderValuesSkybox);
-        memcpy_s(currentUB.skybox.mapped, skyboxValuesSize, &shaderValuesSkybox, skyboxValuesSize);
+        const auto skyboxValuesSize = sizeof(_shaderValuesSkybox);
+        memcpy_s(currentUB.skybox.mapped, skyboxValuesSize, &_shaderValuesSkybox, skyboxValuesSize);
     }
 }
