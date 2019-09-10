@@ -96,56 +96,57 @@ namespace Vk {
         if (node->mesh) {
             // Render mesh primitives
             for (Primitive* primitive : node->mesh->primitives) {
-                if (primitive->material.alphaMode == alphaMode) {
+                if (alphaMode != primitive->material.alphaMode)
+                    continue;
 
-                    const std::vector<VkDescriptorSet> descriptorsets =
-                    {
-                        descSet,
-                        primitive->material.descriptorSet,
-                        node->mesh->uniformBuffer.descriptorSet,
-                    };
-                    vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
+                const uint32_t descSetCount = 3;
+                const std::array<VkDescriptorSet, descSetCount> descriptorsets = {
+                    descSet,
+                    primitive->material.descriptorSet,
+                    node->mesh->uniformBuffer.descriptorSet,
+                };
+                vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descSetCount, descriptorsets.data(), 0, nullptr);
 
-                    // Pass material parameters as push constants
-                    MaterialConstantData pushConstBlockMaterial{};
-                    pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
-                    // To save push constant space, availabilty and texture coordiante set are combined
-                    // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
+                // Pass material parameters as push constants
+                MaterialConstantData pushConstBlockMaterial{};
+                pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
+
+                // To save push constant space, availabilty and texture coordiante set are combined
+                // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
+                pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+                pushConstBlockMaterial.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
+                pushConstBlockMaterial.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
+                pushConstBlockMaterial.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
+                pushConstBlockMaterial.alphaMask = (primitive->material.alphaMode == Material::ALPHAMODE_MASK ? 1.0f : 0.0f);
+                pushConstBlockMaterial.alphaMaskCutoff = primitive->material.alphaCutoff;
+
+                // TODO: glTF specs states that metallic roughness should be preferred, even if specular glosiness is present
+
+                if (primitive->material.pbrWorkflows.metallicRoughness) {
+                    // Metallic roughness workflow
+                    pushConstBlockMaterial.workflow = static_cast<float>(PBRWorkflow::METALLIC_ROUGHNESS);
+                    pushConstBlockMaterial.baseColorFactor = primitive->material.baseColorFactor;
+                    pushConstBlockMaterial.metallicFactor = primitive->material.metallicFactor;
+                    pushConstBlockMaterial.roughnessFactor = primitive->material.roughnessFactor;
+                    pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.metallicRoughnessTexture != nullptr ? primitive->material.texCoordSets.metallicRoughness : -1;
                     pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-                    pushConstBlockMaterial.normalTextureSet = primitive->material.normalTexture != nullptr ? primitive->material.texCoordSets.normal : -1;
-                    pushConstBlockMaterial.occlusionTextureSet = primitive->material.occlusionTexture != nullptr ? primitive->material.texCoordSets.occlusion : -1;
-                    pushConstBlockMaterial.emissiveTextureSet = primitive->material.emissiveTexture != nullptr ? primitive->material.texCoordSets.emissive : -1;
-                    pushConstBlockMaterial.alphaMask = static_cast<float>(primitive->material.alphaMode == Material::ALPHAMODE_MASK);
-                    pushConstBlockMaterial.alphaMaskCutoff = primitive->material.alphaCutoff;
-
-                    // TODO: glTF specs states that metallic roughness should be preferred, even if specular glosiness is present
-
-                    if (primitive->material.pbrWorkflows.metallicRoughness) {
-                        // Metallic roughness workflow
-                        pushConstBlockMaterial.workflow = static_cast<float>(PBRWorkflow::METALLIC_ROUGHNESS);
-                        pushConstBlockMaterial.baseColorFactor = primitive->material.baseColorFactor;
-                        pushConstBlockMaterial.metallicFactor = primitive->material.metallicFactor;
-                        pushConstBlockMaterial.roughnessFactor = primitive->material.roughnessFactor;
-                        pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.metallicRoughnessTexture != nullptr ? primitive->material.texCoordSets.metallicRoughness : -1;
-                        pushConstBlockMaterial.colorTextureSet = primitive->material.baseColorTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-                    }
-
-                    if (primitive->material.pbrWorkflows.specularGlossiness) {
-                        // Specular glossiness workflow
-                        pushConstBlockMaterial.workflow = static_cast<float>(PBRWorkflow::SPECULAR_GLOSINESS);
-                        pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
-                        pushConstBlockMaterial.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
-                        pushConstBlockMaterial.diffuseFactor = primitive->material.extension.diffuseFactor;
-                        pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
-                    }
-
-                    vkCmdPushConstants(cmdBuf, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(MaterialConstantData), &pushConstBlockMaterial);
-
-                    if (primitive->hasIndices)
-                        vkCmdDrawIndexed(cmdBuf, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-                    else
-                        vkCmdDraw(cmdBuf, primitive->vertexCount, 1, 0, 0);
                 }
+
+                if (primitive->material.pbrWorkflows.specularGlossiness) {
+                    // Specular glossiness workflow
+                    pushConstBlockMaterial.workflow = static_cast<float>(PBRWorkflow::SPECULAR_GLOSINESS);
+                    pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
+                    pushConstBlockMaterial.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
+                    pushConstBlockMaterial.diffuseFactor = primitive->material.extension.diffuseFactor;
+                    pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
+                }
+
+                vkCmdPushConstants(cmdBuf, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(MaterialConstantData), &pushConstBlockMaterial);
+
+                if (primitive->hasIndices)
+                    vkCmdDrawIndexed(cmdBuf, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+                else
+                    vkCmdDraw(cmdBuf, primitive->vertexCount, 1, 0, 0);
             }
         };
 
@@ -453,9 +454,6 @@ namespace Vk {
         pipelineCI.pDepthStencilState = &depthStencilStateCI;
         pipelineCI.pDynamicState = &dynamicStateCI;
 
-        if (settings.multiSampling)
-            multisampleStateCI.rasterizationSamples = settings.sampleCount;
-
         // Skybox pipeline (background cube)
         _cubeMap.PrepareSkyboxPipeline(main, pipelineCI);
 
@@ -488,11 +486,15 @@ namespace Vk {
     }
 
     void Scene::LoadScene(Main& main, std::string&& filename) {
-        std::cout << "Loading scene from " << filename << std::endl;
+        const auto tStart = std::chrono::high_resolution_clock::now();
 
         auto* vulkanDevice = &main.GetVulkanDevice();
         auto gpuQueue = main.GetGPUQueue();
         _scene.loadFromFile(filename, vulkanDevice, gpuQueue);
+
+        const auto tEnd = std::chrono::high_resolution_clock::now();
+        const auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+        std::cout << "Loading scene from took " << tDiff << " ms" << std::endl;
 
         const auto imageCount = main.GetVulkanSwapChain().imageCount;
         _sceneUniBufs.resize(imageCount);
@@ -513,7 +515,6 @@ namespace Vk {
         GenerateBRDFLUT(main);
 
         LoadScene(main, assetpath + "models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
-
         _cubeMap.Initialize(main, assetpath);
 
         CreateDescriptorPool(main);
@@ -588,8 +589,8 @@ namespace Vk {
 
         VkClearValue clearValues[3];
         if (settings.multiSampling) {
-            clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-            clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+            clearValues[0].color = { { 0.5f, 0.5f, 0.5f, 1.0f } };
+            clearValues[1].color = { { 0.5f, 0.5f, 0.5f, 1.0f } };
             clearValues[2].depthStencil = { 1.0f, 0 };
         }
         else {
