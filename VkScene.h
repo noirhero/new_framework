@@ -29,23 +29,6 @@ namespace Vk {
         glm::vec3 camPos{};
     };
 
-    struct PushConstBlockMaterial {
-        glm::vec4 baseColorFactor{};
-        glm::vec4 emissiveFactor{};
-        glm::vec4 diffuseFactor{};
-        glm::vec4 specularFactor{};
-        float workflow = 0.0f;
-        int colorTextureSet = 0;
-        int PhysicalDescriptorTextureSet = 0;
-        int normalTextureSet = 0;
-        int occlusionTextureSet = 0;
-        int emissiveTextureSet = 0;
-        float metallicFactor = 0.0f;
-        float roughnessFactor = 0.0f;
-        float alphaMask = 0.0f;
-        float alphaMaskCutoff = 0.0f;
-    };
-
     struct DescriptorSetLayouts {
         VkDescriptorSetLayout scene = VK_NULL_HANDLE;
         VkDescriptorSetLayout material = VK_NULL_HANDLE;
@@ -53,7 +36,6 @@ namespace Vk {
     };
 
     struct Pipelines {
-        VkPipeline skybox = VK_NULL_HANDLE;
         VkPipeline pbr = VK_NULL_HANDLE;
         VkPipeline pbrAlphaBlend = VK_NULL_HANDLE;
     };
@@ -74,17 +56,15 @@ namespace Vk {
         CubeMap                     _cubeMap;
         Model                       _scene;
 
-        Buffers                     _sceneUniBufs;
-        Buffers                     _sceneShaderValueUniBufs;
-
         SceneShaderValues           _sceneShaderValue;
         SceneUniformData            _sceneUniData;
+        Buffers                     _sceneUniBufs;
+        Buffers                     _sceneShaderValueUniBufs;
 
         VkDescriptorPool            _descriptorPool = VK_NULL_HANDLE;
         DescriptorSetLayouts        _descriptorSetLayouts;
         VkDescriptorSets            _sceneDescSets;
 
-        PushConstBlockMaterial      _pushConstBlockMaterial;
         VkPipelineLayout            _pipelineLayout = VK_NULL_HANDLE;
         Pipelines                   _pipelines;
     };

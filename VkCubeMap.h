@@ -16,18 +16,20 @@ namespace Vk
         bool                        Initialize(Main& main, const std::string& assetpath);
         void                        Release(VkDevice device);
 
-        void                        CreateAndSetupSkyboxDescriptorSet(Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout);
-        void                        UpdateSkyboxUniformData(const glm::mat4& view, const glm::mat4& perspective);
-        void                        OnSkyboxUniformBuffrSet(uint32_t currentBuffer);
+        constexpr TextureCubeMap&   GetEnvironment() { return _environmentCube; }
+        constexpr TextureCubeMap&   GetIrradiance() { return _irradianceCube; }
+        constexpr TextureCubeMap&   GetPrefiltered() { return _prefilteredCube; }
+        constexpr float             GetPrefilteredCubeMipLevels() const { return _prefilteredCubeMipLevels; }
 
         Model&                      GetSkybox() const;
         Buffers&                    GetSkyboxUniformBuffers() const;
         VkDescriptorSet*            GetSkyboxDescSets() const;
 
-        constexpr TextureCubeMap&   GetEnvironment() { return _environmentCube; }
-        constexpr TextureCubeMap&   GetIrradiance() { return _irradianceCube; }
-        constexpr TextureCubeMap&   GetPrefiltered() { return _prefilteredCube; }
-        constexpr float             GetPrefilteredCubeMipLevels() const { return _prefilteredCubeMipLevels; }
+        void                        CreateAndSetupSkyboxDescriptorSet(Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout);
+        void                        PrepareSkyboxPipeline(Main& main, VkGraphicsPipelineCreateInfo& info);
+        void                        UpdateSkyboxUniformData(const glm::mat4& view, const glm::mat4& perspective);
+        void                        OnSkyboxUniformBuffrSet(uint32_t currentBuffer);
+        void                        RenderSkybox(uint32_t currentBuffer, VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout);
 
     private:
         TextureCubeMap              _environmentCube;

@@ -15,8 +15,25 @@ namespace Vk {
         SPECULAR_GLOSINESS = 1
     };
 
-    const bool displayBackground = true;
-    std::string assetpath = "./../data/";
+    struct MaterialConstantData {
+        glm::vec4 baseColorFactor{};
+        glm::vec4 emissiveFactor{};
+        glm::vec4 diffuseFactor{};
+        glm::vec4 specularFactor{};
+        float workflow = 0.0f;
+        int colorTextureSet = 0;
+        int PhysicalDescriptorTextureSet = 0;
+        int normalTextureSet = 0;
+        int occlusionTextureSet = 0;
+        int emissiveTextureSet = 0;
+        float metallicFactor = 0.0f;
+        float roughnessFactor = 0.0f;
+        float alphaMask = 0.0f;
+        float alphaMaskCutoff = 0.0f;
+    };
+
+    constexpr bool displayBackground = true;
+    const std::string assetpath{ "./../data/" };
 
     Texture2D empty;
     Texture2D lutBrdf;
@@ -63,33 +80,28 @@ namespace Vk {
         scene.loadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
     }
 
-    void SetupNodeDescriptorSet(Node* node, VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout nodeDescSetLayout) {
-        if (node->mesh) {
-            VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
-            descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            descriptorSetAllocInfo.descriptorPool = descriptorPool;
-            descriptorSetAllocInfo.pSetLayouts = &nodeDescSetLayout;
-            descriptorSetAllocInfo.descriptorSetCount = 1;
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &node->mesh->uniformBuffer.descriptorSet));
+    void SetupNodeDescriptorSet(Node& node, VkDevice device, const VkDescriptorSetAllocateInfo& descSetInfo) {
+        if (node.mesh) {
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descSetInfo, &node.mesh->uniformBuffer.descriptorSet));
 
             VkWriteDescriptorSet writeDescriptorSet{};
             writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             writeDescriptorSet.descriptorCount = 1;
-            writeDescriptorSet.dstSet = node->mesh->uniformBuffer.descriptorSet;
+            writeDescriptorSet.dstSet = node.mesh->uniformBuffer.descriptorSet;
             writeDescriptorSet.dstBinding = 0;
-            writeDescriptorSet.pBufferInfo = &node->mesh->uniformBuffer.descriptor;
+            writeDescriptorSet.pBufferInfo = &node.mesh->uniformBuffer.descriptor;
 
             vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
         }
 
-        for (auto& child : node->children)
-            SetupNodeDescriptorSet(child, device, descriptorPool, nodeDescSetLayout);
+        for (auto& child : node.children)
+            SetupNodeDescriptorSet(*child, device, descSetInfo);
     }
 
     void SetupDescriptors(Model& scene, CubeMap& cubeMap, Main& main, 
                           VkDescriptorPool& descriptorPool, DescriptorSetLayouts& descriptorSetLayouts,
-                          VkDescriptorSets& sceneDescSets, Buffers& sceneUniBufs, Buffers& shaderParamUniBufs, Buffers& skyboxUniBufs) {
+                          VkDescriptorSets& sceneDescSets, Buffers& sceneUniBufs, Buffers& shaderParamUniBufs) {
         VkDevice device = main.GetDevice();
         const auto imageCount = main.GetVulkanSwapChain().imageCount;
 
@@ -283,14 +295,20 @@ namespace Vk {
                 VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.node));
 
                 // Per-Node descriptor set
+                VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
+                descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+                descriptorSetAllocInfo.descriptorPool = descriptorPool;
+                descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayouts.node;
+                descriptorSetAllocInfo.descriptorSetCount = 1;
+
                 for (auto& node : scene.nodes)
-                    SetupNodeDescriptorSet(node, device, descriptorPool, descriptorSetLayouts.node);
+                    SetupNodeDescriptorSet(*node, device, descriptorSetAllocInfo);
             }
 
         }
     }
 
-    void PreparePipelines(const Settings& settings, Main& main, DescriptorSetLayouts& descriptorSetLayouts, VkPipelineLayout& pipelineLayout, Pipelines& pipelines) {
+    void PreparePipelines(const Settings& settings, Main& main, CubeMap& cubeMap, DescriptorSetLayouts& descriptorSetLayouts, VkPipelineLayout& pipelineLayout, Pipelines& pipelines) {
         VkDevice device = main.GetDevice();
         VkRenderPass renderPass = main.GetRenderPass();
         VkPipelineCache pipelineCache = main.GetPipelineCache();
@@ -354,7 +372,7 @@ namespace Vk {
         pipelineLayoutCI.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
         pipelineLayoutCI.pSetLayouts = setLayouts.data();
         VkPushConstantRange pushConstantRange{};
-        pushConstantRange.size = sizeof(PushConstBlockMaterial);
+        pushConstantRange.size = sizeof(MaterialConstantData);
         pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineLayoutCI.pushConstantRangeCount = 1;
         pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
@@ -380,8 +398,6 @@ namespace Vk {
         vertexInputStateCI.pVertexAttributeDescriptions = vertexInputAttributes.data();
 
         // Pipelines
-        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
-
         VkGraphicsPipelineCreateInfo pipelineCI{};
         pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineCI.layout = pipelineLayout;
@@ -394,29 +410,22 @@ namespace Vk {
         pipelineCI.pViewportState = &viewportStateCI;
         pipelineCI.pDepthStencilState = &depthStencilStateCI;
         pipelineCI.pDynamicState = &dynamicStateCI;
-        pipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
-        pipelineCI.pStages = shaderStages.data();
 
         if (settings.multiSampling)
             multisampleStateCI.rasterizationSamples = settings.sampleCount;
 
         // Skybox pipeline (background cube)
-        shaderStages =
-        {
-            loadShader(device, "skybox.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-            loadShader(device, "skybox.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-        };
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipelines.skybox));
-
-        for (auto shaderStage : shaderStages)
-            vkDestroyShaderModule(device, shaderStage.module, nullptr);
+        cubeMap.PrepareSkyboxPipeline(main, pipelineCI);
 
         // PBR pipeline
-        shaderStages =
+        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages =
         {
             loadShader(device, "pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
             loadShader(device, "pbr_khr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
         };
+        pipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineCI.pStages = shaderStages.data();
+
         depthStencilStateCI.depthWriteEnable = VK_TRUE;
         depthStencilStateCI.depthTestEnable = VK_TRUE;
         VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipelines.pbr));
@@ -451,7 +460,7 @@ namespace Vk {
                     vkCmdBindDescriptorSets(cmdBuffers.Get(cbIndex), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
 
                     // Pass material parameters as push constants
-                    PushConstBlockMaterial pushConstBlockMaterial{};
+                    MaterialConstantData pushConstBlockMaterial{};
                     pushConstBlockMaterial.emissiveFactor = primitive->material.emissiveFactor;
                     // To save push constant space, availabilty and texture coordiante set are combined
                     // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
@@ -483,7 +492,7 @@ namespace Vk {
                         pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
                     }
 
-                    vkCmdPushConstants(cmdBuffers.Get(cbIndex), pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstBlockMaterial), &pushConstBlockMaterial);
+                    vkCmdPushConstants(cmdBuffers.Get(cbIndex), pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(MaterialConstantData), &pushConstBlockMaterial);
 
                     if (primitive->hasIndices)
                         vkCmdDrawIndexed(cmdBuffers.Get(cbIndex), primitive->indexCount, 1, primitive->firstIndex, 0, 0);
@@ -501,36 +510,36 @@ namespace Vk {
     bool Scene::Initialize(Main& main, const Settings& settings) {
         CheckToDataPath();
 
-        VulkanDevice& vulkanDevice = main.GetVulkanDevice();
-
         LoadEmptyTexture(main, assetpath + "textures/empty.ktx");
         GenerateBRDFLUT(main);
 
+        VulkanDevice& vulkanDevice = main.GetVulkanDevice();
+        const auto imagecount = main.GetVulkanSwapChain().imageCount;
+
         LoadScene(_scene, main, assetpath + "models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
-        _sceneUniBufs.resize(main.GetVulkanSwapChain().imageCount);
+        _sceneUniBufs.resize(imagecount);
         for (auto& uniformBuffer : _sceneUniBufs) {
-            uniformBuffer.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(_sceneUniData));
+            uniformBuffer.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(SceneShaderValues));
         }
 
-        _sceneShaderValueUniBufs.resize(main.GetVulkanSwapChain().imageCount);
+        _sceneShaderValueUniBufs.resize(imagecount);
         for (auto& uniformBuffer : _sceneShaderValueUniBufs) {
-            uniformBuffer.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(_sceneShaderValue));
+            uniformBuffer.create(&vulkanDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(SceneUniformData));
         }
 
         _cubeMap.Initialize(main, assetpath);
-        _sceneShaderValue.prefilteredCubeMipLevels = _cubeMap.GetPrefilteredCubeMipLevels();
 
-        SetupDescriptors(_scene, _cubeMap, main, _descriptorPool, _descriptorSetLayouts, _sceneDescSets, _sceneUniBufs, _sceneShaderValueUniBufs, _cubeMap.GetSkyboxUniformBuffers());
+        SetupDescriptors(_scene, _cubeMap, main, _descriptorPool, _descriptorSetLayouts, _sceneDescSets, _sceneUniBufs, _sceneShaderValueUniBufs);
         _cubeMap.CreateAndSetupSkyboxDescriptorSet(main, _sceneShaderValueUniBufs, _descriptorPool, _descriptorSetLayouts.scene);
 
 
-        PreparePipelines(settings, main, _descriptorSetLayouts, _pipelineLayout, _pipelines);
+        PreparePipelines(settings, main, _cubeMap, _descriptorSetLayouts, _pipelineLayout, _pipelines);
 
+        _sceneShaderValue.prefilteredCubeMipLevels = _cubeMap.GetPrefilteredCubeMipLevels();
         return true;
     }
 
     void Scene::Release(VkDevice device) {
-        vkDestroyPipeline(device, _pipelines.skybox, nullptr);
         vkDestroyPipeline(device, _pipelines.pbr, nullptr);
         vkDestroyPipeline(device, _pipelines.pbrAlphaBlend, nullptr);
 
@@ -609,7 +618,7 @@ namespace Vk {
         renderPassBeginInfo.pClearValues = clearValues;
 
         for (decltype(cmdBuffers.Count()) i = 0; i < cmdBuffers.Count(); ++i) {
-            renderPassBeginInfo.framebuffer = frameBuffers.Get(static_cast<uint32_t>(i));
+            renderPassBeginInfo.framebuffer = frameBuffers.Get(i);
 
             VkCommandBuffer currentCB = cmdBuffers.Get(i);
 
@@ -630,9 +639,7 @@ namespace Vk {
             VkDeviceSize offsets[1] = { 0 };
 
             if (true == displayBackground) {
-                vkCmdBindDescriptorSets(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_cubeMap.GetSkyboxDescSets()[i], 0, nullptr);
-                vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines.skybox);
-                _cubeMap.GetSkybox().draw(currentCB);
+                _cubeMap.RenderSkybox(i, currentCB, _pipelineLayout);
             }
 
             vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines.pbr);
