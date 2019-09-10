@@ -29,12 +29,6 @@ namespace Vk {
         glm::vec3 camPos{};
     };
 
-    struct DescriptorSetLayouts {
-        VkDescriptorSetLayout scene = VK_NULL_HANDLE;
-        VkDescriptorSetLayout material = VK_NULL_HANDLE;
-        VkDescriptorSetLayout node = VK_NULL_HANDLE;
-    };
-
     struct Pipelines {
         VkPipeline pbr = VK_NULL_HANDLE;
         VkPipeline pbrAlphaBlend = VK_NULL_HANDLE;
@@ -53,6 +47,12 @@ namespace Vk {
         void                        OnUniformBufferSets(uint32_t currentBuffer);
 
     private:
+        void                        LoadScene(Main& main, std::string&& filename);
+        void                        CreateDescriptorPool(Main& main);
+        void                        CreateAndSetupSceneDescriptorSet(Main& main);
+        void                        CreateAndSetupMaterialDescriptorSet(Main& main);
+        void                        CreateAndSetupNodeDescriptorSet(Main& main);
+
         CubeMap                     _cubeMap;
         Model                       _scene;
 
@@ -62,7 +62,9 @@ namespace Vk {
         Buffers                     _sceneShaderValueUniBufs;
 
         VkDescriptorPool            _descriptorPool = VK_NULL_HANDLE;
-        DescriptorSetLayouts        _descriptorSetLayouts;
+        VkDescriptorSetLayout       _sceneDescLayout = VK_NULL_HANDLE;
+        VkDescriptorSetLayout       _materialDescLayout = VK_NULL_HANDLE;
+        VkDescriptorSetLayout       _nodeDescLayout = VK_NULL_HANDLE;
         VkDescriptorSets            _sceneDescSets;
 
         VkPipelineLayout            _pipelineLayout = VK_NULL_HANDLE;
