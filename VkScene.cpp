@@ -92,145 +92,7 @@ namespace Vk {
             SetupNodeDescriptorSet(*child, device, descSetInfo);
     }
 
-    void PreparePipelines(const Settings& settings, Main& main, CubeMap& cubeMap,
-        VkDescriptorSetLayout sceneDescLayout, VkDescriptorSetLayout materialDescLayout, VkDescriptorSetLayout nodeDescLayout,
-        VkPipelineLayout& pipelineLayout, Pipelines& pipelines) {
-        VkDevice device = main.GetDevice();
-        VkRenderPass renderPass = main.GetRenderPass();
-        VkPipelineCache pipelineCache = main.GetPipelineCache();
-
-        VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI{};
-        inputAssemblyStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssemblyStateCI.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
-        VkPipelineRasterizationStateCreateInfo rasterizationStateCI{};
-        rasterizationStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizationStateCI.polygonMode = VK_POLYGON_MODE_FILL;
-        rasterizationStateCI.cullMode = VK_CULL_MODE_BACK_BIT;
-        rasterizationStateCI.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-        rasterizationStateCI.lineWidth = 1.0f;
-
-        VkPipelineColorBlendAttachmentState blendAttachmentState{};
-        blendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        blendAttachmentState.blendEnable = VK_FALSE;
-
-        VkPipelineColorBlendStateCreateInfo colorBlendStateCI{};
-        colorBlendStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlendStateCI.attachmentCount = 1;
-        colorBlendStateCI.pAttachments = &blendAttachmentState;
-
-        VkPipelineDepthStencilStateCreateInfo depthStencilStateCI{};
-        depthStencilStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencilStateCI.depthTestEnable = VK_FALSE;
-        depthStencilStateCI.depthWriteEnable = VK_FALSE;
-        depthStencilStateCI.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-        depthStencilStateCI.front = depthStencilStateCI.back;
-        depthStencilStateCI.back.compareOp = VK_COMPARE_OP_ALWAYS;
-
-        VkPipelineViewportStateCreateInfo viewportStateCI{};
-        viewportStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportStateCI.viewportCount = 1;
-        viewportStateCI.scissorCount = 1;
-
-        VkPipelineMultisampleStateCreateInfo multisampleStateCI{};
-        multisampleStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-
-        if (settings.multiSampling) {
-            multisampleStateCI.rasterizationSamples = settings.sampleCount;
-        }
-
-        std::vector<VkDynamicState> dynamicStateEnables = {
-            VK_DYNAMIC_STATE_VIEWPORT,
-            VK_DYNAMIC_STATE_SCISSOR
-        };
-        VkPipelineDynamicStateCreateInfo dynamicStateCI{};
-        dynamicStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        dynamicStateCI.pDynamicStates = dynamicStateEnables.data();
-        dynamicStateCI.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
-
-        // Pipeline layout
-        const std::vector<VkDescriptorSetLayout> setLayouts = {
-            sceneDescLayout, materialDescLayout, nodeDescLayout
-        };
-        VkPipelineLayoutCreateInfo pipelineLayoutCI{};
-        pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutCI.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
-        pipelineLayoutCI.pSetLayouts = setLayouts.data();
-        VkPushConstantRange pushConstantRange{};
-        pushConstantRange.size = sizeof(MaterialConstantData);
-        pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        pipelineLayoutCI.pushConstantRangeCount = 1;
-        pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
-        VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &pipelineLayout));
-
-        // Vertex bindings an attributes
-        const VkVertexInputBindingDescription vertexInputBinding = { 0, sizeof(Model::Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
-        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes =
-        {
-            { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 },
-            { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float) * 3 },
-            { 2, 0, VK_FORMAT_R32G32_SFLOAT, sizeof(float) * 6 },
-            { 3, 0, VK_FORMAT_R32G32_SFLOAT, sizeof(float) * 8 },
-            { 4, 0, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(float) * 10 },
-            { 5, 0, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(float) * 14 }
-        };
-
-        VkPipelineVertexInputStateCreateInfo vertexInputStateCI{};
-        vertexInputStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputStateCI.vertexBindingDescriptionCount = 1;
-        vertexInputStateCI.pVertexBindingDescriptions = &vertexInputBinding;
-        vertexInputStateCI.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexInputAttributes.size());
-        vertexInputStateCI.pVertexAttributeDescriptions = vertexInputAttributes.data();
-
-        // Pipelines
-        VkGraphicsPipelineCreateInfo pipelineCI{};
-        pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineCI.layout = pipelineLayout;
-        pipelineCI.renderPass = renderPass;
-        pipelineCI.pInputAssemblyState = &inputAssemblyStateCI;
-        pipelineCI.pVertexInputState = &vertexInputStateCI;
-        pipelineCI.pRasterizationState = &rasterizationStateCI;
-        pipelineCI.pColorBlendState = &colorBlendStateCI;
-        pipelineCI.pMultisampleState = &multisampleStateCI;
-        pipelineCI.pViewportState = &viewportStateCI;
-        pipelineCI.pDepthStencilState = &depthStencilStateCI;
-        pipelineCI.pDynamicState = &dynamicStateCI;
-
-        if (settings.multiSampling)
-            multisampleStateCI.rasterizationSamples = settings.sampleCount;
-
-        // Skybox pipeline (background cube)
-        cubeMap.PrepareSkyboxPipeline(main, pipelineCI);
-
-        // PBR pipeline
-        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages =
-        {
-            loadShader(device, "pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-            loadShader(device, "pbr_khr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-        };
-        pipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
-        pipelineCI.pStages = shaderStages.data();
-
-        depthStencilStateCI.depthWriteEnable = VK_TRUE;
-        depthStencilStateCI.depthTestEnable = VK_TRUE;
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipelines.pbr));
-
-        rasterizationStateCI.cullMode = VK_CULL_MODE_NONE;
-        blendAttachmentState.blendEnable = VK_TRUE;
-        blendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-        blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        blendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-        blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipelines.pbrAlphaBlend));
-
-        for (auto shaderStage : shaderStages)
-            vkDestroyShaderModule(device, shaderStage.module, nullptr);
-    }
-
-    void RenderNode(Node* node, uint32_t cbIndex, Material::AlphaMode alphaMode, CommandBuffer& cmdBuffers, VkDescriptorSets& sceneDescSets, VkPipelineLayout& pipelineLayout) {
+    void RenderNode(Node* node, Material::AlphaMode alphaMode, VkCommandBuffer cmdBuf, VkDescriptorSet descSet, VkPipelineLayout pipelineLayout) {
         if (node->mesh) {
             // Render mesh primitives
             for (Primitive* primitive : node->mesh->primitives) {
@@ -238,11 +100,11 @@ namespace Vk {
 
                     const std::vector<VkDescriptorSet> descriptorsets =
                     {
-                        sceneDescSets[cbIndex],
+                        descSet,
                         primitive->material.descriptorSet,
                         node->mesh->uniformBuffer.descriptorSet,
                     };
-                    vkCmdBindDescriptorSets(cmdBuffers.Get(cbIndex), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
+                    vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, static_cast<uint32_t>(descriptorsets.size()), descriptorsets.data(), 0, NULL);
 
                     // Pass material parameters as push constants
                     MaterialConstantData pushConstBlockMaterial{};
@@ -277,18 +139,18 @@ namespace Vk {
                         pushConstBlockMaterial.specularFactor = glm::vec4(primitive->material.extension.specularFactor, 1.0f);
                     }
 
-                    vkCmdPushConstants(cmdBuffers.Get(cbIndex), pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(MaterialConstantData), &pushConstBlockMaterial);
+                    vkCmdPushConstants(cmdBuf, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(MaterialConstantData), &pushConstBlockMaterial);
 
                     if (primitive->hasIndices)
-                        vkCmdDrawIndexed(cmdBuffers.Get(cbIndex), primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+                        vkCmdDrawIndexed(cmdBuf, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
                     else
-                        vkCmdDraw(cmdBuffers.Get(cbIndex), primitive->vertexCount, 1, 0, 0);
+                        vkCmdDraw(cmdBuf, primitive->vertexCount, 1, 0, 0);
                 }
             }
         };
 
         for (auto child : node->children) {
-            RenderNode(child, cbIndex, alphaMode, cmdBuffers, sceneDescSets, pipelineLayout);
+            RenderNode(child, alphaMode, cmdBuf, descSet, pipelineLayout);
         }
     }
 
@@ -489,6 +351,142 @@ namespace Vk {
             SetupNodeDescriptorSet(*node, main.GetDevice(), descriptorSetAllocInfo);
     }
 
+    void Scene::CreatePipelines(Main& main, const Settings& settings) {
+        VkDevice device = main.GetDevice();
+        VkRenderPass renderPass = main.GetRenderPass();
+        VkPipelineCache pipelineCache = main.GetPipelineCache();
+
+        VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI{};
+        inputAssemblyStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        inputAssemblyStateCI.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+        VkPipelineRasterizationStateCreateInfo rasterizationStateCI{};
+        rasterizationStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterizationStateCI.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterizationStateCI.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizationStateCI.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        rasterizationStateCI.lineWidth = 1.0f;
+
+        VkPipelineColorBlendAttachmentState blendAttachmentState{};
+        blendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        blendAttachmentState.blendEnable = VK_FALSE;
+
+        VkPipelineColorBlendStateCreateInfo colorBlendStateCI{};
+        colorBlendStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        colorBlendStateCI.attachmentCount = 1;
+        colorBlendStateCI.pAttachments = &blendAttachmentState;
+
+        VkPipelineDepthStencilStateCreateInfo depthStencilStateCI{};
+        depthStencilStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencilStateCI.depthTestEnable = VK_FALSE;
+        depthStencilStateCI.depthWriteEnable = VK_FALSE;
+        depthStencilStateCI.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+        depthStencilStateCI.front = depthStencilStateCI.back;
+        depthStencilStateCI.back.compareOp = VK_COMPARE_OP_ALWAYS;
+
+        VkPipelineViewportStateCreateInfo viewportStateCI{};
+        viewportStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewportStateCI.viewportCount = 1;
+        viewportStateCI.scissorCount = 1;
+
+        VkPipelineMultisampleStateCreateInfo multisampleStateCI{};
+        multisampleStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+
+        if (true == settings.multiSampling) {
+            multisampleStateCI.rasterizationSamples = settings.sampleCount;
+        }
+
+        std::vector<VkDynamicState> dynamicStateEnables = {
+            VK_DYNAMIC_STATE_VIEWPORT,
+            VK_DYNAMIC_STATE_SCISSOR
+        };
+        VkPipelineDynamicStateCreateInfo dynamicStateCI{};
+        dynamicStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamicStateCI.pDynamicStates = dynamicStateEnables.data();
+        dynamicStateCI.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
+
+        // Pipeline layout
+        const std::vector<VkDescriptorSetLayout> setLayouts = {
+            _sceneDescLayout, _materialDescLayout, _nodeDescLayout
+        };
+        VkPipelineLayoutCreateInfo pipelineLayoutCI{};
+        pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutCI.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+        pipelineLayoutCI.pSetLayouts = setLayouts.data();
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.size = sizeof(MaterialConstantData);
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        pipelineLayoutCI.pushConstantRangeCount = 1;
+        pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
+        VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &_pipelineLayout));
+
+        // Vertex bindings an attributes
+        const VkVertexInputBindingDescription vertexInputBinding = { 0, sizeof(Model::Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
+        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes =
+        {
+            { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 },
+            { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float) * 3 },
+            { 2, 0, VK_FORMAT_R32G32_SFLOAT, sizeof(float) * 6 },
+            { 3, 0, VK_FORMAT_R32G32_SFLOAT, sizeof(float) * 8 },
+            { 4, 0, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(float) * 10 },
+            { 5, 0, VK_FORMAT_R32G32B32A32_SFLOAT, sizeof(float) * 14 }
+        };
+
+        VkPipelineVertexInputStateCreateInfo vertexInputStateCI{};
+        vertexInputStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertexInputStateCI.vertexBindingDescriptionCount = 1;
+        vertexInputStateCI.pVertexBindingDescriptions = &vertexInputBinding;
+        vertexInputStateCI.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexInputAttributes.size());
+        vertexInputStateCI.pVertexAttributeDescriptions = vertexInputAttributes.data();
+
+        // Pipelines
+        VkGraphicsPipelineCreateInfo pipelineCI{};
+        pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineCI.layout = _pipelineLayout;
+        pipelineCI.renderPass = renderPass;
+        pipelineCI.pInputAssemblyState = &inputAssemblyStateCI;
+        pipelineCI.pVertexInputState = &vertexInputStateCI;
+        pipelineCI.pRasterizationState = &rasterizationStateCI;
+        pipelineCI.pColorBlendState = &colorBlendStateCI;
+        pipelineCI.pMultisampleState = &multisampleStateCI;
+        pipelineCI.pViewportState = &viewportStateCI;
+        pipelineCI.pDepthStencilState = &depthStencilStateCI;
+        pipelineCI.pDynamicState = &dynamicStateCI;
+
+        if (settings.multiSampling)
+            multisampleStateCI.rasterizationSamples = settings.sampleCount;
+
+        // Skybox pipeline (background cube)
+        _cubeMap.PrepareSkyboxPipeline(main, pipelineCI);
+
+        // PBR pipeline
+        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages =
+        {
+            loadShader(device, "pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+            loadShader(device, "pbr_khr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+        };
+        pipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineCI.pStages = shaderStages.data();
+
+        depthStencilStateCI.depthWriteEnable = VK_TRUE;
+        depthStencilStateCI.depthTestEnable = VK_TRUE;
+        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &_opaquePipeline));
+
+        rasterizationStateCI.cullMode = VK_CULL_MODE_NONE;
+        blendAttachmentState.blendEnable = VK_TRUE;
+        blendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        blendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+        blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &_alphaBlendPipeline));
+
+        for (auto shaderStage : shaderStages)
+            vkDestroyShaderModule(device, shaderStage.module, nullptr);
+    }
+
     void Scene::LoadScene(Main& main, std::string&& filename) {
         std::cout << "Loading scene from " << filename << std::endl;
 
@@ -524,7 +522,7 @@ namespace Vk {
         CreateAndSetupNodeDescriptorSet(main);
         _cubeMap.CreateAndSetupSkyboxDescriptorSet(main, _sceneShaderValueUniBufs, _descriptorPool, _sceneDescLayout);
 
-        PreparePipelines(settings, main, _cubeMap, _sceneDescLayout, _materialDescLayout, _nodeDescLayout, _pipelineLayout, _pipelines);
+        CreatePipelines(main, settings);
 
         _sceneShaderValue.prefilteredCubeMipLevels = _cubeMap.GetPrefilteredCubeMipLevels();
 
@@ -532,8 +530,8 @@ namespace Vk {
     }
 
     void Scene::Release(VkDevice device) {
-        vkDestroyPipeline(device, _pipelines.pbr, nullptr);
-        vkDestroyPipeline(device, _pipelines.pbrAlphaBlend, nullptr);
+        vkDestroyPipeline(device, _alphaBlendPipeline, nullptr);
+        vkDestroyPipeline(device, _opaquePipeline, nullptr);
 
         vkDestroyPipelineLayout(device, _pipelineLayout, nullptr);
 
@@ -634,7 +632,7 @@ namespace Vk {
                 _cubeMap.RenderSkybox(i, currentCB, _pipelineLayout);
             }
 
-            vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines.pbr);
+            vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _opaquePipeline);
 
             Model& model = _scene;
 
@@ -642,19 +640,21 @@ namespace Vk {
             if (model.indices.buffer != VK_NULL_HANDLE)
                 vkCmdBindIndexBuffer(currentCB, model.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
+            auto sceneDescSet = _sceneDescSets[i];
+
             // Opaque primitives first
             for (auto node : model.nodes)
-                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_OPAQUE, cmdBuffers, _sceneDescSets, _pipelineLayout);
+                RenderNode(node, Material::ALPHAMODE_OPAQUE, currentCB, sceneDescSet, _pipelineLayout);
 
             // Alpha masked primitives
             for (auto node : model.nodes)
-                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_MASK, cmdBuffers, _sceneDescSets, _pipelineLayout);
+                RenderNode(node, Material::ALPHAMODE_MASK, currentCB, sceneDescSet, _pipelineLayout);
 
             // Transparent primitives
             // TODO: Correct depth sorting
-            vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines.pbrAlphaBlend);
+            vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _alphaBlendPipeline);
             for (auto node : model.nodes)
-                RenderNode(node, static_cast<uint32_t>(i), Material::ALPHAMODE_BLEND, cmdBuffers, _sceneDescSets, _pipelineLayout);
+                RenderNode(node, Material::ALPHAMODE_BLEND, currentCB, sceneDescSet, _pipelineLayout);
 
             vkCmdEndRenderPass(currentCB);
             VK_CHECK_RESULT(vkEndCommandBuffer(currentCB));

@@ -29,11 +29,6 @@ namespace Vk {
         glm::vec3 camPos{};
     };
 
-    struct Pipelines {
-        VkPipeline pbr = VK_NULL_HANDLE;
-        VkPipeline pbrAlphaBlend = VK_NULL_HANDLE;
-    };
-
     using VkDescriptorSets = std::vector<VkDescriptorSet>;
 
     class Scene {
@@ -52,6 +47,7 @@ namespace Vk {
         void                        CreateAndSetupSceneDescriptorSet(Main& main);
         void                        CreateAndSetupMaterialDescriptorSet(Main& main);
         void                        CreateAndSetupNodeDescriptorSet(Main& main);
+        void                        CreatePipelines(Main& main, const Settings& settings);
 
         CubeMap                     _cubeMap;
         Model                       _scene;
@@ -68,6 +64,7 @@ namespace Vk {
         VkDescriptorSets            _sceneDescSets;
 
         VkPipelineLayout            _pipelineLayout = VK_NULL_HANDLE;
-        Pipelines                   _pipelines;
+        VkPipeline                  _opaquePipeline = VK_NULL_HANDLE;
+        VkPipeline                  _alphaBlendPipeline = VK_NULL_HANDLE;
     };
 }
