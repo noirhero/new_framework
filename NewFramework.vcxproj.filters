@@ -3,9 +3,6 @@
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="VkCommon.h">
-      <Filter>vulkan</Filter>
-    </ClInclude>
     <ClInclude Include="VkWin.h">
       <Filter>vulkan</Filter>
     </ClInclude>

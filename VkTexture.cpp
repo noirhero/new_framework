@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "VkTexture.h"
 
-#include "VkCommon.h"
+#include "VkUtils.h"
 #include "VulkanDevice.h"
 
 namespace Vk

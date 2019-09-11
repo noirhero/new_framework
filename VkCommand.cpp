@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "VkCommand.h"
 
-#include "VkCommon.h"
+#include "VkUtils.h"
 #include "VkMain.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"

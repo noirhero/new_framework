@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "VkBuffer.h"
 
-#include "VkCommon.h"
+#include "VkUtils.h"
 #include "VulkanDevice.h"
 
 namespace Vk

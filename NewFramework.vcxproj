@@ -164,7 +164,6 @@
     <ClInclude Include="VkFramework.h" />
     <ClInclude Include="VkCamera.h" />
     <ClInclude Include="VkCommand.h" />
-    <ClInclude Include="VkCommon.h" />
     <ClInclude Include="VkDebug.h" />
     <ClInclude Include="VulkanDevice.h" />
     <ClInclude Include="VkInstance.h" />

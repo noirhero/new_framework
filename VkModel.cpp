@@ -15,7 +15,7 @@
 #pragma message ("ERROR constant already defined, undefining")
 #endif
 
-#include "VkCommon.h"
+#include "VkUtils.h"
 #include "VulkanDevice.h"
 
 namespace Vk

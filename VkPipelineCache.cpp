@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "VkPipelineCache.h"
 
-#include "VkCommon.h"
+#include "VkUtils.h"
 
 namespace Vk
 {

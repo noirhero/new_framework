@@ -6,12 +6,17 @@ namespace Vk
 {
 	struct Settings;
 
-	namespace Win
+	class Win
 	{
-		HINSTANCE	GetInstance();
-		HWND		GetHandle();
-
-		void		CreateConsole();
+	public:
+		static void CreateConsole();
 		bool		SetupWindow(Settings& settings, HINSTANCE instance, WNDPROC wndProc);
-	}
+
+		HINSTANCE	GetInstance() const { return _instance; };
+		HWND		GetHandle() const { return _handle; };
+
+	private:
+		HINSTANCE	_instance = nullptr;
+		HWND		_handle = nullptr;
+	};
 }

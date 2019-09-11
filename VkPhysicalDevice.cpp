@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "VkPhysicalDevice.h"
 
-#include "VkCommon.h"
+#include "VkUtils.h"
 
 bool Vk::PhysicalDevice::Initialize(VkInstance instance)
 {
