@@ -3,11 +3,9 @@
 #include "stdafx.h"
 #include "VkInstance.h"
 
-#include "VkCommon.h"
-
 namespace Vk
 {
-	bool Instance::Initialize(const Settings& settings)
+	bool Instance::Initialize(bool isValidation)
 	{
 		const VkApplicationInfo appInfo
 		{
@@ -31,7 +29,7 @@ namespace Vk
 
 		if (false == instanceExtensions.empty())
 		{
-			if (true == settings.validation)
+			if (true == isValidation)
 			{
 				instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 			}
@@ -40,7 +38,7 @@ namespace Vk
 			info.ppEnabledExtensionNames = instanceExtensions.data();
 		}
 
-		if (true == settings.validation)
+		if (true == isValidation)
 		{
 			info.enabledLayerCount = 1;
 			const char *validationLayerNames[] =

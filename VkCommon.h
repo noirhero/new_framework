@@ -52,16 +52,4 @@ namespace Vk
 #define KEY_N 0x4E
 #define KEY_O 0x4F
 #define KEY_T 0x54
-
-	struct Settings
-	{
-		bool validation = false;
-		bool fullscreen = false;
-		bool vsync = false;
-		bool multiSampling = true;
-		VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_4_BIT;
-		uint32_t width = 100;
-		uint32_t height = 100;
-		uint32_t renderAhead = 2;
-	};
 }

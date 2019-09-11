@@ -14,19 +14,33 @@ namespace Vk
 	struct VulkanDevice;
 	class VulkanSwapChain;
 
+	struct Settings
+	{
+		bool validation = false;
+		bool fullscreen = false;
+		bool vsync = false;
+		bool multiSampling = true;
+		VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_4_BIT;
+		uint32_t width = 100;
+		uint32_t height = 100;
+		uint32_t renderAhead = 2;
+	};
+
 	using VkFences = std::vector<VkFence>;
 	using VkSemaphores = std::vector<VkSemaphore>;
 
 	class Main
 	{
 	public:
-		bool					Initialize(const Settings& settings);
-		void					Prepare(Settings& settings, HINSTANCE instance, HWND window);
-		void					Release(const Settings& settings);
+		bool					Initialize();
+		void					Prepare(HINSTANCE instance, HWND window);
+		void					Release();
 
-		void					RecreateSwapChain(Settings& settings);
+		void					RecreateSwapChain();
 		VkResult				AcquireNextImage(uint32_t& currentBuffer, uint32_t frameIndex);
 		VkResult				QueuePresent(uint32_t currentBuffer, uint32_t frameIndex);
+
+		Settings&				GetSettings() { return _settings; }
 
 		VulkanDevice&			GetVulkanDevice() const { return *_device; }
 		VulkanSwapChain&		GetVulkanSwapChain() const { return *_swapChain; }
@@ -40,14 +54,16 @@ namespace Vk
 		FrameBuffer&			GetFrameBuffer() { return _frameBufs; }
 
 	private:
-		bool					InitializePhysicalGroup(const Settings& settings);
+		bool					InitializePhysicalGroup();
 		void					ReleasePhysicalGroup();
 
 		bool					InitializeLogicalGroup();
 		void					ReleaseLogicalGroup();
 
-		void					CreateFences(const Settings& settings);
+		void					CreateFences();
 		void					ReleaseFences();
+
+		Settings				_settings;
 
 		Instance				_inst;
 		VkInstance				_instanceHandle = VK_NULL_HANDLE;

@@ -7,7 +7,6 @@
 #include "VkBuffer.h"
 
 namespace Vk {
-    struct Settings;
     class Main;
     class CommandBuffer;
     class FrameBuffer;
@@ -33,11 +32,11 @@ namespace Vk {
 
     class Scene {
     public:
-        bool                        Initialize(Main& main, const Settings& settings);
+        bool                        Initialize(Main& main);
         void                        Release(VkDevice device);
 
         void                        UpdateUniformDatas(const glm::mat4& view, const glm::mat4& perspective, const glm::vec3& cameraPos, const glm::vec4& lightDir);
-        void                        RecordBuffers(Main& main, const Settings& settings, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers);
+        void                        RecordBuffers(Main& main, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers);
 
         void                        OnUniformBufferSets(uint32_t currentBuffer);
 
@@ -47,7 +46,7 @@ namespace Vk {
         void                        CreateAndSetupSceneDescriptorSet(Main& main);
         void                        CreateAndSetupMaterialDescriptorSet(Main& main);
         void                        CreateAndSetupNodeDescriptorSet(Main& main);
-        void                        CreatePipelines(Main& main, const Settings& settings);
+        void                        CreatePipelines(Main& main);
 
         CubeMap                     _cubeMap;
         Model                       _scene;

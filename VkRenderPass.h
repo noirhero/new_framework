@@ -4,12 +4,10 @@
 
 namespace Vk
 {
-	struct Settings;
-
 	class RenderPass
 	{
 	public:
-		bool			Initialize(const Settings& settings, VkFormat colorFormat, VkFormat depthFormat, VkDevice device);
+		bool			Initialize(VkFormat colorFormat, VkFormat depthFormat, VkDevice device, bool isMultiSampling, VkSampleCountFlagBits sampleCount);
 		void			Release(VkDevice device);
 
 		VkRenderPass	Get() const { return _renderPass; }

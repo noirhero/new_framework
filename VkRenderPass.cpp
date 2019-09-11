@@ -7,15 +7,15 @@
 
 namespace Vk
 {
-	bool RenderPass::Initialize(const Settings& settings, VkFormat colorFormat, VkFormat depthFormat, VkDevice device)
+	bool RenderPass::Initialize(VkFormat colorFormat, VkFormat depthFormat, VkDevice device, bool isMultiSampling, VkSampleCountFlagBits sampleCount)
 	{
-		if (settings.multiSampling)
+		if (true == isMultiSampling)
 		{
 			std::array<VkAttachmentDescription, 4> attachments = {};
 
 			// Multisampled attachment that we render to
 			attachments[0].format = colorFormat;
-			attachments[0].samples = settings.sampleCount;
+			attachments[0].samples = sampleCount;
 			attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 			attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -36,7 +36,7 @@ namespace Vk
 
 			// Multisampled depth attachment we render to
 			attachments[2].format = depthFormat;
-			attachments[2].samples = settings.sampleCount;
+			attachments[2].samples = sampleCount;
 			attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;

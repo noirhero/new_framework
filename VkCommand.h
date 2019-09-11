@@ -2,15 +2,11 @@
 
 #pragma once
 
-using VkCommandBuffers = std::vector<VkCommandBuffer>;
-using VkFrameBuffers = std::vector<VkFramebuffer>;
-
 namespace Vk
 {
+	struct Settings;
 	struct VulkanDevice;
 	class VulkanSwapChain;
-
-	struct Settings;
 
 	struct Target
 	{
@@ -31,6 +27,9 @@ namespace Vk
 		Target color;
 		Target depth;
 	};
+
+	using VkCommandBuffers = std::vector<VkCommandBuffer>;
+	using VkFrameBuffers = std::vector<VkFramebuffer>;
 
 	class CommandPool
 	{
@@ -61,12 +60,14 @@ namespace Vk
 	class FrameBuffer
 	{
 	public:
-		bool					Initialize(const Settings& settings, VulkanDevice& vulkanDevice, VulkanSwapChain& swapChain, VkFormat depthFormat, VkRenderPass renderPass);
-		void					Release(const Settings& settings, VkDevice device);
+		bool					Initialize(VulkanDevice& vulkanDevice, VulkanSwapChain& swapChain, VkFormat depthFormat, VkRenderPass renderPass, const Settings& settings);
+		void					Release(VkDevice device);
 
 		VkFramebuffer			Get(uint32_t i) const { return _frameBufs[i]; }
 
 	private:
+		bool					_isMultiSampling = true;
+		
 		MultisampleTarget		_multiSampleTarget;
 		DepthStencil			_depthStencil;
 		VkFrameBuffers			_frameBufs;

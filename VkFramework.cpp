@@ -41,18 +41,17 @@ namespace Vk
 
 	Camera _camera;
 	LightSource _lightSource;
-	Settings _settings;
 	Main _main;
 	Scene _scene;
 
 	Settings& GetSettings()
 	{
-		return _settings;
+		return _main.GetSettings();
 	}
 
 	bool Initialize()
 	{
-		return _main.Initialize(_settings);
+		return _main.Initialize();
 	}
 
 	void Release()
@@ -60,7 +59,7 @@ namespace Vk
 		vkDeviceWaitIdle(_main.GetDevice());
 
 		_scene.Release(_main.GetDevice());
-		_main.Release(_settings);
+		_main.Release();
 	}
 
 	void UpdateUniformBuffers()
@@ -82,15 +81,16 @@ namespace Vk
 
 	void Prepare(HINSTANCE instance, HWND window)
 	{
-		_main.Prepare(_settings, instance, window);
+		_main.Prepare(instance, window);
 
-		_scene.Initialize(_main, _settings);
-		_scene.RecordBuffers(_main, _settings, _main.GetCommandBuffer(), _main.GetFrameBuffer());
+		_scene.Initialize(_main);
+		_scene.RecordBuffers(_main, _main.GetCommandBuffer(), _main.GetFrameBuffer());
 
 		prepared = true;
 
+		const float aspect = _main.GetSettings().width / static_cast<float>(_main.GetSettings().height);
 		_camera.type = Camera::CameraType::lookat;
-		_camera.setPerspective(45.0f, _settings.width / static_cast<float>(_settings.height), 0.1f, 256.0f);
+		_camera.setPerspective(45.0f, aspect, 0.1f, 256.0f);
 		_camera.rotationSpeed = 0.25f;
 		_camera.movementSpeed = 0.1f;
 		_camera.setPosition({ 0.0f, 0.0f, 1.0f });
@@ -105,14 +105,14 @@ namespace Vk
 		prepared = false;
 		vkDeviceWaitIdle(_main.GetDevice());
 
-		_settings.width = destWidth;
-		_settings.height = destHeight;
-		_main.RecreateSwapChain(_settings);
-        _scene.RecordBuffers(_main, _settings, _main.GetCommandBuffer(), _main.GetFrameBuffer());
+		_main.GetSettings().width = destWidth;
+		_main.GetSettings().height = destHeight;
+		_main.RecreateSwapChain();
+        _scene.RecordBuffers(_main, _main.GetCommandBuffer(), _main.GetFrameBuffer());
 
 		vkDeviceWaitIdle(_main.GetDevice());
 
-		const auto aspect = _settings.width / static_cast<float>(_settings.height);
+		const float aspect = _main.GetSettings().width / static_cast<float>(_main.GetSettings().height);
 		_camera.updateAspectRatio(aspect);
 
 		prepared = true;
@@ -147,13 +147,13 @@ namespace Vk
 		}
 
 		frameIndex += 1;
-		frameIndex %= _settings.renderAhead;
+		frameIndex %= _main.GetSettings().renderAhead;
 	}
 
 	void RenderLoop(HWND window)
 	{
-		destWidth = _settings.width;
-		destHeight = _settings.height;
+		destWidth = _main.GetSettings().width;
+		destHeight = _main.GetSettings().height;
 
 		MSG msg = {};
 		while (WM_QUIT != msg.message)

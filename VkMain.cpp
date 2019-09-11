@@ -34,9 +34,9 @@ namespace Vk
 		return VK_FORMAT_UNDEFINED;
 	}
 
-	bool Main::Initialize(const Settings & settings)
+	bool Main::Initialize()
 	{
-		if (false == InitializePhysicalGroup(settings))
+		if (false == InitializePhysicalGroup())
 			return false;
 
 		if (false == InitializeLogicalGroup())
@@ -45,29 +45,27 @@ namespace Vk
 		return true;
 	}
 
-	void Main::Prepare(Settings& settings, HINSTANCE instance, HWND window)
+	void Main::Prepare(HINSTANCE instance, HWND window)
 	{
 		_swapChain->initSurface(instance, window);
-		_swapChain->create(&settings.width, &settings.height, settings.vsync);
+		_swapChain->create(&_settings.width, &_settings.height, _settings.vsync);
 
 		_cmdPool.Initialize(_swapChain->queueNodeIndex, _logicalDevice);
-
-		_renderPass.Initialize(settings, _swapChain->colorFormat, _depthFormat, _logicalDevice);
-
+		_renderPass.Initialize(_swapChain->colorFormat, _depthFormat, _logicalDevice, _settings.multiSampling, _settings.sampleCount);
 		_pipelineCache.Initialize(_logicalDevice);
 
-		_frameBufs.Initialize(settings, *_device, *_swapChain, _depthFormat, _renderPass.Get());
+		_frameBufs.Initialize(*_device, *_swapChain, _depthFormat, _renderPass.Get(), _settings);
 		_cmdBufs.Initialize(_logicalDevice, _cmdPool.Get(), _swapChain->imageCount);
 
-		CreateFences(settings);
+		CreateFences();
 	}
 
-	void Main::Release(const Settings& settings)
+	void Main::Release()
 	{
 		ReleaseFences();
 
 		_cmdBufs.Release(_logicalDevice, _cmdPool.Get());
-		_frameBufs.Release(settings, _logicalDevice);
+		_frameBufs.Release(_logicalDevice);
 
 		_pipelineCache.Release(_logicalDevice);
 		_renderPass.Release(_logicalDevice);
@@ -77,12 +75,12 @@ namespace Vk
 		ReleasePhysicalGroup();
 	}
 
-	void Main::RecreateSwapChain(Settings & settings)
+	void Main::RecreateSwapChain()
 	{
-		_swapChain->create(&settings.width, &settings.height, settings.vsync);
+		_swapChain->create(&_settings.width, &_settings.height, _settings.vsync);
 
-		_frameBufs.Release(settings, _logicalDevice);
-		_frameBufs.Initialize(settings, *_device, *_swapChain, _depthFormat, _renderPass.Get());
+		_frameBufs.Release(_logicalDevice);
+		_frameBufs.Initialize(*_device, *_swapChain, _depthFormat, _renderPass.Get(), _settings);
 	}
 
 	VkResult Main::AcquireNextImage(uint32_t & currentBuffer, uint32_t frameIndex)
@@ -111,14 +109,14 @@ namespace Vk
 		return _swapChain->queuePresent(_gpuQueue, currentBuffer, _renderCompleteSemaphores[frameIndex]);
 	}
 
-	bool Main::InitializePhysicalGroup(const Settings& settings)
+	bool Main::InitializePhysicalGroup()
 	{
-		if (false == _inst.Initialize(settings))
+		if (false == _inst.Initialize(_settings.validation))
 			return false;
 
 		_instanceHandle = _inst.Get();
 
-		if (true == settings.validation)
+		if (true == _settings.validation)
 			_debug.Initialize(_instanceHandle);
 
 		_physDevice.Initialize(_inst.Get());
@@ -187,23 +185,23 @@ namespace Vk
 		}
 	}
 
-	void Main::CreateFences(const Settings& settings)
+	void Main::CreateFences()
 	{
-		_waitFences.resize(settings.renderAhead);
+		_waitFences.resize(_settings.renderAhead);
 		for (auto &waitFence : _waitFences)
 		{
 			VkFenceCreateInfo fenceCI{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT };
 			VK_CHECK_RESULT(vkCreateFence(_logicalDevice, &fenceCI, nullptr, &waitFence));
 		}
 
-		_presentCompleteSemaphores.resize(settings.renderAhead);
+		_presentCompleteSemaphores.resize(_settings.renderAhead);
 		for (auto &semaphore : _presentCompleteSemaphores)
 		{
 			VkSemaphoreCreateInfo semaphoreCI{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
 			VK_CHECK_RESULT(vkCreateSemaphore(_logicalDevice, &semaphoreCI, nullptr, &semaphore));
 		}
 
-		_renderCompleteSemaphores.resize(settings.renderAhead);
+		_renderCompleteSemaphores.resize(_settings.renderAhead);
 		for (auto &semaphore : _renderCompleteSemaphores)
 		{
 			VkSemaphoreCreateInfo semaphoreCI{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };

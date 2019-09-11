@@ -7,10 +7,10 @@ namespace Vk
 	class Debug
 	{
 	public:
-		bool Initialize(VkInstance instance);
-		void Release(VkInstance instance);
+		bool						Initialize(VkInstance instance);
+		void						Release(VkInstance instance);
 
 	private:
-		VkDebugReportCallbackEXT _handle = VK_NULL_HANDLE;
+		VkDebugReportCallbackEXT	_handle = VK_NULL_HANDLE;
 	};
 }

@@ -4,12 +4,10 @@
 
 namespace Vk
 {
-	struct Settings;
-
 	class Instance
 	{
 	public:
-		bool		Initialize(const Settings& settings);
+		bool		Initialize(bool isValidation);
 		void		Release();
 
 		VkInstance	Get() const { return _instance; }

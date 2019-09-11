@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 
-#include "VkCommon.h"
+#include "VkMain.h"
 #include "VkFramework.h"
 #include "VkWin.h"
 

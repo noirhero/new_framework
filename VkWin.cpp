@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "VkWin.h"
 
-#include "VkCommon.h"
+#include "VkMain.h"
 
 namespace Vk
 {

@@ -4,6 +4,7 @@
 #include "VkCommand.h"
 
 #include "VkCommon.h"
+#include "VkMain.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
 
@@ -57,14 +58,16 @@ namespace Vk
 	}
 
 	// Frame buffer
-	bool FrameBuffer::Initialize(const Settings & settings, VulkanDevice & vulkanDevice, VulkanSwapChain & swapChain, VkFormat depthFormat, VkRenderPass renderPass)
+	bool FrameBuffer::Initialize(VulkanDevice & vulkanDevice, VulkanSwapChain & swapChain, VkFormat depthFormat, VkRenderPass renderPass, const Settings& settings)
 	{
+		_isMultiSampling = settings.multiSampling;
+		
 		VkDevice device = vulkanDevice.logicalDevice;
 
 		/*
 		MSAA
 		*/
-		if (true == settings.multiSampling)
+		if (true == _isMultiSampling)
 		{
 			// Check if device supports requested sample count for color and depth frame buffer
 			//assert((deviceProperties.limits.framebufferColorSampleCounts >= sampleCount) && (deviceProperties.limits.framebufferDepthSampleCounts >= sampleCount));
@@ -242,24 +245,32 @@ namespace Vk
 		return true;
 	}
 
-	void FrameBuffer::Release(const Settings & settings, VkDevice device)
+	void FrameBuffer::Release(VkDevice device)
 	{
 		for (uint32_t i = 0; i < _frameBufs.size(); i++)
 			vkDestroyFramebuffer(device, _frameBufs[i], nullptr);
 		_frameBufs.clear();
 
-		vkDestroyImageView(device, _depthStencil.view, nullptr);
-		vkDestroyImage(device, _depthStencil.image, nullptr);
-		vkFreeMemory(device, _depthStencil.mem, nullptr);
-
-		if (true == settings.multiSampling)
+		const auto deleteFn = [device](VkImage image, VkImageView view, VkDeviceMemory memory)
 		{
-			vkDestroyImage(device, _multiSampleTarget.color.image, nullptr);
-			vkDestroyImageView(device, _multiSampleTarget.color.view, nullptr);
-			vkFreeMemory(device, _multiSampleTarget.color.memory, nullptr);
-			vkDestroyImage(device, _multiSampleTarget.depth.image, nullptr);
-			vkDestroyImageView(device, _multiSampleTarget.depth.view, nullptr);
-			vkFreeMemory(device, _multiSampleTarget.depth.memory, nullptr);
+			if(VK_NULL_HANDLE != memory)
+				vkFreeMemory(device, memory, nullptr);
+
+			if (VK_NULL_HANDLE != view)
+				vkDestroyImageView(device, view, nullptr);
+
+			if (VK_NULL_HANDLE != image)
+				vkDestroyImage(device, image, nullptr);
+		};
+
+		deleteFn(_depthStencil.image, _depthStencil.view, _depthStencil.mem);
+		_depthStencil = {};
+
+		if (true == _isMultiSampling)
+		{
+			deleteFn(_multiSampleTarget.color.image, _multiSampleTarget.color.view, _multiSampleTarget.color.memory);
+			deleteFn(_multiSampleTarget.depth.image, _multiSampleTarget.depth.view, _multiSampleTarget.depth.memory);
+			_multiSampleTarget = {};
 		}
 	}
 }

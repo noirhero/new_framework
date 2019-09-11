@@ -352,10 +352,11 @@ namespace Vk {
             SetupNodeDescriptorSet(*node, main.GetDevice(), descriptorSetAllocInfo);
     }
 
-    void Scene::CreatePipelines(Main& main, const Settings& settings) {
+    void Scene::CreatePipelines(Main& main) {
         VkDevice device = main.GetDevice();
         VkRenderPass renderPass = main.GetRenderPass();
         VkPipelineCache pipelineCache = main.GetPipelineCache();
+		const Settings& settings = main.GetSettings();
 
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI{};
         inputAssemblyStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -508,7 +509,7 @@ namespace Vk {
             uniformBuffer.create(vulkanDevice, uniBufUsagFlags, uniBufMemPropertyFlags, sizeof(SceneUniformData));
     }
 
-    bool Scene::Initialize(Main& main, const Settings& settings) {
+    bool Scene::Initialize(Main& main) {
         CheckToDataPath();
 
         LoadEmptyTexture(main, assetpath + "textures/empty.ktx");
@@ -523,7 +524,7 @@ namespace Vk {
         CreateAndSetupNodeDescriptorSet(main);
         _cubeMap.CreateAndSetupSkyboxDescriptorSet(main, _sceneShaderValueUniBufs, _descriptorPool, _sceneDescLayout);
 
-        CreatePipelines(main, settings);
+        CreatePipelines(main);
 
         _sceneShaderValue.prefilteredCubeMipLevels = _cubeMap.GetPrefilteredCubeMipLevels();
 
@@ -583,7 +584,9 @@ namespace Vk {
         _cubeMap.UpdateSkyboxUniformData(view, perspective);
     }
 
-    void Scene::RecordBuffers(Main& main, const Settings& settings, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers) {
+    void Scene::RecordBuffers(Main& main, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers) {
+		const Settings& settings = main.GetSettings();
+    	
         VkCommandBufferBeginInfo cmdBufferBeginInfo{};
         cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
