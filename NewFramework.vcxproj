@@ -166,7 +166,7 @@
     <ClInclude Include="VkCommand.h" />
     <ClInclude Include="VkCommon.h" />
     <ClInclude Include="VkDebug.h" />
-    <ClInclude Include="VkDevice.h" />
+    <ClInclude Include="VulkanDevice.h" />
     <ClInclude Include="VkInstance.h" />
     <ClInclude Include="VkMain.h" />
     <ClInclude Include="VkScene.h" />
@@ -174,7 +174,7 @@
     <ClInclude Include="VkPhysicalDevice.h" />
     <ClInclude Include="VkPipelineCache.h" />
     <ClInclude Include="VkRenderPass.h" />
-    <ClInclude Include="VkSwapChain.h" />
+    <ClInclude Include="VulkanSwapChain.h" />
     <ClInclude Include="VkTexture.h" />
     <ClInclude Include="VkUtils.h" />
     <ClInclude Include="VkWin.h" />
@@ -190,7 +190,7 @@
     <ClCompile Include="VkBuffer.cpp" />
     <ClCompile Include="VkCamera.cpp" />
     <ClCompile Include="VkCubeMap.cpp" />
-    <ClCompile Include="VkDevice.cpp" />
+    <ClCompile Include="VulkanDevice.cpp" />
     <ClCompile Include="VkFramework.cpp" />
     <ClCompile Include="VkCommand.cpp" />
     <ClCompile Include="VkDebug.cpp" />
@@ -201,7 +201,7 @@
     <ClCompile Include="VkPhysicalDevice.cpp" />
     <ClCompile Include="VkPipelineCache.cpp" />
     <ClCompile Include="VkRenderPass.cpp" />
-    <ClCompile Include="VkSwapChain.cpp" />
+    <ClCompile Include="VulkanSwapChain.cpp" />
     <ClCompile Include="VkTexture.cpp" />
     <ClCompile Include="VkUtils.cpp" />
     <ClCompile Include="VkWin.cpp" />

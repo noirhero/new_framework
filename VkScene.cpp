@@ -5,8 +5,8 @@
 
 #include "VkCommon.h"
 #include "VkMain.h"
-#include "VkDevice.h"
-#include "VkSwapChain.h"
+#include "VulkanDevice.h"
+#include "VulkanSwapChain.h"
 #include "VkUtils.h"
 
 namespace Vk {

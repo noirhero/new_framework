@@ -16,7 +16,7 @@
 #endif
 
 #include "VkCommon.h"
-#include "VkDevice.h"
+#include "VulkanDevice.h"
 
 namespace Vk
 {

@@ -1,7 +1,7 @@
 // Copyright 2018-2019 TAP, Inc. All Rights Reserved.
 
 #include "stdafx.h"
-#include "VkDevice.h"
+#include "VulkanDevice.h"
 
 #include "VkCommon.h"
 

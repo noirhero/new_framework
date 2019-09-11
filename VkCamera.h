@@ -8,7 +8,8 @@ namespace Vk
 	{
 	private:
 		float fov = 0.0f;
-		float znear, zfar = 0.0f;
+		float znear = 0.0f;
+		float zfar = 0.0f;
 
 		void updateViewMatrix();
 
