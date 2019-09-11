@@ -51,11 +51,14 @@
     <ClInclude Include="VkCamera.h">
       <Filter>vulkan\legacy</Filter>
     </ClInclude>
-    <ClInclude Include="VkModel.h">
-      <Filter>vulkan\legacy</Filter>
-    </ClInclude>
     <ClInclude Include="VulkanSwapChain.h">
       <Filter>vulkan\legacy</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanModel.h">
+      <Filter>vulkan\legacy</Filter>
+    </ClInclude>
+    <ClInclude Include="VkGeometry.h">
+      <Filter>vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -109,11 +112,14 @@
     <ClCompile Include="VkCamera.cpp">
       <Filter>vulkan\legacy</Filter>
     </ClCompile>
-    <ClCompile Include="VkModel.cpp">
-      <Filter>vulkan\legacy</Filter>
-    </ClCompile>
     <ClCompile Include="VulkanSwapChain.cpp">
       <Filter>vulkan\legacy</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanModel.cpp">
+      <Filter>vulkan\legacy</Filter>
+    </ClCompile>
+    <ClCompile Include="VkGeometry.cpp">
+      <Filter>vulkan</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

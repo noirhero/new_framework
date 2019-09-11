@@ -5,7 +5,7 @@
 
 #include "VkUtils.h"
 #include "VkMain.h"
-#include "VkScene.h"
+#include "VkGeometry.h"
 #include "VkCamera.h"
 
 namespace Vk
@@ -42,7 +42,7 @@ namespace Vk
 	Camera _camera;
 	LightSource _lightSource;
 	Main _main;
-	Scene _scene;
+	Geometry _geometry;
 
 	Settings& GetSettings()
 	{
@@ -58,13 +58,13 @@ namespace Vk
 	{
 		vkDeviceWaitIdle(_main.GetDevice());
 
-		_scene.Release(_main.GetDevice());
+		_geometry.Release(_main.GetDevice());
 		_main.Release();
 	}
 
 	void UpdateUniformBuffers()
 	{
-		_scene.UpdateUniformDatas(
+		_geometry.UpdateUniformDatas(
 			_camera.matrices.view,
 			_camera.matrices.perspective,
 			glm::vec3(
@@ -83,8 +83,8 @@ namespace Vk
 	{
 		_main.Prepare(instance, window);
 
-		_scene.Initialize(_main);
-		_scene.RecordBuffers(_main, _main.GetCommandBuffer(), _main.GetFrameBuffer());
+		_geometry.Initialize(_main);
+		_geometry.RecordBuffers(_main, _main.GetCommandBuffer(), _main.GetFrameBuffer());
 
 		prepared = true;
 
@@ -108,7 +108,7 @@ namespace Vk
 		_main.GetSettings().width = destWidth;
 		_main.GetSettings().height = destHeight;
 		_main.RecreateSwapChain();
-        _scene.RecordBuffers(_main, _main.GetCommandBuffer(), _main.GetFrameBuffer());
+        _geometry.RecordBuffers(_main, _main.GetCommandBuffer(), _main.GetFrameBuffer());
 
 		vkDeviceWaitIdle(_main.GetDevice());
 
@@ -130,7 +130,7 @@ namespace Vk
 			VK_CHECK_RESULT(acquire);
 
 		UpdateUniformBuffers();
-		_scene.OnUniformBufferSets(currentBuffer);
+		_geometry.OnUniformBufferSets(currentBuffer);
 
 		const auto present = _main.QueuePresent(currentBuffer, frameIndex);
 		if (false == (VK_SUCCESS == present || VK_SUBOPTIMAL_KHR == present))
@@ -227,6 +227,7 @@ namespace Vk
 #define KEY_N 0x4E
 #define KEY_O 0x4F
 #define KEY_T 0x54
+	
 	void HandleMessage(HWND window, uint32_t msg, WPARAM wParam, LPARAM lParam)
 	{
 		if (VK_NULL_HANDLE == _main.GetDevice())

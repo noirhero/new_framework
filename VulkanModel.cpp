@@ -1,7 +1,7 @@
 // Copyright 2018-2019 TAP, Inc. All Rights Reserved.
 
 #include "stdafx.h"
-#include "VkModel.h"
+#include "VulkanModel.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
