@@ -11,7 +11,7 @@ namespace Vk {
 
     class CubeMap {
     public:
-        bool                        Initialize(const Main& main, const std::string& assetpath);
+        bool                        Initialize(const Main& main, std::string&& environmentMapPath);
         void                        Release(VkDevice device);
 
         constexpr TextureCubeMap&   GetEnvironment() { return _environmentCube; }

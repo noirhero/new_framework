@@ -16,7 +16,7 @@ namespace Vk
 
 		transM = glm::translate(glm::mat4(1.0f), position * glm::vec3(1.0f, 1.0f, -1.0f));
 
-		if (type == CameraType::firstperson)
+		if (type == CameraType::FirstPerson)
 		{
 			matrices.view = rotM * transM;
 		}
@@ -74,7 +74,7 @@ namespace Vk
 	void Camera::update(float deltaTime)
 	{
 		updated = false;
-		if (type == CameraType::firstperson)
+		if (type == CameraType::FirstPerson)
 		{
 			if (moving())
 			{
@@ -104,7 +104,7 @@ namespace Vk
 	{
 		bool retVal = false;
 
-		if (type == CameraType::firstperson)
+		if (type == CameraType::FirstPerson)
 		{
 			// Use the common console thumbstick layout		
 			// Left = view, right = move
@@ -161,4 +161,13 @@ namespace Vk
 
 		return retVal;
 	}
+
+    glm::vec3 Camera::GetCameraPosition() const {
+        return {
+            -position.z * glm::sin(glm::radians(rotation.y)) * glm::cos(glm::radians(rotation.x)),
+            -position.z * glm::sin(glm::radians(rotation.x)),
+            position.z * glm::cos(glm::radians(rotation.y)) * glm::cos(glm::radians(rotation.x))
+        };
+    }
+
 }

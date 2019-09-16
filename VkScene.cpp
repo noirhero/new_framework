@@ -8,6 +8,9 @@
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
 
+#include "Timer.h"
+#include "Path.h"
+
 namespace Vk {
     enum class PBRWorkflow : uint8_t {
         METALLIC_ROUGHNESS = 0,
@@ -72,7 +75,7 @@ namespace Vk {
         std::cout << "Generating BRDF LUT took " << tDiff << " ms" << std::endl;
     }
 
-    void SetupNodeDescriptorSet(Node& node, VkDevice device, const VkDescriptorSetAllocateInfo& descSetInfo) {
+    void SetNodeDescriptorSet(Node& node, VkDevice device, const VkDescriptorSetAllocateInfo& descSetInfo) {
         if (node.mesh) {
             VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descSetInfo, &node.mesh->uniformBuffer.descriptorSet));
 
@@ -88,7 +91,7 @@ namespace Vk {
         }
 
         for (auto& child : node.children)
-            SetupNodeDescriptorSet(*child, device, descSetInfo);
+            SetNodeDescriptorSet(*child, device, descSetInfo);
     }
 
     void RenderNode(Node* node, Material::AlphaMode alphaMode, VkCommandBuffer cmdBuf, VkDescriptorSet descSet, VkPipelineLayout pipelineLayout) {
@@ -189,7 +192,7 @@ namespace Vk {
         VK_CHECK_RESULT(vkCreateDescriptorPool(main.GetDevice(), &descriptorPoolCI, nullptr, &_descriptorPool));
     }
 
-    void Scene::CreateAndSetupSceneDescriptorSet(const Main& main) {
+    void Scene::CreateSceneDescriptorLayout(const Main& main) {
         auto device = main.GetDevice();
 
         const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
@@ -205,6 +208,42 @@ namespace Vk {
         descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
         descriptorSetLayoutCI.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
         VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &_sceneDescLayout));
+    }
+
+    void Scene::CreateMaterialDescriptorLayout(const Main& main) {
+        auto device = main.GetDevice();
+
+        const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+            { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+            { 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+            { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+            { 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+            { 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+        };
+
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI{};
+        descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
+        descriptorSetLayoutCI.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
+
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &_materialDescLayout));
+    }
+
+    void Scene::CreateNodeDescriptorLayout(const Main& main) {
+        const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+            { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr },
+        };
+
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI{};
+        descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
+        descriptorSetLayoutCI.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
+
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(main.GetDevice(), &descriptorSetLayoutCI, nullptr, &_nodeDescLayout));
+    }
+
+    void Scene::SetupSceneDescriptorSet(const Main& main) {
+        auto device = main.GetDevice();
 
         _sceneDescSets.resize(main.GetVulkanSwapChain().imageCount);
         for (decltype(_sceneDescSets.size()) i = 0; i < _sceneDescSets.size(); ++i) {
@@ -256,23 +295,8 @@ namespace Vk {
         }
     }
 
-    void Scene::CreateAndSetupMaterialDescriptorSet(const Main & main) {
+    void Scene::SetupMaterialDescriptorSet(const Main & main) {
         auto device = main.GetDevice();
-
-        const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
-            { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
-            { 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
-            { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
-            { 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
-            { 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
-        };
-
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI{};
-        descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
-        descriptorSetLayoutCI.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
-
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &_materialDescLayout));
 
         // Per-Material descriptor sets
         for (auto& material : _scene.materials) {
@@ -323,18 +347,7 @@ namespace Vk {
         }
     }
 
-    void Scene::CreateAndSetupNodeDescriptorSet(const Main& main) {
-        const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
-            { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr },
-        };
-
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI{};
-        descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
-        descriptorSetLayoutCI.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
-
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(main.GetDevice(), &descriptorSetLayoutCI, nullptr, &_nodeDescLayout));
-
+    void Scene::SetupNodeDescriptorSet(const Main& main) {
         // Per-Node descriptor set
         VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
         descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -343,7 +356,7 @@ namespace Vk {
         descriptorSetAllocInfo.descriptorSetCount = 1;
 
         for (auto& node : _scene.nodes)
-            SetupNodeDescriptorSet(*node, main.GetDevice(), descriptorSetAllocInfo);
+            SetNodeDescriptorSet(*node, main.GetDevice(), descriptorSetAllocInfo);
     }
 
     void Scene::CreatePipelines(const Main& main) {
@@ -479,15 +492,21 @@ namespace Vk {
     }
 
     void Scene::LoadScene(const Main& main, std::string&& filename) {
-        const auto tStart = std::chrono::high_resolution_clock::now();
+        Timer timer;
 
         auto* vulkanDevice = &main.GetVulkanDevice();
         auto gpuQueue = main.GetGPUQueue();
         _scene.loadFromFile(filename, vulkanDevice, gpuQueue);
 
-        const auto tEnd = std::chrono::high_resolution_clock::now();
-        const auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-        std::cout << "Loading scene from took " << tDiff << " ms" << std::endl;
+        std::cout << "Loading scene from took " << timer.Update() << " ms" << std::endl;
+
+        SetupSceneDescriptorSet(main);
+        SetupMaterialDescriptorSet(main);
+        SetupNodeDescriptorSet(main);
+    }
+
+    void Scene::InitializeUniformBuffers(const Main& main) {
+        auto* vulkanDevice = &main.GetVulkanDevice();
 
         const auto imageCount = main.GetVulkanSwapChain().imageCount;
         _sceneUniBufs.resize(imageCount);
@@ -501,19 +520,20 @@ namespace Vk {
             uniformBuffer.create(vulkanDevice, uniBufUsagFlags, uniBufMemPropertyFlags, sizeof(UniformData));
     }
 
-    bool Scene::Initialize(const Main& main) {
+
+    bool Scene::Initialize(const Main& main, std::string&& environmentMapPath) {
         CheckToDataPath();
 
-        LoadEmptyTexture(main, assetpath + "textures/empty.ktx");
+        LoadEmptyTexture(main, Path::Apply("textures/empty.ktx"s));
         GenerateBRDFLUT(main);
 
-        LoadScene(main, assetpath + "models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
-        _cubeMap.Initialize(main, assetpath);
+        InitializeUniformBuffers(main);
+        _cubeMap.Initialize(main, std::move(environmentMapPath));
 
         CreateDescriptorPool(main);
-        CreateAndSetupSceneDescriptorSet(main);
-        CreateAndSetupMaterialDescriptorSet(main);
-        CreateAndSetupNodeDescriptorSet(main);
+        CreateSceneDescriptorLayout(main);
+        CreateMaterialDescriptorLayout(main);
+        CreateNodeDescriptorLayout(main);
         _cubeMap.CreateAndSetupSkyboxDescriptorSet(main, _sceneShaderValueUniBufs, _descriptorPool, _sceneDescLayout);
 
         CreatePipelines(main);
@@ -637,26 +657,27 @@ namespace Vk {
             vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _opaquePipeline);
 
             Model& model = _scene;
+            if(false == model.nodes.empty()) {
+                vkCmdBindVertexBuffers(currentCB, 0, 1, &model.vertices.buffer, offsets);
+                if (model.indices.buffer != VK_NULL_HANDLE)
+                    vkCmdBindIndexBuffer(currentCB, model.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            vkCmdBindVertexBuffers(currentCB, 0, 1, &model.vertices.buffer, offsets);
-            if (model.indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(currentCB, model.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+                const auto sceneDescSet = _sceneDescSets[i];
 
-            auto sceneDescSet = _sceneDescSets[i];
+                // Opaque primitives first
+                for (auto node : model.nodes)
+                    RenderNode(node, Material::ALPHAMODE_OPAQUE, currentCB, sceneDescSet, _pipelineLayout);
 
-            // Opaque primitives first
-            for (auto node : model.nodes)
-                RenderNode(node, Material::ALPHAMODE_OPAQUE, currentCB, sceneDescSet, _pipelineLayout);
+                // Alpha masked primitives
+                for (auto node : model.nodes)
+                    RenderNode(node, Material::ALPHAMODE_MASK, currentCB, sceneDescSet, _pipelineLayout);
 
-            // Alpha masked primitives
-            for (auto node : model.nodes)
-                RenderNode(node, Material::ALPHAMODE_MASK, currentCB, sceneDescSet, _pipelineLayout);
-
-            // Transparent primitives
-            // TODO: Correct depth sorting
-            vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _alphaBlendPipeline);
-            for (auto node : model.nodes)
-                RenderNode(node, Material::ALPHAMODE_BLEND, currentCB, sceneDescSet, _pipelineLayout);
+                // Transparent primitives
+                // TODO: Correct depth sorting
+                vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _alphaBlendPipeline);
+                for (auto node : model.nodes)
+                    RenderNode(node, Material::ALPHAMODE_BLEND, currentCB, sceneDescSet, _pipelineLayout);
+            }
 
             vkCmdEndRenderPass(currentCB);
             VK_CHECK_RESULT(vkEndCommandBuffer(currentCB));

@@ -9,6 +9,7 @@
 #include "VkCamera.h"
 
 #include "Timer.h"
+#include "Path.h"
 
 namespace Vk {
     struct MouseButtons {
@@ -21,6 +22,15 @@ namespace Vk {
         glm::vec3 color = glm::vec3(1.0f);
         glm::vec3 rotation = glm::vec3(75.0f, 40.0f, 0.0f);
     };
+
+    glm::vec4 GetLightDirection(const LightSource& lightSource) {
+        return {
+            glm::sin(glm::radians(lightSource.rotation.x)) * glm::cos(glm::radians(lightSource.rotation.y)),
+            glm::sin(glm::radians(lightSource.rotation.y)),
+            glm::cos(glm::radians(lightSource.rotation.x)) * glm::cos(glm::radians(lightSource.rotation.y)),
+            0.0f
+        };
+    }
 
     uint32_t currentBuffer = 0;
     uint32_t frameIndex = 0;
@@ -45,6 +55,10 @@ namespace Vk {
     }
 
     bool Initialize() {
+        if (false == Path::SetAssetPath("./../data/"s)) {
+            return false;
+        }
+
         return _main.Initialize();
     }
 
@@ -54,31 +68,20 @@ namespace Vk {
     }
 
     void UpdateUniformBuffers() {
-        _scene.UpdateUniformDatas(
-            _camera.matrices.view,
-            _camera.matrices.perspective,
-            glm::vec3(
-            -_camera.position.z * glm::sin(glm::radians(_camera.rotation.y)) * glm::cos(glm::radians(_camera.rotation.x)),
-            -_camera.position.z * glm::sin(glm::radians(_camera.rotation.x)),
-            _camera.position.z * glm::cos(glm::radians(_camera.rotation.y)) * glm::cos(glm::radians(_camera.rotation.x))),
-            glm::vec4(
-            glm::sin(glm::radians(_lightSource.rotation.x)) * glm::cos(glm::radians(_lightSource.rotation.y)),
-            glm::sin(glm::radians(_lightSource.rotation.y)),
-            glm::cos(glm::radians(_lightSource.rotation.x)) * glm::cos(glm::radians(_lightSource.rotation.y)),
-            0.0f)
-        );
+        _scene.UpdateUniformDatas(_camera.matrices.view, _camera.matrices.perspective, _camera.GetCameraPosition(), GetLightDirection(_lightSource));
     }
 
     void Prepare(HINSTANCE instance, HWND window) {
         _main.Prepare(instance, window);
 
-        _scene.Initialize(_main);
+        _scene.Initialize(_main, "environments/papermill.ktx"s);
+        _scene.LoadScene(_main, Path::Apply("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf"s));
         _scene.RecordBuffers(_main);
 
         prepared = true;
 
         const float aspect = _main.GetSettings().width / static_cast<float>(_main.GetSettings().height);
-        _camera.type = Camera::CameraType::lookat;
+        _camera.type = Camera::CameraType::LookAt;
         _camera.setPerspective(45.0f, aspect, 0.1f, 256.0f);
         _camera.rotationSpeed = 0.25f;
         _camera.movementSpeed = 0.1f;
@@ -104,7 +107,7 @@ namespace Vk {
         prepared = true;
     }
 
-    void render() {
+    void Render() {
         if (false == prepared)
             return;
 
@@ -146,7 +149,7 @@ namespace Vk {
                 _timer.Update();
 
                 if (FALSE == IsIconic(window)) {
-                    render();
+                    Render();
                 }
 
                 _camera.update(_timer.Delta());
@@ -214,7 +217,7 @@ namespace Vk {
                 break;
             }
 
-            if (Camera::CameraType::firstperson == _camera.type) {
+            if (Camera::CameraType::FirstPerson == _camera.type) {
                 switch (wParam) {
                 case KEY_W:
                     _camera.keys.up = true;
@@ -233,7 +236,7 @@ namespace Vk {
 
             break;
         case WM_KEYUP:
-            if (Camera::CameraType::firstperson == _camera.type) {
+            if (Camera::CameraType::FirstPerson == _camera.type) {
                 switch (wParam) {
                 case KEY_W:
                     _camera.keys.up = false;
@@ -273,8 +276,8 @@ namespace Vk {
             break;
         case WM_MOUSEWHEEL:
         {
-            const auto wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-            _camera.translate(glm::vec3(0.0f, 0.0f, -static_cast<float>(wheelDelta) * 0.005f * _camera.movementSpeed));
+            const auto wheelDelta = static_cast<float>(GET_WHEEL_DELTA_WPARAM(wParam));
+            _camera.translate(glm::vec3(0.0f, 0.0f, -wheelDelta * 0.005f * _camera.movementSpeed));
             break;
         }
         case WM_MOUSEMOVE:

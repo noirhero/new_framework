@@ -8,7 +8,8 @@
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
 #include "VulkanModel.h"
-#include "VkUtils.h"
+
+#include "Path.h"
 
 namespace Vk {
     enum class CubeMapTarget : uint8_t {
@@ -594,10 +595,10 @@ namespace Vk {
         return cubemap;
     }
 
-    bool CubeMap::Initialize(const Main& main, const std::string& assetpath) {
-        LoadSkybox(main, assetpath + "models/Box/glTF-Embedded/Box.gltf");
+    bool CubeMap::Initialize(const Main& main, std::string&& environmentMapPath) {
+        LoadSkybox(main, Path::Apply("models/Box/glTF-Embedded/Box.gltf"s));
 
-        _environmentCube.loadFromFile(assetpath + "environments/papermill.ktx", VK_FORMAT_R16G16B16A16_SFLOAT, &main.GetVulkanDevice(), main.GetGPUQueue());
+        _environmentCube.loadFromFile(Path::Apply(std::move(environmentMapPath)), VK_FORMAT_R16G16B16A16_SFLOAT, &main.GetVulkanDevice(), main.GetGPUQueue());
         _irradianceCube = GenerateCubeMap(_prefilteredCubeMipLevels, _environmentCube, main, CubeMapTarget::IRRADIANCE);
         _prefilteredCube = GenerateCubeMap(_prefilteredCubeMipLevels, _environmentCube, main, CubeMapTarget::PREFILTEREDENV);
 

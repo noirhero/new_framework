@@ -13,7 +13,7 @@ namespace Vk
 		{
 			std::array<VkAttachmentDescription, 4> attachments = {};
 
-			// Multisampled attachment that we render to
+			// Multisampled attachment that we Render to
 			attachments[0].format = colorFormat;
 			attachments[0].samples = sampleCount;
 			attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -34,7 +34,7 @@ namespace Vk
 			attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			attachments[1].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-			// Multisampled depth attachment we render to
+			// Multisampled depth attachment we Render to
 			attachments[2].format = depthFormat;
 			attachments[2].samples = sampleCount;
 			attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;

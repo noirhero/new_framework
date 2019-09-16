@@ -60,6 +60,9 @@
     <ClInclude Include="Timer.h">
       <Filter>utility</Filter>
     </ClInclude>
+    <ClInclude Include="Path.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -119,6 +122,9 @@
       <Filter>vulkan\legacy</Filter>
     </ClCompile>
     <ClCompile Include="Timer.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Path.cpp">
       <Filter>utility</Filter>
     </ClCompile>
   </ItemGroup>

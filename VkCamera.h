@@ -14,8 +14,8 @@ namespace Vk
 		void updateViewMatrix();
 
 	public:
-		enum CameraType { lookat, firstperson };
-		CameraType type = CameraType::lookat;
+		enum class CameraType : uint8_t { LookAt, FirstPerson };
+		CameraType type = CameraType::LookAt;
 
 		glm::vec3 rotation = glm::vec3();
 		glm::vec3 position = glm::vec3();
@@ -55,5 +55,7 @@ namespace Vk
 		// Update camera passing separate axis data (gamepad)
 		// Returns true if view or position has been changed
 		bool updatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime);
+
+        glm::vec3 GetCameraPosition() const;
 	};
 }

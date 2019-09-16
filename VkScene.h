@@ -29,11 +29,14 @@ namespace Vk {
     };
 
     using VkDescriptorSets = std::vector<VkDescriptorSet>;
+    using Models = std::vector<Model>;
 
     class Scene {
     public:
-        bool                        Initialize(const Main& main);
+        bool                        Initialize(const Main& main, std::string&& skyboxPath);
         void                        Release(const Main& main);
+
+        void                        LoadScene(const Main& main, std::string&& filename);
 
         void                        UpdateUniformDatas(const glm::mat4& view, const glm::mat4& perspective, const glm::vec3& cameraPos, const glm::vec4& lightDir);
         void                        RecordBuffers(const Main& main);
@@ -41,12 +44,16 @@ namespace Vk {
         void                        OnUniformBufferSets(uint32_t currentBuffer);
 
     private:
-        void                        LoadScene(const Main& main, std::string&& filename);
+        void                        InitializeUniformBuffers(const Main& main);
         void                        CreateDescriptorPool(const Main& main);
-        void                        CreateAndSetupSceneDescriptorSet(const Main& main);
-        void                        CreateAndSetupMaterialDescriptorSet(const Main& main);
-        void                        CreateAndSetupNodeDescriptorSet(const Main& main);
+        void                        CreateSceneDescriptorLayout(const Main& main);
+        void                        CreateMaterialDescriptorLayout(const Main& main);
+        void                        CreateNodeDescriptorLayout(const Main& main);
         void                        CreatePipelines(const Main& main);
+
+        void                        SetupSceneDescriptorSet(const Main& main);
+        void                        SetupMaterialDescriptorSet(const Main& main);
+        void                        SetupNodeDescriptorSet(const Main& main);
 
         CubeMap                     _cubeMap;
         Model                       _scene;

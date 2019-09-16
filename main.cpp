@@ -17,7 +17,9 @@ int32_t APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int32_t) {
     Vk::GetSettings().validation = true;
 #endif
 
-    Vk::Initialize();
+    if(false == Vk::Initialize()) {
+        return 0;
+    }
 
     Vk::Win win;
     win.SetupWindow(Vk::GetSettings(), instance, WndProc);
