@@ -30,7 +30,7 @@ namespace Vk {
     std::vector<VkDescriptorSet>    skyboxDescSets;
     VkPipeline                      skyboxPipeline = VK_NULL_HANDLE;
 
-    void LoadSkybox(Main& main, std::string&& filename) {
+    void LoadSkybox(const Main& main, std::string&& filename) {
         // model
         skybox.destroy(main.GetDevice());
         skybox.loadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
@@ -42,7 +42,7 @@ namespace Vk {
         }
     }
 
-    TextureCubeMap GenerateCubeMap(float& prefilteredCubeMipLevels, TextureCubeMap& environmentCube, Main& main, CubeMapTarget target) {
+    TextureCubeMap GenerateCubeMap(float& prefilteredCubeMipLevels, TextureCubeMap& environmentCube, const Main& main, CubeMapTarget target) {
         VkFormat format = VK_FORMAT_UNDEFINED;
         int32_t dim = 0;
 
@@ -491,17 +491,17 @@ namespace Vk {
                 vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
                 vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelinelayout, 0, 1, &descriptorset, 0, NULL);
 
-                VkDeviceSize offsets[1] = { 0 };
+                //VkDeviceSize offsets[1] = { 0 };
 
                 skybox.draw(cmdBuf);
 
                 vkCmdEndRenderPass(cmdBuf);
 
-                VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-                subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                subresourceRange.baseMipLevel = 0;
-                subresourceRange.levelCount = numMips;
-                subresourceRange.layerCount = 6;
+                //VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+                //subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                //subresourceRange.baseMipLevel = 0;
+                //subresourceRange.levelCount = numMips;
+                //subresourceRange.layerCount = 6;
 
                 {
                     VkImageMemoryBarrier imageMemoryBarrier{};
@@ -594,7 +594,7 @@ namespace Vk {
         return cubemap;
     }
 
-    bool CubeMap::Initialize(Main& main, const std::string& assetpath) {
+    bool CubeMap::Initialize(const Main& main, const std::string& assetpath) {
         LoadSkybox(main, assetpath + "models/Box/glTF-Embedded/Box.gltf");
 
         _environmentCube.loadFromFile(assetpath + "environments/papermill.ktx", VK_FORMAT_R16G16B16A16_SFLOAT, &main.GetVulkanDevice(), main.GetGPUQueue());
@@ -626,7 +626,7 @@ namespace Vk {
         skybox.destroy(device);
     }
 
-    void CubeMap::CreateAndSetupSkyboxDescriptorSet(Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout) {
+    void CubeMap::CreateAndSetupSkyboxDescriptorSet(const Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout) {
         VkDevice device = main.GetDevice();
 
         const auto imageCount = main.GetVulkanSwapChain().imageCount;
@@ -667,7 +667,7 @@ namespace Vk {
         }
     }
 
-    void CubeMap::PrepareSkyboxPipeline(Main & main, VkGraphicsPipelineCreateInfo & info) {
+    void CubeMap::PrepareSkyboxPipeline(const Main & main, VkGraphicsPipelineCreateInfo & info) {
         VkDevice device = main.GetDevice();
         VkPipelineCache pipelineCache = main.GetPipelineCache();
 

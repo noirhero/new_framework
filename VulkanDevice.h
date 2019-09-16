@@ -41,14 +41,14 @@ namespace Vk
 		* Get the index of a memory type that has all the requested property bits set
 		*
 		* @param typeBits Bitmask with bits set for each memory type supported by the resource to request for (from VkMemoryRequirements)
-		* @param properties Bitmask of properties for the memory type to request
+		* @param inProperties Bitmask of inProperties for the memory type to request
 		* @param (Optional) memTypeFound Pointer to a bool that is set to true if a matching memory type has been found
 		*
 		* @return Index of the requested memory type
 		*
-		* @throw Throws an exception if memTypeFound is null and no memory type could be found that supports the requested properties
+		* @throw Throws an exception if memTypeFound is null and no memory type could be found that supports the requested inProperties
 		*/
-		uint32_t getMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound = nullptr);
+		uint32_t getMemoryType(uint32_t typeBits, VkMemoryPropertyFlags inProperties, VkBool32 *memTypeFound = nullptr);
 
 		/**
 		* Get the index of a queue family that supports the requested queue flags
@@ -64,12 +64,12 @@ namespace Vk
 		/**
 		* Create the logical device based on the assigned physical device, also gets default queue family indices
 		*
-		* @param enabledFeatures Can be used to enable certain features upon device creation
+		* @param inEnabledFeatures Can be used to enable certain features upon device creation
 		* @param requestedQueueTypes Bit flags specifying the queue types to be requested from the device
 		*
 		* @return VkResult of the device creation call
 		*/
-		VkResult createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures, std::vector<const char*> enabledExtensions, VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+		VkResult createLogicalDevice(VkPhysicalDeviceFeatures inEnabledFeatures, std::vector<const char*> enabledExtensions, VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
 		/**
 		* Create a buffer on the device

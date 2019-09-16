@@ -47,14 +47,14 @@ namespace Vk {
         }
     }
 
-    void LoadEmptyTexture(Main& main, std::string&& filename) {
+    void LoadEmptyTexture(const Main& main, std::string&& filename) {
         if (VK_NULL_HANDLE != empty.image)
             empty.destroy();
 
         empty.loadFromFile(filename, VK_FORMAT_R8G8B8A8_UNORM, &main.GetVulkanDevice(), main.GetGPUQueue());
     }
 
-    void GenerateBRDFLUT(Main& main) {
+    void GenerateBRDFLUT(const Main& main) {
         if (VK_NULL_HANDLE != lutBrdf.image)
             lutBrdf.destroy();
 
@@ -154,7 +154,7 @@ namespace Vk {
         }
     }
 
-    void Scene::CreateDescriptorPool(Main& main) {
+    void Scene::CreateDescriptorPool(const Main& main) {
         uint32_t imageSamplerCount = 0;
         uint32_t materialCount = 0;
         uint32_t meshCount = 0;
@@ -164,12 +164,12 @@ namespace Vk {
 
         const std::vector<Model*> modellist = { &_cubeMap.GetSkybox(), &_scene };
         for (auto& model : modellist) {
-            for (auto& material : model->materials) {
-                imageSamplerCount += 5;
-                materialCount++;
-            }
+            const auto inModelMaterialCount = static_cast<uint32_t>(model->materials.size());
+            imageSamplerCount += inModelMaterialCount * 5;
+            materialCount += inModelMaterialCount;
+
             for (auto node : model->linearNodes) {
-                if (node->mesh) {
+                if (nullptr != node->mesh) {
                     meshCount++;
                 }
             }
@@ -190,11 +190,10 @@ namespace Vk {
         VK_CHECK_RESULT(vkCreateDescriptorPool(main.GetDevice(), &descriptorPoolCI, nullptr, &_descriptorPool));
     }
 
-    void Scene::CreateAndSetupSceneDescriptorSet(Main& main) {
+    void Scene::CreateAndSetupSceneDescriptorSet(const Main& main) {
         auto device = main.GetDevice();
 
-        const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings =
-        {
+        const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
             { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
             { 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
             { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
@@ -209,7 +208,7 @@ namespace Vk {
         VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &_sceneDescLayout));
 
         _sceneDescSets.resize(main.GetVulkanSwapChain().imageCount);
-        for (auto i = 0; i < _sceneDescSets.size(); ++i) {
+        for (decltype(_sceneDescSets.size()) i = 0; i < _sceneDescSets.size(); ++i) {
             VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
             descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             descriptorSetAllocInfo.descriptorPool = _descriptorPool;
@@ -258,7 +257,7 @@ namespace Vk {
         }
     }
 
-    void Scene::CreateAndSetupMaterialDescriptorSet(Main & main) {
+    void Scene::CreateAndSetupMaterialDescriptorSet(const Main & main) {
         auto device = main.GetDevice();
 
         const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings =
@@ -327,7 +326,7 @@ namespace Vk {
         }
     }
 
-    void Scene::CreateAndSetupNodeDescriptorSet(Main& main) {
+    void Scene::CreateAndSetupNodeDescriptorSet(const Main& main) {
         const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings =
         {
             { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr },
@@ -351,7 +350,7 @@ namespace Vk {
             SetupNodeDescriptorSet(*node, main.GetDevice(), descriptorSetAllocInfo);
     }
 
-    void Scene::CreatePipelines(Main& main) {
+    void Scene::CreatePipelines(const Main& main) {
         VkDevice device = main.GetDevice();
         VkRenderPass renderPass = main.GetRenderPass();
         VkPipelineCache pipelineCache = main.GetPipelineCache();
@@ -485,7 +484,7 @@ namespace Vk {
             vkDestroyShaderModule(device, shaderStage.module, nullptr);
     }
 
-    void Scene::LoadScene(Main& main, std::string&& filename) {
+    void Scene::LoadScene(const Main& main, std::string&& filename) {
         const auto tStart = std::chrono::high_resolution_clock::now();
 
         auto* vulkanDevice = &main.GetVulkanDevice();
@@ -508,7 +507,7 @@ namespace Vk {
             uniformBuffer.create(vulkanDevice, uniBufUsagFlags, uniBufMemPropertyFlags, sizeof(UniformData));
     }
 
-    bool Scene::Initialize(Main& main) {
+    bool Scene::Initialize(const Main& main) {
         CheckToDataPath();
 
         LoadEmptyTexture(main, assetpath + "textures/empty.ktx");
@@ -583,7 +582,7 @@ namespace Vk {
         _cubeMap.UpdateSkyboxUniformData(view, perspective);
     }
 
-    void Scene::RecordBuffers(Main& main, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers) {
+    void Scene::RecordBuffers(const Main& main, const CommandBuffer& cmdBuffers, const FrameBuffer& frameBuffers) {
         const Settings& settings = main.GetSettings();
 
         VkCommandBufferBeginInfo cmdBufferBeginInfo{};
@@ -631,9 +630,9 @@ namespace Vk {
 
             VkDeviceSize offsets[1] = { 0 };
 
-            if (true == displayBackground) {
+            //if (true == displayBackground) {
                 _cubeMap.RenderSkybox(i, currentCB, _pipelineLayout);
-            }
+            //}
 
             vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _opaquePipeline);
 

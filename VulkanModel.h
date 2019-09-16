@@ -19,12 +19,12 @@ namespace Vk
 
 	struct BoundingBox
 	{
-		glm::vec3 min = { 0.0f, 0.0f, 0.0f };
-		glm::vec3 max = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 _min = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 _max = { 0.0f, 0.0f, 0.0f };
 		bool valid = false;
 
 		BoundingBox() {};
-		BoundingBox(glm::vec3 min, glm::vec3 max) : min(min), max(max) {}
+		BoundingBox(glm::vec3 min, glm::vec3 max) : _min(min), _max(max) {}
 
 		BoundingBox getAABB(glm::mat4 m);
 	};
@@ -65,7 +65,7 @@ namespace Vk
 			Load a texture from a glTF image (stored as vector of chars loaded via stb_image)
 			Also generates the mip chain as glTF images are stored as jpg or png without any mips
 		*/
-		void fromglTfImage(tinygltf::Image &gltfimage, TextureSampler textureSampler, Vk::VulkanDevice *device, VkQueue copyQueue);
+		void fromglTfImage(tinygltf::Image &gltfimage, TextureSampler textureSampler, Vk::VulkanDevice *inDevice, VkQueue copyQueue);
 	};
 
 	/*
@@ -129,8 +129,8 @@ namespace Vk
 
 		void setBoundingBox(glm::vec3 min, glm::vec3 max)
 		{
-			bb.min = min;
-			bb.max = max;
+			bb._min = min;
+			bb._max = max;
 			bb.valid = true;
 		}
 	};
@@ -168,8 +168,8 @@ namespace Vk
 
 		void setBoundingBox(glm::vec3 min, glm::vec3 max)
 		{
-			bb.min = min;
-			bb.max = max;
+			bb._min = min;
+			bb._max = max;
 			bb.valid = true;
 		}
 	};
@@ -295,16 +295,16 @@ namespace Vk
 			glm::vec3 max = glm::vec3(-FLT_MAX);
 		} dimensions;
 
-		void destroy(VkDevice device);
+		void destroy(VkDevice inDevice);
 		void loadNode(Node *parent, const tinygltf::Node &node, uint32_t nodeIndex, const tinygltf::Model &model, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer, float globalscale);
 		void loadSkins(tinygltf::Model &gltfModel);
-		void loadTextures(tinygltf::Model &gltfModel, Vk::VulkanDevice *device, VkQueue transferQueue);
+		void loadTextures(tinygltf::Model &gltfModel, Vk::VulkanDevice *inDevice, VkQueue transferQueue);
 		VkSamplerAddressMode getVkWrapMode(int32_t wrapMode);
 		VkFilter getVkFilterMode(int32_t filterMode);
 		void loadTextureSamplers(tinygltf::Model &gltfModel);
 		void loadMaterials(tinygltf::Model &gltfModel);
 		void loadAnimations(tinygltf::Model &gltfModel);
-		void loadFromFile(std::string filename, Vk::VulkanDevice *device, VkQueue transferQueue, float scale = 1.0f);
+		void loadFromFile(std::string filename, Vk::VulkanDevice *inDevice, VkQueue transferQueue, float scale = 1.0f);
 		void drawNode(Node *node, VkCommandBuffer commandBuffer);
 		void draw(VkCommandBuffer commandBuffer);
 		void calculateBoundingBox(Node *node, Node *parent);

@@ -16,7 +16,7 @@ namespace Vk {
         int32_t count = 0;
         void* mapped = nullptr;
 
-        void create(VulkanDevice* device, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, bool map = true);
+        void create(VulkanDevice* inDevice, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, bool map = true);
         void destroy();
         void map();
         void unmap();

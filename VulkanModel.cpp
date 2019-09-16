@@ -3,11 +3,13 @@
 #include "stdafx.h"
 #include "VulkanModel.h"
 
+#pragma warning(disable : 4100)
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MSC_SECURE_CRT
 #include <tinygltf/tiny_gltf.h>
+#pragma warning(default : 4100)
 
 // ERROR is already defined in wingdi.h and collides with a define in the Draco headers
 #if defined(_WIN32) && defined(ERROR) && defined(TINYGLTF_ENABLE_DRACO) 
@@ -28,20 +30,20 @@ namespace Vk
 		glm::vec3 v0, v1;
 
 		glm::vec3 right = glm::vec3(m[0]);
-		v0 = right * this->min.x;
-		v1 = right * this->max.x;
+		v0 = right * this->_min.x;
+		v1 = right * this->_max.x;
 		min += glm::min(v0, v1);
 		max += glm::max(v0, v1);
 
 		glm::vec3 up = glm::vec3(m[1]);
-		v0 = up * this->min.y;
-		v1 = up * this->max.y;
+		v0 = up * this->_min.y;
+		v1 = up * this->_max.y;
 		min += glm::min(v0, v1);
 		max += glm::max(v0, v1);
 
 		glm::vec3 back = glm::vec3(m[2]);
-		v0 = back * this->min.z;
-		v1 = back * this->max.z;
+		v0 = back * this->_min.z;
+		v1 = back * this->_max.z;
 		min += glm::min(v0, v1);
 		max += glm::max(v0, v1);
 
@@ -64,9 +66,9 @@ namespace Vk
 		vkDestroySampler(device->logicalDevice, sampler, nullptr);
 	}
 
-	void ModelTexture::fromglTfImage(tinygltf::Image &gltfimage, TextureSampler textureSampler, Vk::VulkanDevice *device, VkQueue copyQueue)
+	void ModelTexture::fromglTfImage(tinygltf::Image &gltfimage, TextureSampler textureSampler, Vk::VulkanDevice *inDevice, VkQueue copyQueue)
 	{
-		this->device = device;
+		this->device = inDevice;
 
 		unsigned char* buffer = nullptr;
 		VkDeviceSize bufferSize = 0;
@@ -100,7 +102,7 @@ namespace Vk
 		height = gltfimage.height;
 		mipLevels = static_cast<uint32_t>(floor(log2(std::max(width, height))) + 1.0);
 
-		vkGetPhysicalDeviceFormatProperties(device->physicalDevice, format, &formatProperties);
+		vkGetPhysicalDeviceFormatProperties(inDevice->physicalDevice, format, &formatProperties);
 		assert(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT);
 		assert(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT);
 
@@ -116,17 +118,17 @@ namespace Vk
 		bufferCreateInfo.size = bufferSize;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		VK_CHECK_RESULT(vkCreateBuffer(device->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
-		vkGetBufferMemoryRequirements(device->logicalDevice, stagingBuffer, &memReqs);
+		VK_CHECK_RESULT(vkCreateBuffer(inDevice->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
+		vkGetBufferMemoryRequirements(inDevice->logicalDevice, stagingBuffer, &memReqs);
 		memAllocInfo.allocationSize = memReqs.size;
-		memAllocInfo.memoryTypeIndex = device->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		VK_CHECK_RESULT(vkAllocateMemory(device->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
-		VK_CHECK_RESULT(vkBindBufferMemory(device->logicalDevice, stagingBuffer, stagingMemory, 0));
+		memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		VK_CHECK_RESULT(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
+		VK_CHECK_RESULT(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
 
 		uint8_t *data;
-		VK_CHECK_RESULT(vkMapMemory(device->logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data));
+		VK_CHECK_RESULT(vkMapMemory(inDevice->logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data));
 		memcpy(data, buffer, bufferSize);
-		vkUnmapMemory(device->logicalDevice, stagingMemory);
+		vkUnmapMemory(inDevice->logicalDevice, stagingMemory);
 
 		VkImageCreateInfo imageCreateInfo{};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -141,14 +143,14 @@ namespace Vk
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageCreateInfo.extent = { width, height, 1 };
 		imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		VK_CHECK_RESULT(vkCreateImage(device->logicalDevice, &imageCreateInfo, nullptr, &image));
-		vkGetImageMemoryRequirements(device->logicalDevice, image, &memReqs);
+		VK_CHECK_RESULT(vkCreateImage(inDevice->logicalDevice, &imageCreateInfo, nullptr, &image));
+		vkGetImageMemoryRequirements(inDevice->logicalDevice, image, &memReqs);
 		memAllocInfo.allocationSize = memReqs.size;
-		memAllocInfo.memoryTypeIndex = device->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		VK_CHECK_RESULT(vkAllocateMemory(device->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
-		VK_CHECK_RESULT(vkBindImageMemory(device->logicalDevice, image, deviceMemory, 0));
+		memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		VK_CHECK_RESULT(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
+		VK_CHECK_RESULT(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
 
-		VkCommandBuffer copyCmd = device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		VkCommandBuffer copyCmd = inDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
 		VkImageSubresourceRange subresourceRange = {};
 		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -190,13 +192,13 @@ namespace Vk
 			vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 		}
 
-		device->flushCommandBuffer(copyCmd, copyQueue, true);
+		inDevice->flushCommandBuffer(copyCmd, copyQueue, true);
 
-		vkFreeMemory(device->logicalDevice, stagingMemory, nullptr);
-		vkDestroyBuffer(device->logicalDevice, stagingBuffer, nullptr);
+		vkFreeMemory(inDevice->logicalDevice, stagingMemory, nullptr);
+		vkDestroyBuffer(inDevice->logicalDevice, stagingBuffer, nullptr);
 
 		// Generate the mip chain (glTF uses jpg and png, so we need to create this manually)
-		VkCommandBuffer blitCmd = device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		VkCommandBuffer blitCmd = inDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 		for (uint32_t i = 1; i < mipLevels; i++) {
 			VkImageBlit imageBlit{};
 
@@ -262,7 +264,7 @@ namespace Vk
 			vkCmdPipelineBarrier(blitCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 		}
 
-		device->flushCommandBuffer(blitCmd, copyQueue, true);
+		inDevice->flushCommandBuffer(blitCmd, copyQueue, true);
 
 		VkSamplerCreateInfo samplerInfo{};
 		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -279,7 +281,7 @@ namespace Vk
 		samplerInfo.maxLod = (float)mipLevels;
 		samplerInfo.maxAnisotropy = 8.0f;
 		samplerInfo.anisotropyEnable = VK_TRUE;
-		VK_CHECK_RESULT(vkCreateSampler(device->logicalDevice, &samplerInfo, nullptr, &sampler));
+		VK_CHECK_RESULT(vkCreateSampler(inDevice->logicalDevice, &samplerInfo, nullptr, &sampler));
 
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -290,7 +292,7 @@ namespace Vk
 		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		viewInfo.subresourceRange.layerCount = 1;
 		viewInfo.subresourceRange.levelCount = mipLevels;
-		VK_CHECK_RESULT(vkCreateImageView(device->logicalDevice, &viewInfo, nullptr, &view));
+		VK_CHECK_RESULT(vkCreateImageView(inDevice->logicalDevice, &viewInfo, nullptr, &view));
 
 		descriptor.sampler = sampler;
 		descriptor.imageView = view;
@@ -381,15 +383,15 @@ namespace Vk
 	}
 
 	// Model
-	void Model::destroy(VkDevice device)
+	void Model::destroy(VkDevice inDevice)
 	{
 		if (vertices.buffer != VK_NULL_HANDLE) {
-			vkDestroyBuffer(device, vertices.buffer, nullptr);
-			vkFreeMemory(device, vertices.memory, nullptr);
+			vkDestroyBuffer(inDevice, vertices.buffer, nullptr);
+			vkFreeMemory(inDevice, vertices.memory, nullptr);
 		}
 		if (indices.buffer != VK_NULL_HANDLE) {
-			vkDestroyBuffer(device, indices.buffer, nullptr);
-			vkFreeMemory(device, indices.memory, nullptr);
+			vkDestroyBuffer(inDevice, indices.buffer, nullptr);
+			vkFreeMemory(inDevice, indices.memory, nullptr);
 		}
 		for (auto texture : textures) {
 			texture.destroy();
@@ -568,8 +570,8 @@ namespace Vk
 					newMesh->bb = p->bb;
 					newMesh->bb.valid = true;
 				}
-				newMesh->bb.min = glm::min(newMesh->bb.min, p->bb.min);
-				newMesh->bb.max = glm::max(newMesh->bb.max, p->bb.max);
+				newMesh->bb._min = glm::min(newMesh->bb._min, p->bb._min);
+				newMesh->bb._max = glm::max(newMesh->bb._max, p->bb._max);
 			}
 			newNode->mesh = newMesh;
 		}
@@ -614,7 +616,7 @@ namespace Vk
 		}
 	}
 
-	void Model::loadTextures(tinygltf::Model &gltfModel, Vk::VulkanDevice *device, VkQueue transferQueue)
+	void Model::loadTextures(tinygltf::Model &gltfModel, Vk::VulkanDevice *inDevice, VkQueue transferQueue)
 	{
 		for (tinygltf::Texture &tex : gltfModel.textures) {
 			tinygltf::Image image = gltfModel.images[tex.source];
@@ -631,7 +633,7 @@ namespace Vk
 				textureSampler = textureSamplers[tex.sampler];
 			}
 			ModelTexture texture;
-			texture.fromglTfImage(image, textureSampler, device, transferQueue);
+			texture.fromglTfImage(image, textureSampler, inDevice, transferQueue);
 			textures.push_back(texture);
 		}
 	}
@@ -689,11 +691,11 @@ namespace Vk
 			Material material{};
 			if (mat.values.find("baseColorTexture") != mat.values.end()) {
 				material.baseColorTexture = &textures[mat.values["baseColorTexture"].TextureIndex()];
-				material.texCoordSets.baseColor = mat.values["baseColorTexture"].TextureTexCoord();
+				material.texCoordSets.baseColor = static_cast<uint8_t>(mat.values["baseColorTexture"].TextureTexCoord());
 			}
 			if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
 				material.metallicRoughnessTexture = &textures[mat.values["metallicRoughnessTexture"].TextureIndex()];
-				material.texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord();
+				material.texCoordSets.metallicRoughness = static_cast<uint8_t>(mat.values["metallicRoughnessTexture"].TextureTexCoord());
 			}
 			if (mat.values.find("roughnessFactor") != mat.values.end()) {
 				material.roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
@@ -706,15 +708,15 @@ namespace Vk
 			}
 			if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
 				material.normalTexture = &textures[mat.additionalValues["normalTexture"].TextureIndex()];
-				material.texCoordSets.normal = mat.additionalValues["normalTexture"].TextureTexCoord();
+				material.texCoordSets.normal = static_cast<uint8_t>(mat.additionalValues["normalTexture"].TextureTexCoord());
 			}
 			if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
 				material.emissiveTexture = &textures[mat.additionalValues["emissiveTexture"].TextureIndex()];
-				material.texCoordSets.emissive = mat.additionalValues["emissiveTexture"].TextureTexCoord();
+				material.texCoordSets.emissive = static_cast<uint8_t>(mat.additionalValues["emissiveTexture"].TextureTexCoord());
 			}
 			if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
 				material.occlusionTexture = &textures[mat.additionalValues["occlusionTexture"].TextureIndex()];
-				material.texCoordSets.occlusion = mat.additionalValues["occlusionTexture"].TextureTexCoord();
+				material.texCoordSets.occlusion = static_cast<uint8_t>(mat.additionalValues["occlusionTexture"].TextureTexCoord());
 			}
 			if (mat.additionalValues.find("alphaMode") != mat.additionalValues.end()) {
 				tinygltf::Parameter param = mat.additionalValues["alphaMode"];
@@ -742,7 +744,7 @@ namespace Vk
 					auto index = ext->second.Get("specularGlossinessTexture").Get("index");
 					material.extension.specularGlossinessTexture = &textures[index.Get<int>()];
 					auto texCoordSet = ext->second.Get("specularGlossinessTexture").Get("texCoord");
-					material.texCoordSets.specularGlossiness = texCoordSet.Get<int>();
+					material.texCoordSets.specularGlossiness = static_cast<uint8_t>(texCoordSet.Get<int>());
 					material.pbrWorkflows.specularGlossiness = true;
 				}
 				if (ext->second.Has("diffuseTexture")) {
@@ -883,14 +885,14 @@ namespace Vk
 		}
 	}
 
-	void Model::loadFromFile(std::string filename, Vk::VulkanDevice *device, VkQueue transferQueue, float scale)
+	void Model::loadFromFile(std::string filename, Vk::VulkanDevice *inDevice, VkQueue transferQueue, float scale)
 	{
 		tinygltf::Model gltfModel;
 		tinygltf::TinyGLTF gltfContext;
 		std::string error;
 		std::string warning;
 
-		this->device = device;
+		this->device = inDevice;
 
 		bool binary = false;
 		size_t extpos = filename.rfind('.', filename.length());
@@ -905,7 +907,7 @@ namespace Vk
 
 		if (fileLoaded) {
 			loadTextureSamplers(gltfModel);
-			loadTextures(gltfModel, device, transferQueue);
+			loadTextures(gltfModel, inDevice, transferQueue);
 			loadMaterials(gltfModel);
 			// TODO: scene handling with no default scene
 			const tinygltf::Scene &scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
@@ -944,13 +946,13 @@ namespace Vk
 		assert(vertexBufferSize > 0);
 
 		struct StagingBuffer {
-			VkBuffer buffer;
-			VkDeviceMemory memory;
+			VkBuffer buffer = VK_NULL_HANDLE;
+			VkDeviceMemory memory = VK_NULL_HANDLE;
 		} vertexStaging, indexStaging;
 
 		// Create staging buffers
 		// Vertex data
-		VK_CHECK_RESULT(device->createBuffer(
+		VK_CHECK_RESULT(inDevice->createBuffer(
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			vertexBufferSize,
@@ -959,7 +961,7 @@ namespace Vk
 			vertexBuffer.data()));
 		// Index data
 		if (indexBufferSize > 0) {
-			VK_CHECK_RESULT(device->createBuffer(
+			VK_CHECK_RESULT(inDevice->createBuffer(
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				indexBufferSize,
@@ -968,9 +970,9 @@ namespace Vk
 				indexBuffer.data()));
 		}
 
-		// Create device local buffers
+		// Create inDevice local buffers
 		// Vertex buffer
-		VK_CHECK_RESULT(device->createBuffer(
+		VK_CHECK_RESULT(inDevice->createBuffer(
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			vertexBufferSize,
@@ -978,7 +980,7 @@ namespace Vk
 			&vertices.memory));
 		// Index buffer
 		if (indexBufferSize > 0) {
-			VK_CHECK_RESULT(device->createBuffer(
+			VK_CHECK_RESULT(inDevice->createBuffer(
 				VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				indexBufferSize,
@@ -987,7 +989,7 @@ namespace Vk
 		}
 
 		// Copy from staging buffers
-		VkCommandBuffer copyCmd = device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+		VkCommandBuffer copyCmd = inDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
 		VkBufferCopy copyRegion = {};
 
@@ -999,13 +1001,13 @@ namespace Vk
 			vkCmdCopyBuffer(copyCmd, indexStaging.buffer, indices.buffer, 1, &copyRegion);
 		}
 
-		device->flushCommandBuffer(copyCmd, transferQueue, true);
+		inDevice->flushCommandBuffer(copyCmd, transferQueue, true);
 
-		vkDestroyBuffer(device->logicalDevice, vertexStaging.buffer, nullptr);
-		vkFreeMemory(device->logicalDevice, vertexStaging.memory, nullptr);
+		vkDestroyBuffer(inDevice->logicalDevice, vertexStaging.buffer, nullptr);
+		vkFreeMemory(inDevice->logicalDevice, vertexStaging.memory, nullptr);
 		if (indexBufferSize > 0) {
-			vkDestroyBuffer(device->logicalDevice, indexStaging.buffer, nullptr);
-			vkFreeMemory(device->logicalDevice, indexStaging.memory, nullptr);
+			vkDestroyBuffer(inDevice->logicalDevice, indexStaging.buffer, nullptr);
+			vkFreeMemory(inDevice->logicalDevice, indexStaging.memory, nullptr);
 		}
 
 		getSceneDimensions();
@@ -1041,15 +1043,15 @@ namespace Vk
 			if (node->mesh->bb.valid) {
 				node->aabb = node->mesh->bb.getAABB(node->getMatrix());
 				if (node->children.size() == 0) {
-					node->bvh.min = node->aabb.min;
-					node->bvh.max = node->aabb.max;
+					node->bvh._min = node->aabb._min;
+					node->bvh._max = node->aabb._max;
 					node->bvh.valid = true;
 				}
 			}
 		}
 
-		parentBvh.min = glm::min(parentBvh.min, node->bvh.min);
-		parentBvh.max = glm::min(parentBvh.max, node->bvh.max);
+		parentBvh._min = glm::min(parentBvh._min, node->bvh._min);
+		parentBvh._max = glm::min(parentBvh._max, node->bvh._max);
 
 		for (auto &child : node->children) {
 			calculateBoundingBox(child, node);
@@ -1068,8 +1070,8 @@ namespace Vk
 
 		for (auto node : linearNodes) {
 			if (node->bvh.valid) {
-				dimensions.min = glm::min(dimensions.min, node->bvh.min);
-				dimensions.max = glm::max(dimensions.max, node->bvh.max);
+				dimensions.min = glm::min(dimensions.min, node->bvh._min);
+				dimensions.max = glm::max(dimensions.max, node->bvh._max);
 			}
 		}
 

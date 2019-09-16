@@ -43,14 +43,14 @@ namespace Vk
 		void initSurface(void* platformHandle, void* platformWindow);
 
 		/**
-		* Set instance, physical and logical device to use for the swapchain and get all required function pointers
+		* Set inInstance, physical and logical inDevice to use for the swapchain and get all required function pointers
 		*
-		* @param instance Vulkan instance to use
-		* @param physicalDevice Physical device used to query properties and formats relevant to the swapchain
-		* @param device Logical representation of the device to create the swapchain for
+		* @param inInstance Vulkan inInstance to use
+		* @param inPhysicalDevice Physical inDevice used to query properties and formats relevant to the swapchain
+		* @param inDevice Logical representation of the inDevice to create the swapchain for
 		*
 		*/
-		void connect(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device);
+		void connect(VkInstance inInstance, VkPhysicalDevice inPhysicalDevice, VkDevice inDevice);
 
 		/**
 		* Create the swapchain and get it's images with given width and height

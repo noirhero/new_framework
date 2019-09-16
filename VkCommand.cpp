@@ -49,7 +49,7 @@ namespace Vk
 
 	void CommandBuffer::Release(VkDevice device, VkCommandPool cmdPool)
 	{
-		const uint32_t count = static_cast<uint32_t>(_cmdBufs.size());
+		const auto count = static_cast<uint32_t>(_cmdBufs.size());
 		if (0 == count)
 			return;
 
@@ -247,12 +247,11 @@ namespace Vk
 
 	void FrameBuffer::Release(VkDevice device)
 	{
-		for (uint32_t i = 0; i < _frameBufs.size(); i++)
+		for (decltype(_frameBufs.size()) i = 0; i < _frameBufs.size(); i++)
 			vkDestroyFramebuffer(device, _frameBufs[i], nullptr);
 		_frameBufs.clear();
 
-		const auto deleteFn = [device](VkImage image, VkImageView view, VkDeviceMemory memory)
-		{
+		const auto deleteFn = [device](VkImage image, VkImageView view, VkDeviceMemory memory) {
 			if(VK_NULL_HANDLE != memory)
 				vkFreeMemory(device, memory, nullptr);
 

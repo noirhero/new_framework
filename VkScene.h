@@ -32,21 +32,21 @@ namespace Vk {
 
     class Scene {
     public:
-        bool                        Initialize(Main& main);
+        bool                        Initialize(const Main& main);
         void                        Release(VkDevice device);
 
         void                        UpdateUniformDatas(const glm::mat4& view, const glm::mat4& perspective, const glm::vec3& cameraPos, const glm::vec4& lightDir);
-        void                        RecordBuffers(Main& main, CommandBuffer& cmdBuffers, FrameBuffer& frameBuffers);
+        void                        RecordBuffers(const Main& main, const CommandBuffer& cmdBuffers, const FrameBuffer& frameBuffers);
 
         void                        OnUniformBufferSets(uint32_t currentBuffer);
 
     private:
-        void                        LoadScene(Main& main, std::string&& filename);
-        void                        CreateDescriptorPool(Main& main);
-        void                        CreateAndSetupSceneDescriptorSet(Main& main);
-        void                        CreateAndSetupMaterialDescriptorSet(Main& main);
-        void                        CreateAndSetupNodeDescriptorSet(Main& main);
-        void                        CreatePipelines(Main& main);
+        void                        LoadScene(const Main& main, std::string&& filename);
+        void                        CreateDescriptorPool(const Main& main);
+        void                        CreateAndSetupSceneDescriptorSet(const Main& main);
+        void                        CreateAndSetupMaterialDescriptorSet(const Main& main);
+        void                        CreateAndSetupNodeDescriptorSet(const Main& main);
+        void                        CreatePipelines(const Main& main);
 
         CubeMap                     _cubeMap;
         Model                       _scene;

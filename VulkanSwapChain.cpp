@@ -139,20 +139,20 @@ namespace Vk
 
 	}
 
-	void VulkanSwapChain::connect(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device)
+	void VulkanSwapChain::connect(VkInstance inInstance, VkPhysicalDevice inPhysicalDevice, VkDevice inDevice)
 	{
-		this->instance = instance;
-		this->physicalDevice = physicalDevice;
-		this->device = device;
-		GET_INSTANCE_PROC_ADDR(instance, GetPhysicalDeviceSurfaceSupportKHR);
-		GET_INSTANCE_PROC_ADDR(instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
-		GET_INSTANCE_PROC_ADDR(instance, GetPhysicalDeviceSurfaceFormatsKHR);
-		GET_INSTANCE_PROC_ADDR(instance, GetPhysicalDeviceSurfacePresentModesKHR);
-		GET_DEVICE_PROC_ADDR(device, CreateSwapchainKHR);
-		GET_DEVICE_PROC_ADDR(device, DestroySwapchainKHR);
-		GET_DEVICE_PROC_ADDR(device, GetSwapchainImagesKHR);
-		GET_DEVICE_PROC_ADDR(device, AcquireNextImageKHR);
-		GET_DEVICE_PROC_ADDR(device, QueuePresentKHR);
+		this->instance = inInstance;
+		this->physicalDevice = inPhysicalDevice;
+		this->device = inDevice;
+		GET_INSTANCE_PROC_ADDR(inInstance, GetPhysicalDeviceSurfaceSupportKHR);
+		GET_INSTANCE_PROC_ADDR(inInstance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
+		GET_INSTANCE_PROC_ADDR(inInstance, GetPhysicalDeviceSurfaceFormatsKHR);
+		GET_INSTANCE_PROC_ADDR(inInstance, GetPhysicalDeviceSurfacePresentModesKHR);
+		GET_DEVICE_PROC_ADDR(inDevice, CreateSwapchainKHR);
+		GET_DEVICE_PROC_ADDR(inDevice, DestroySwapchainKHR);
+		GET_DEVICE_PROC_ADDR(inDevice, GetSwapchainImagesKHR);
+		GET_DEVICE_PROC_ADDR(inDevice, AcquireNextImageKHR);
+		GET_DEVICE_PROC_ADDR(inDevice, QueuePresentKHR);
 	}
 
 	void VulkanSwapChain::create(uint32_t *width, uint32_t *height, bool vsync)

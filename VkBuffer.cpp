@@ -8,13 +8,13 @@
 
 namespace Vk
 {
-	void Buffer::create(VulkanDevice *device, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, bool map)
+	void Buffer::create(VulkanDevice *inDevice, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, bool map)
 	{
-		this->device = device->logicalDevice;
-		device->createBuffer(usageFlags, memoryPropertyFlags, size, &buffer, &memory);
+		this->device = inDevice->logicalDevice;
+		inDevice->createBuffer(usageFlags, memoryPropertyFlags, size, &buffer, &memory);
 		descriptor = { buffer, 0, size };
 		if (map) {
-			VK_CHECK_RESULT(vkMapMemory(device->logicalDevice, memory, 0, size, 0, &mapped));
+			VK_CHECK_RESULT(vkMapMemory(inDevice->logicalDevice, memory, 0, size, 0, &mapped));
 		}
 	}
 

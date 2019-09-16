@@ -5,15 +5,13 @@
 #include "VkTexture.h"
 #include "VkBuffer.h"
 
-namespace Vk
-{
+namespace Vk {
     struct Model;
     class Main;
 
-    class CubeMap
-    {
+    class CubeMap {
     public:
-        bool                        Initialize(Main& main, const std::string& assetpath);
+        bool                        Initialize(const Main& main, const std::string& assetpath);
         void                        Release(VkDevice device);
 
         constexpr TextureCubeMap&   GetEnvironment() { return _environmentCube; }
@@ -25,8 +23,8 @@ namespace Vk
         Buffers&                    GetSkyboxUniformBuffers() const;
         VkDescriptorSet*            GetSkyboxDescSets() const;
 
-        void                        CreateAndSetupSkyboxDescriptorSet(Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout);
-        void                        PrepareSkyboxPipeline(Main& main, VkGraphicsPipelineCreateInfo& info);
+        void                        CreateAndSetupSkyboxDescriptorSet(const Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout);
+        void                        PrepareSkyboxPipeline(const Main& main, VkGraphicsPipelineCreateInfo& info);
         void                        UpdateSkyboxUniformData(const glm::mat4& view, const glm::mat4& perspective);
         void                        OnSkyboxUniformBuffrSet(uint32_t currentBuffer);
         void                        RenderSkybox(uint32_t currentBuffer, VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout);

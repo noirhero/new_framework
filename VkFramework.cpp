@@ -231,7 +231,7 @@ namespace Vk {
                 break;
             }
 
-            if (_camera.firstperson) {
+            if (Camera::CameraType::firstperson == _camera.type) {
                 switch (wParam) {
                 case KEY_W:
                     _camera.keys.up = true;
@@ -250,7 +250,7 @@ namespace Vk {
 
             break;
         case WM_KEYUP:
-            if (_camera.firstperson) {
+            if (Camera::CameraType::firstperson == _camera.type) {
                 switch (wParam) {
                 case KEY_W:
                     _camera.keys.up = false;

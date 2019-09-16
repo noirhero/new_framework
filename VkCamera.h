@@ -43,10 +43,10 @@ namespace Vk
 		float getNearClip() const { return znear; }
 		float getFarClip()const { return zfar; }
 
-		void setPerspective(float fov, float aspect, float znear, float zfar);
+		void setPerspective(float inFov, float aspect, float inZNear, float inZFar);
 		void updateAspectRatio(float aspect);
-		void setPosition(glm::vec3 position);
-		void setRotation(glm::vec3 rotation);
+		void setPosition(glm::vec3 inPosition);
+		void setRotation(glm::vec3 inRotation);
 		void rotate(glm::vec3 delta);
 		void setTranslation(glm::vec3 translation);
 		void translate(glm::vec3 delta);

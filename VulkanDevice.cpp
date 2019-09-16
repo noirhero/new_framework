@@ -37,11 +37,11 @@ namespace Vk
 		}
 	}
 
-	uint32_t VulkanDevice::getMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound)
+	uint32_t VulkanDevice::getMemoryType(uint32_t typeBits, VkMemoryPropertyFlags inProperties, VkBool32 *memTypeFound)
 	{
 		for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
 			if ((typeBits & 1) == 1) {
-				if ((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+				if ((memoryProperties.memoryTypes[i].propertyFlags & inProperties) == inProperties) {
 					if (memTypeFound) {
 						*memTypeFound = true;
 					}
@@ -85,7 +85,7 @@ namespace Vk
 		throw std::runtime_error("Could not find a matching queue family index");
 	}
 
-	VkResult VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures, std::vector<const char*> enabledExtensions, VkQueueFlags requestedQueueTypes)
+	VkResult VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures inEnabledFeatures, std::vector<const char*> enabledExtensions, VkQueueFlags requestedQueueTypes)
 	{
 		// Desired queues need to be requested upon logical device creation
 		// Due to differing queue family configurations of Vulkan implementations this can be a bit tricky, especially if the application
@@ -138,7 +138,7 @@ namespace Vk
 		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());;
 		deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-		deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
+		deviceCreateInfo.pEnabledFeatures = &inEnabledFeatures;
 
 		if (deviceExtensions.size() > 0) {
 			deviceCreateInfo.enabledExtensionCount = (uint32_t)deviceExtensions.size();
@@ -151,7 +151,7 @@ namespace Vk
 			commandPool = createCommandPool(queueFamilyIndices.graphics);
 		}
 
-		this->enabledFeatures = enabledFeatures;
+		this->enabledFeatures = inEnabledFeatures;
 
 		return result;
 	}

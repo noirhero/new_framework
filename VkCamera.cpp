@@ -28,12 +28,12 @@ namespace Vk
 		updated = true;
 	}
 
-	void Camera::setPerspective(float fov, float aspect, float znear, float zfar)
+	void Camera::setPerspective(float inFov, float aspect, float inZNear, float inZFar)
 	{
-		this->fov = fov;
-		this->znear = znear;
-		this->zfar = zfar;
-		matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
+		this->fov = inFov;
+		this->znear = inZNear;
+		this->zfar = inZFar;
+		matrices.perspective = glm::perspective(glm::radians(inFov), aspect, inZNear, inZFar);
 	};
 
 	void Camera::updateAspectRatio(float aspect)
@@ -41,15 +41,15 @@ namespace Vk
 		matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
 	}
 
-	void Camera::setPosition(glm::vec3 position)
+	void Camera::setPosition(glm::vec3 inPosition)
 	{
-		this->position = position;
+		this->position = inPosition;
 		updateViewMatrix();
 	}
 
-	void Camera::setRotation(glm::vec3 rotation)
+	void Camera::setRotation(glm::vec3 inRotation)
 	{
-		this->rotation = rotation;
+		this->rotation = inRotation;
 		updateViewMatrix();
 	};
 
