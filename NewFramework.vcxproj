@@ -165,7 +165,6 @@
     <ClInclude Include="VkCamera.h" />
     <ClInclude Include="VkCommand.h" />
     <ClInclude Include="VkDebug.h" />
-    <ClInclude Include="VkGeometry.h" />
     <ClInclude Include="VulkanDevice.h" />
     <ClInclude Include="VkInstance.h" />
     <ClInclude Include="VkMain.h" />
@@ -190,7 +189,6 @@
     <ClCompile Include="VkBuffer.cpp" />
     <ClCompile Include="VkCamera.cpp" />
     <ClCompile Include="VkCubeMap.cpp" />
-    <ClCompile Include="VkGeometry.cpp" />
     <ClCompile Include="VulkanDevice.cpp" />
     <ClCompile Include="VkFramework.cpp" />
     <ClCompile Include="VkCommand.cpp" />
