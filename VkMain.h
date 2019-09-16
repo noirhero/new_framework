@@ -48,8 +48,8 @@ namespace Vk {
         VkRenderPass            GetRenderPass() const { return _renderPass.Get(); }
         VkPipelineCache         GetPipelineCache() const { return _pipelineCache.Get(); }
 
-        const CommandBuffer&          GetCommandBuffer() const { return _cmdBufs; }
-        const FrameBuffer&            GetFrameBuffer() const { return _frameBufs; }
+        const CommandBuffer&    GetCommandBuffer() const { return _cmdBufs; }
+        const FrameBuffer&      GetFrameBuffer() const { return _frameBufs; }
 
     private:
         bool                    InitializePhysicalGroup();

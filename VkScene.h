@@ -33,10 +33,10 @@ namespace Vk {
     class Scene {
     public:
         bool                        Initialize(const Main& main);
-        void                        Release(VkDevice device);
+        void                        Release(const Main& main);
 
         void                        UpdateUniformDatas(const glm::mat4& view, const glm::mat4& perspective, const glm::vec3& cameraPos, const glm::vec4& lightDir);
-        void                        RecordBuffers(const Main& main, const CommandBuffer& cmdBuffers, const FrameBuffer& frameBuffers);
+        void                        RecordBuffers(const Main& main);
 
         void                        OnUniformBufferSets(uint32_t currentBuffer);
 

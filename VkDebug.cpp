@@ -11,7 +11,7 @@ namespace Vk
 		uint64_t /*srcObject*/, size_t /*location*/, int32_t msgCode,
 		const char * layerPrefix, const char * msg, void * /*userData*/)
 	{
-		std::string prefix("");
+		std::string prefix;
 		if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
 			prefix += "ERROR:";
 		};

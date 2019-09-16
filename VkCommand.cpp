@@ -247,8 +247,8 @@ namespace Vk
 
 	void FrameBuffer::Release(VkDevice device)
 	{
-		for (decltype(_frameBufs.size()) i = 0; i < _frameBufs.size(); i++)
-			vkDestroyFramebuffer(device, _frameBufs[i], nullptr);
+		for(auto& frameBuffer : _frameBufs)
+			vkDestroyFramebuffer(device, frameBuffer, nullptr);
 		_frameBufs.clear();
 
 		const auto deleteFn = [device](VkImage image, VkImageView view, VkDeviceMemory memory) {

@@ -2,17 +2,16 @@
 
 #pragma once
 
-namespace Vk
-{
-	struct Settings;
+namespace Vk {
+    struct Settings;
 
-	Settings&	GetSettings();
+    Settings&   GetSettings();
 
-	bool		Initialize();
-	void		Release();
+    bool        Initialize();
+    void        Release();
 
-	void		Prepare(HINSTANCE instance, HWND window);
-	void		RenderLoop(HWND window);
+    void        Prepare(HINSTANCE instance, HWND window);
+    void        RenderLoop(HWND window);
 
-	void		HandleMessage(HWND window, uint32_t msg, WPARAM wParam, LPARAM lParam);
+    void        HandleMessage(HWND window, uint32_t msg, WPARAM wParam, LPARAM lParam);
 }

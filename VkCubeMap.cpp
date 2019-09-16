@@ -143,7 +143,7 @@ namespace Vk {
         subpassDescription.pColorAttachments = &colorReference;
 
         // Use subpass dependencies for layout transitions
-        std::array<VkSubpassDependency, 2> dependencies;
+        std::array<VkSubpassDependency, 2> dependencies{};
         dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
         dependencies[0].dstSubpass = 0;
         dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
@@ -174,10 +174,10 @@ namespace Vk {
 
         // Create offscreen framebuffer
         struct Offscreen {
-            VkImage image;
-            VkImageView view;
-            VkDeviceMemory memory;
-            VkFramebuffer framebuffer;
+            VkImage image = VK_NULL_HANDLE;
+            VkImageView view = VK_NULL_HANDLE;
+            VkDeviceMemory memory = VK_NULL_HANDLE;
+            VkFramebuffer framebuffer = VK_NULL_HANDLE;
         } offscreen;
         {
             // Image

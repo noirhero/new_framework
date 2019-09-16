@@ -176,8 +176,7 @@ namespace Vk {
         }
 
         const auto imageCount = main.GetVulkanSwapChain().imageCount;
-        const std::vector<VkDescriptorPoolSize> poolSizes =
-        {
+        const std::vector<VkDescriptorPoolSize> poolSizes = {
             { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (4 + meshCount) * imageCount },
             { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageSamplerCount * imageCount }
         };
@@ -260,8 +259,7 @@ namespace Vk {
     void Scene::CreateAndSetupMaterialDescriptorSet(const Main & main) {
         auto device = main.GetDevice();
 
-        const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings =
-        {
+        const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
             { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
             { 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
             { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
@@ -285,8 +283,7 @@ namespace Vk {
             descriptorSetAllocInfo.descriptorSetCount = 1;
             VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material.descriptorSet));
 
-            std::vector<VkDescriptorImageInfo> imageDescriptors =
-            {
+            std::vector<VkDescriptorImageInfo> imageDescriptors = {
                 empty.descriptor,
                 empty.descriptor,
                 material.normalTexture ? material.normalTexture->descriptor : empty.descriptor,
@@ -327,8 +324,7 @@ namespace Vk {
     }
 
     void Scene::CreateAndSetupNodeDescriptorSet(const Main& main) {
-        const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings =
-        {
+        const std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
             { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr },
         };
 
@@ -422,8 +418,7 @@ namespace Vk {
 
         // Vertex bindings an attributes
         const VkVertexInputBindingDescription vertexInputBinding = { 0, sizeof(Model::Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
-        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes =
-        {
+        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
             { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 },
             { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float) * 3 },
             { 2, 0, VK_FORMAT_R32G32_SFLOAT, sizeof(float) * 6 },
@@ -457,8 +452,7 @@ namespace Vk {
         _cubeMap.PrepareSkyboxPipeline(main, pipelineCI);
 
         // PBR pipeline
-        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages =
-        {
+        const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {
             loadShader(device, "pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
             loadShader(device, "pbr_khr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
         };
@@ -529,7 +523,11 @@ namespace Vk {
         return true;
     }
 
-    void Scene::Release(VkDevice device) {
+    void Scene::Release(const Main& main) {
+        const auto device = main.GetDevice();
+
+        vkDeviceWaitIdle(device);
+
         vkDestroyPipeline(device, _alphaBlendPipeline, nullptr);
         vkDestroyPipeline(device, _opaquePipeline, nullptr);
 
@@ -582,8 +580,10 @@ namespace Vk {
         _cubeMap.UpdateSkyboxUniformData(view, perspective);
     }
 
-    void Scene::RecordBuffers(const Main& main, const CommandBuffer& cmdBuffers, const FrameBuffer& frameBuffers) {
+    void Scene::RecordBuffers(const Main& main) {
         const Settings& settings = main.GetSettings();
+        const CommandBuffer& cmdBuffers = main.GetCommandBuffer();
+        const FrameBuffer& frameBuffers = main.GetFrameBuffer();
 
         VkCommandBufferBeginInfo cmdBufferBeginInfo{};
         cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -661,6 +661,8 @@ namespace Vk {
             vkCmdEndRenderPass(currentCB);
             VK_CHECK_RESULT(vkEndCommandBuffer(currentCB));
         }
+
+        vkDeviceWaitIdle(main.GetDevice());
     }
 
     void Scene::OnUniformBufferSets(uint32_t currentBuffer) {

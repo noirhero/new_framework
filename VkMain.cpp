@@ -68,6 +68,8 @@ namespace Vk {
     }
 
     void Main::RecreateSwapChain() {
+        vkDeviceWaitIdle(_logicalDevice);
+
         _swapChain->create(&_settings.width, &_settings.height, _settings.vsync);
 
         _frameBufs.Release(_logicalDevice);

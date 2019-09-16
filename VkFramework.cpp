@@ -8,6 +8,8 @@
 #include "VkScene.h"
 #include "VkCamera.h"
 
+#include "Timer.h"
+
 namespace Vk {
     struct MouseButtons {
         bool left = false;
@@ -20,10 +22,6 @@ namespace Vk {
         glm::vec3 rotation = glm::vec3(75.0f, 40.0f, 0.0f);
     };
 
-    float fpsTimer = 0.0f;
-    float frameTimer = 1.0f;
-    uint32_t frameCounter = 0;
-    uint32_t lastFPS = 0;
     uint32_t currentBuffer = 0;
     uint32_t frameIndex = 0;
 
@@ -36,10 +34,11 @@ namespace Vk {
     glm::vec2 mousePos{};
     MouseButtons mouseButtons;
 
+    Timer _timer;
     Camera _camera;
     LightSource _lightSource;
     Main _main;
-    Scene _geometry;
+    Scene _scene;
 
     Settings& GetSettings() {
         return _main.GetSettings();
@@ -50,14 +49,12 @@ namespace Vk {
     }
 
     void Release() {
-        vkDeviceWaitIdle(_main.GetDevice());
-
-        _geometry.Release(_main.GetDevice());
+        _scene.Release(_main);
         _main.Release();
     }
 
     void UpdateUniformBuffers() {
-        _geometry.UpdateUniformDatas(
+        _scene.UpdateUniformDatas(
             _camera.matrices.view,
             _camera.matrices.perspective,
             glm::vec3(
@@ -75,8 +72,8 @@ namespace Vk {
     void Prepare(HINSTANCE instance, HWND window) {
         _main.Prepare(instance, window);
 
-        _geometry.Initialize(_main);
-        _geometry.RecordBuffers(_main, _main.GetCommandBuffer(), _main.GetFrameBuffer());
+        _scene.Initialize(_main);
+        _scene.RecordBuffers(_main);
 
         prepared = true;
 
@@ -94,14 +91,12 @@ namespace Vk {
             return;
 
         prepared = false;
-        vkDeviceWaitIdle(_main.GetDevice());
 
         _main.GetSettings().width = destWidth;
         _main.GetSettings().height = destHeight;
-        _main.RecreateSwapChain();
-        _geometry.RecordBuffers(_main, _main.GetCommandBuffer(), _main.GetFrameBuffer());
 
-        vkDeviceWaitIdle(_main.GetDevice());
+        _main.RecreateSwapChain();
+        _scene.RecordBuffers(_main);
 
         const float aspect = _main.GetSettings().width / static_cast<float>(_main.GetSettings().height);
         _camera.updateAspectRatio(aspect);
@@ -120,7 +115,7 @@ namespace Vk {
             VK_CHECK_RESULT(acquire);
 
         UpdateUniformBuffers();
-        _geometry.OnUniformBufferSets(currentBuffer);
+        _scene.OnUniformBufferSets(currentBuffer);
 
         const auto present = _main.QueuePresent(currentBuffer, frameIndex);
         if (false == (VK_SUCCESS == present || VK_SUBOPTIMAL_KHR == present)) {
@@ -148,25 +143,13 @@ namespace Vk {
                 DispatchMessage(&msg);
             }
             else {
-                const auto tStart = std::chrono::high_resolution_clock::now();
+                _timer.Update();
 
                 if (FALSE == IsIconic(window)) {
                     render();
                 }
-                ++frameCounter;
 
-                const auto tEnd = std::chrono::high_resolution_clock::now();
-                const auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-                frameTimer = static_cast<float>(tDiff) / 1000.0f;
-
-                _camera.update(frameTimer);
-
-                fpsTimer += (float)tDiff;
-                if (fpsTimer > 1000.0f) {
-                    lastFPS = static_cast<uint32_t>((float)frameCounter * (1000.0f / fpsTimer));
-                    fpsTimer = 0.0f;
-                    frameCounter = 0;
-                }
+                _camera.update(_timer.Delta());
             }
         }
     }

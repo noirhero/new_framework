@@ -57,6 +57,9 @@
     <ClInclude Include="VulkanModel.h">
       <Filter>vulkan\legacy</Filter>
     </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -115,6 +118,9 @@
     <ClCompile Include="VulkanModel.cpp">
       <Filter>vulkan\legacy</Filter>
     </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="vulkan">
@@ -122,6 +128,9 @@
     </Filter>
     <Filter Include="vulkan\legacy">
       <UniqueIdentifier>{8ac65fc8-d66f-4387-979c-44a362bf0693}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utility">
+      <UniqueIdentifier>{159c6211-d478-4e05-8e59-f0cb5d062e76}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
