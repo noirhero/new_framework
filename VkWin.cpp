@@ -45,8 +45,8 @@ namespace Vk {
             return false;
         }
 
-        const uint32_t screenWidth = static_cast<uint32_t>(GetSystemMetrics(SM_CXSCREEN));
-        const uint32_t screenHeight = static_cast<uint32_t>(GetSystemMetrics(SM_CYSCREEN));
+        const auto screenWidth = static_cast<uint32_t>(GetSystemMetrics(SM_CXSCREEN));
+        const auto screenHeight = static_cast<uint32_t>(GetSystemMetrics(SM_CYSCREEN));
 
         if (true == settings.fullscreen) {
             if (settings.width != screenWidth && settings.height != screenHeight) {

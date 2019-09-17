@@ -9,7 +9,7 @@ public:
 
     float                                   Delta() const { return _delta; }
     float                                   Accum() const { return _accum; }
-    uint32_t                                FPS() const { _fps; }
+    uint32_t                                FPS() const { return _fps; }
 
 private:
     std::chrono::system_clock::time_point   _prev = std::chrono::system_clock::now();

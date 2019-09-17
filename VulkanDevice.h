@@ -65,6 +65,7 @@ namespace Vk
 		* Create the logical device based on the assigned physical device, also gets default queue family indices
 		*
 		* @param inEnabledFeatures Can be used to enable certain features upon device creation
+		* @param enabledExtensions
 		* @param requestedQueueTypes Bit flags specifying the queue types to be requested from the device
 		*
 		* @return VkResult of the device creation call

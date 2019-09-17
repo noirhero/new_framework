@@ -23,7 +23,7 @@ namespace Vk
 		glm::vec3 _max = { 0.0f, 0.0f, 0.0f };
 		bool valid = false;
 
-		BoundingBox() {};
+        BoundingBox() = default;
 		BoundingBox(glm::vec3 min, glm::vec3 max) : _min(min), _max(max) {}
 
 		BoundingBox getAABB(glm::mat4 m);
@@ -34,11 +34,11 @@ namespace Vk
 	*/
 	struct TextureSampler
 	{
-		VkFilter magFilter;
-		VkFilter minFilter;
-		VkSamplerAddressMode addressModeU;
-		VkSamplerAddressMode addressModeV;
-		VkSamplerAddressMode addressModeW;
+		VkFilter magFilter = VK_FILTER_NEAREST;
+		VkFilter minFilter = VK_FILTER_NEAREST;
+		VkSamplerAddressMode addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		VkSamplerAddressMode addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		VkSamplerAddressMode addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	};
 
 	/*
@@ -48,7 +48,7 @@ namespace Vk
 	{
 		Vk::VulkanDevice *device = nullptr;
 		VkImage image = VK_NULL_HANDLE;
-		VkImageLayout imageLayout;
+        VkImageLayout imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
 		VkImageView view = VK_NULL_HANDLE;
 		uint32_t width = 0;
@@ -80,11 +80,11 @@ namespace Vk
 		float roughnessFactor = 1.0f;
 		glm::vec4 baseColorFactor = glm::vec4(1.0f);
 		glm::vec4 emissiveFactor = glm::vec4(1.0f);
-		ModelTexture *baseColorTexture;
-		ModelTexture *metallicRoughnessTexture;
-		ModelTexture *normalTexture;
-		ModelTexture *occlusionTexture;
-		ModelTexture *emissiveTexture;
+		ModelTexture *baseColorTexture = nullptr;
+		ModelTexture *metallicRoughnessTexture = nullptr;
+		ModelTexture *normalTexture = nullptr;
+		ModelTexture *occlusionTexture = nullptr;
+		ModelTexture *emissiveTexture = nullptr;
 		struct TexCoordSets
 		{
 			uint8_t baseColor = 0;
@@ -96,8 +96,8 @@ namespace Vk
 		} texCoordSets;
 		struct Extension
 		{
-			ModelTexture *specularGlossinessTexture;
-			ModelTexture *diffuseTexture;
+			ModelTexture *specularGlossinessTexture = nullptr;
+			ModelTexture *diffuseTexture = nullptr;
 			glm::vec4 diffuseFactor = glm::vec4(1.0f);
 			glm::vec3 specularFactor = glm::vec3(0.0f);
 		} extension;
@@ -149,16 +149,16 @@ namespace Vk
 
 		struct UniformBuffer
 		{
-			VkBuffer buffer;
-			VkDeviceMemory memory;
-			VkDescriptorBufferInfo descriptor;
-			VkDescriptorSet descriptorSet;
-			void *mapped;
+			VkBuffer buffer = VK_NULL_HANDLE;
+			VkDeviceMemory memory = VK_NULL_HANDLE;
+			VkDescriptorBufferInfo descriptor{};
+			VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+			void *mapped = nullptr;
 		} uniformBuffer;
 
 		struct UniformBlock
 		{
-			glm::mat4 matrix;
+            glm::mat4 matrix{ glm::identity<glm::mat4>() };
 			glm::mat4 jointMatrix[MAX_NUM_JOINTS]{};
 			float jointcount{ 0 };
 		} uniformBlock;
@@ -193,7 +193,7 @@ namespace Vk
 		Node *parent = nullptr;
 		uint32_t index = 0;
 		std::vector<Node*> children;
-		glm::mat4 matrix;
+        glm::mat4 matrix{ glm::identity<glm::mat4>() };
 		std::string name;
 		Mesh *mesh = nullptr;
 		Skin *skin = nullptr;
@@ -304,7 +304,7 @@ namespace Vk
 		void loadTextureSamplers(tinygltf::Model &gltfModel);
 		void loadMaterials(tinygltf::Model &gltfModel);
 		void loadAnimations(tinygltf::Model &gltfModel);
-		void loadFromFile(std::string filename, Vk::VulkanDevice *inDevice, VkQueue transferQueue, float scale = 1.0f);
+		void loadFromFile(const std::string& filename, Vk::VulkanDevice *inDevice, VkQueue transferQueue, float scale = 1.0f);
 		void drawNode(Node *node, VkCommandBuffer commandBuffer);
 		void draw(VkCommandBuffer commandBuffer);
 		void calculateBoundingBox(Node *node, Node *parent);

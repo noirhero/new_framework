@@ -29,7 +29,6 @@ namespace Vk {
     };
 
     using VkDescriptorSets = std::vector<VkDescriptorSet>;
-    using Models = std::vector<Model>;
 
     class Scene {
     public:

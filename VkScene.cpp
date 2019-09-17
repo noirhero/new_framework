@@ -43,8 +43,6 @@ namespace Vk {
         float alphaMaskCutoff = 0.0f;
     };
 
-    constexpr bool displayBackground = true;
-
     Texture2D empty;
     Texture2D lutBrdf;
 
@@ -642,16 +640,14 @@ namespace Vk {
             scissor.extent = { settings.width, settings.height };
             vkCmdSetScissor(currentCB, 0, 1, &scissor);
 
-            VkDeviceSize offsets[1] = { 0 };
-
-            //if (true == displayBackground) {
-                _cubeMap.RenderSkybox(i, currentCB, _pipelineLayout);
-            //}
+            _cubeMap.RenderSkybox(i, currentCB, _pipelineLayout);
 
             vkCmdBindPipeline(currentCB, VK_PIPELINE_BIND_POINT_GRAPHICS, _opaquePipeline);
 
             Model& model = _scene;
+
             if(false == model.nodes.empty()) {
+                VkDeviceSize offsets[1] = { 0 };
                 vkCmdBindVertexBuffers(currentCB, 0, 1, &model.vertices.buffer, offsets);
                 if (model.indices.buffer != VK_NULL_HANDLE)
                     vkCmdBindIndexBuffer(currentCB, model.indices.buffer, 0, VK_INDEX_TYPE_UINT32);

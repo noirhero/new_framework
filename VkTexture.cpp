@@ -24,7 +24,7 @@ namespace Vk {
     }
 
     void Texture2D::loadFromFile(
-        std::string filename,
+        const std::string& filename,
         VkFormat format,
         VulkanDevice *inDevice,
         VkQueue copyQueue,
@@ -375,7 +375,7 @@ namespace Vk {
 
     // TextureCubeMap
     void TextureCubeMap::loadFromFile(
-        std::string filename,
+        const std::string& filename,
         VkFormat format,
         VulkanDevice *inDevice,
         VkQueue copyQueue,

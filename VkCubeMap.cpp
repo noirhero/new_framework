@@ -283,14 +283,14 @@ namespace Vk {
         vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 
         struct PushBlockIrradiance {
-            glm::mat4 mvp;
+            glm::mat4 mvp{ glm::identity<glm::mat4>() };
             float deltaPhi = (2.0f * float(M_PI)) / 180.0f;
             float deltaTheta = (0.5f * float(M_PI)) / 64.0f;
         } pushBlockIrradiance;
 
         struct PushBlockPrefilterEnv {
-            glm::mat4 mvp;
-            float roughness;
+            glm::mat4 mvp{ glm::identity<glm::mat4>() };
+            float roughness = 0.0f;
             uint32_t numSamples = 32u;
         } pushBlockPrefilterEnv;
 
@@ -371,7 +371,11 @@ namespace Vk {
         vertexInputStateCI.vertexAttributeDescriptionCount = 1;
         vertexInputStateCI.pVertexAttributeDescriptions = &vertexInputAttribute;
 
-        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+        const auto shaderName = (CubeMapTarget::IRRADIANCE == target) ? "irradiancecube.frag.spv" : "prefilterenvmap.frag.spv";
+        const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages {
+            loadShader(device, "filtercube.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+            loadShader(device, shaderName, VK_SHADER_STAGE_FRAGMENT_BIT)
+        };
 
         VkGraphicsPipelineCreateInfo pipelineCI{};
         pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -388,16 +392,6 @@ namespace Vk {
         pipelineCI.stageCount = 2;
         pipelineCI.pStages = shaderStages.data();
         pipelineCI.renderPass = renderpass;
-
-        shaderStages[0] = loadShader(device, "filtercube.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-        switch (target) {
-        case CubeMapTarget::IRRADIANCE:
-            shaderStages[1] = loadShader(device, "irradiancecube.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-            break;
-        case CubeMapTarget::PREFILTEREDENV:
-            shaderStages[1] = loadShader(device, "prefilterenvmap.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-            break;
-        };
 
         VkPipeline pipeline;
         VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipeline));

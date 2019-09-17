@@ -29,7 +29,7 @@ namespace Vk {
     class Texture2D : public Texture {
     public:
         void loadFromFile(
-            std::string filename,
+            const std::string& filename,
             VkFormat format,
             VulkanDevice *inDevice,
             VkQueue copyQueue,
@@ -52,7 +52,7 @@ namespace Vk {
     class TextureCubeMap : public Texture {
     public:
         void loadFromFile(
-            std::string filename,
+            const std::string& filename,
             VkFormat format,
             VulkanDevice *inDevice,
             VkQueue copyQueue,

@@ -8,7 +8,7 @@
 
 namespace Vk
 {
-	VkPipelineShaderStageCreateInfo loadShader(VkDevice device, std::string filename, VkShaderStageFlagBits stage)
+	VkPipelineShaderStageCreateInfo loadShader(VkDevice device, const std::string& filename, VkShaderStageFlagBits stage)
 	{
 		VkPipelineShaderStageCreateInfo shaderStage{};
 		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -48,7 +48,7 @@ namespace Vk
 		if ((hFind = FindFirstFileA(searchpattern.c_str(), &data)) != INVALID_HANDLE_VALUE) {
 			do {
 				std::string filename(data.cFileName);
-				filename.erase(filename.find_last_of("."), std::string::npos);
+				filename.erase(filename.find_last_of('.'), std::string::npos);
 				filelist[filename] = directory + "/" + data.cFileName;
 			} while (FindNextFileA(hFind, &data) != 0);
 			FindClose(hFind);
@@ -150,7 +150,7 @@ namespace Vk
 		subpassDescription.pColorAttachments = &colorReference;
 
 		// Use subpass dependencies for layout transitions
-		std::array<VkSubpassDependency, 2> dependencies;
+		std::array<VkSubpassDependency, 2> dependencies{};
 		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependencies[0].dstSubpass = 0;
 		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
@@ -252,7 +252,10 @@ namespace Vk
 		VkPipelineVertexInputStateCreateInfo emptyInputStateCI{};
 		emptyInputStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+		const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{
+            loadShader(device, "genbrdflut.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+            loadShader(device, "genbrdflut.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+		};
 
 		VkGraphicsPipelineCreateInfo pipelineCI{};
 		pipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -269,13 +272,7 @@ namespace Vk
 		pipelineCI.stageCount = 2;
 		pipelineCI.pStages = shaderStages.data();
 
-		// Look-up-table (from BRDF) pipeline		
-		shaderStages =
-		{
-			loadShader(device, "genbrdflut.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-			loadShader(device, "genbrdflut.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
-		};
-
+		// Look-up-table (from BRDF) pipeline
 		VkPipeline pipeline = VK_NULL_HANDLE;
 		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipeline));
 

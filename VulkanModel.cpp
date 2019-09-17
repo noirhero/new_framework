@@ -47,7 +47,7 @@ namespace Vk
 		min += glm::min(v0, v1);
 		max += glm::max(v0, v1);
 
-		return BoundingBox(min, max);
+        return { min, max };
 	}
 
 	// Texture
@@ -376,7 +376,9 @@ namespace Vk
 	{
 		if (mesh) {
 			delete mesh;
+            mesh = nullptr;
 		}
+
 		for (auto& child : children) {
 			delete child;
 		}
@@ -439,9 +441,9 @@ namespace Vk
 		};
 
 		// Node with children
-		if (node.children.size() > 0) {
-			for (size_t i = 0; i < node.children.size(); i++) {
-				loadNode(newNode, model.nodes[node.children[i]], node.children[i], model, indexBuffer, vertexBuffer, globalscale);
+		if (!node.children.empty()) {
+			for (int i : node.children) {
+				loadNode(newNode, model.nodes[i], i, model, indexBuffer, vertexBuffer, globalscale);
 			}
 		}
 
@@ -449,10 +451,9 @@ namespace Vk
 		if (node.mesh > -1) {
 			const tinygltf::Mesh mesh = model.meshes[node.mesh];
 			Mesh *newMesh = new Mesh(device, newNode->matrix);
-			for (size_t j = 0; j < mesh.primitives.size(); j++) {
-				const tinygltf::Primitive &primitive = mesh.primitives[j];
-				uint32_t indexStart = static_cast<uint32_t>(indexBuffer.size());
-				uint32_t vertexStart = static_cast<uint32_t>(vertexBuffer.size());
+			for (const auto& primitive : mesh.primitives) {
+                auto indexStart = static_cast<uint32_t>(indexBuffer.size());
+				auto vertexStart = static_cast<uint32_t>(vertexBuffer.size());
 				uint32_t indexCount = 0;
 				uint32_t vertexCount = 0;
 				glm::vec3 posMin{};
@@ -535,21 +536,21 @@ namespace Vk
 
 					switch (accessor.componentType) {
 					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
-						const uint32_t *buf = static_cast<const uint32_t*>(dataPtr);
+						const auto *buf = static_cast<const uint32_t*>(dataPtr);
 						for (size_t index = 0; index < accessor.count; index++) {
 							indexBuffer.push_back(buf[index] + vertexStart);
 						}
 						break;
 					}
 					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
-						const uint16_t *buf = static_cast<const uint16_t*>(dataPtr);
+						const auto *buf = static_cast<const uint16_t*>(dataPtr);
 						for (size_t index = 0; index < accessor.count; index++) {
 							indexBuffer.push_back(buf[index] + vertexStart);
 						}
 						break;
 					}
 					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
-						const uint8_t *buf = static_cast<const uint8_t*>(dataPtr);
+						const auto *buf = static_cast<const uint8_t*>(dataPtr);
 						for (size_t index = 0; index < accessor.count; index++) {
 							indexBuffer.push_back(buf[index] + vertexStart);
 						}
@@ -560,7 +561,7 @@ namespace Vk
 						return;
 					}
 				}
-				Primitive *newPrimitive = new Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? materials[primitive.material] : materials.back());
+				auto newPrimitive = new Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? materials[primitive.material] : materials.back());
 				newPrimitive->setBoundingBox(posMin, posMax);
 				newMesh->primitives.push_back(newPrimitive);
 			}
@@ -620,7 +621,7 @@ namespace Vk
 	{
 		for (tinygltf::Texture &tex : gltfModel.textures) {
 			tinygltf::Image image = gltfModel.images[tex.source];
-			TextureSampler textureSampler;
+			TextureSampler textureSampler{};
 			if (tex.sampler == -1) {
 				// No sampler specified, use a default one
 				textureSampler.magFilter = VK_FILTER_LINEAR;
@@ -674,7 +675,7 @@ namespace Vk
 
 	void Model::loadTextureSamplers(tinygltf::Model &gltfModel)
 	{
-		for (tinygltf::Sampler smpl : gltfModel.samplers) {
+		for (const tinygltf::Sampler& smpl : gltfModel.samplers) {
 			TextureSampler sampler{};
 			sampler.minFilter = getVkFilterMode(smpl.minFilter);
 			sampler.magFilter = getVkFilterMode(smpl.magFilter);
@@ -770,7 +771,7 @@ namespace Vk
 			materials.push_back(material);
 		}
 		// Push a default material at the end of the list for meshes with no material assigned
-		materials.push_back(Material());
+		materials.emplace_back();
 	}
 
 	void Model::loadAnimations(tinygltf::Model &gltfModel)
@@ -805,7 +806,7 @@ namespace Vk
 					assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
 
 					const void *dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
-					const float *buf = static_cast<const float*>(dataPtr);
+					const auto buf = static_cast<const float*>(dataPtr);
 					for (size_t index = 0; index < accessor.count; index++) {
 						sampler.inputs.push_back(buf[index]);
 					}
@@ -832,14 +833,14 @@ namespace Vk
 
 					switch (accessor.type) {
 					case TINYGLTF_TYPE_VEC3: {
-						const glm::vec3 *buf = static_cast<const glm::vec3*>(dataPtr);
+						const auto buf = static_cast<const glm::vec3*>(dataPtr);
 						for (size_t index = 0; index < accessor.count; index++) {
-							sampler.outputsVec4.push_back(glm::vec4(buf[index], 0.0f));
+							sampler.outputsVec4.emplace_back(buf[index], 0.0f);
 						}
 						break;
 					}
 					case TINYGLTF_TYPE_VEC4: {
-						const glm::vec4 *buf = static_cast<const glm::vec4*>(dataPtr);
+						const auto buf = static_cast<const glm::vec4*>(dataPtr);
 						for (size_t index = 0; index < accessor.count; index++) {
 							sampler.outputsVec4.push_back(buf[index]);
 						}
@@ -885,7 +886,7 @@ namespace Vk
 		}
 	}
 
-	void Model::loadFromFile(std::string filename, Vk::VulkanDevice *inDevice, VkQueue transferQueue, float scale)
+	void Model::loadFromFile(const std::string& filename, Vk::VulkanDevice *inDevice, VkQueue transferQueue, float scale)
 	{
 		tinygltf::Model gltfModel;
 		tinygltf::TinyGLTF gltfContext;
@@ -900,7 +901,7 @@ namespace Vk
 			binary = (filename.substr(extpos + 1, filename.length() - extpos) == "glb");
 		}
 
-		bool fileLoaded = binary ? gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, filename.c_str()) : gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, filename.c_str());
+		bool fileLoaded = binary ? gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, filename) : gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, filename);
 
 		std::vector<uint32_t> indexBuffer;
 		std::vector<Vertex> vertexBuffer;
@@ -911,11 +912,11 @@ namespace Vk
 			loadMaterials(gltfModel);
 			// TODO: scene handling with no default scene
 			const tinygltf::Scene &scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
-			for (size_t i = 0; i < scene.nodes.size(); i++) {
-				const tinygltf::Node node = gltfModel.nodes[scene.nodes[i]];
-				loadNode(nullptr, node, scene.nodes[i], gltfModel, indexBuffer, vertexBuffer, scale);
+			for (int i : scene.nodes) {
+				const tinygltf::Node node = gltfModel.nodes[i];
+				loadNode(nullptr, node, i, gltfModel, indexBuffer, vertexBuffer, scale);
 			}
-			if (gltfModel.animations.size() > 0) {
+			if (!gltfModel.animations.empty()) {
 				loadAnimations(gltfModel);
 			}
 			loadSkins(gltfModel);
@@ -1042,7 +1043,7 @@ namespace Vk
 		if (node->mesh) {
 			if (node->mesh->bb.valid) {
 				node->aabb = node->mesh->bb.getAABB(node->getMatrix());
-				if (node->children.size() == 0) {
+				if (node->children.empty()) {
 					node->bvh._min = node->aabb._min;
 					node->bvh._max = node->aabb._max;
 					node->bvh.valid = true;

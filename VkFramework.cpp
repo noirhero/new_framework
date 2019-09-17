@@ -173,26 +173,26 @@ namespace Vk {
         mousePos = glm::vec2(static_cast<float>(x), static_cast<float>(y));
     }
 
-#define KEY_ESCAPE VK_ESCAPE 
-#define KEY_F1 VK_F1
-#define KEY_F2 VK_F2
-#define KEY_F3 VK_F3
-#define KEY_F4 VK_F4
-#define KEY_F5 VK_F5
-#define KEY_W 0x57
-#define KEY_A 0x41
-#define KEY_S 0x53
-#define KEY_D 0x44
-#define KEY_P 0x50
-#define KEY_SPACE 0x20
-#define KEY_KPADD 0x6B
-#define KEY_KPSUB 0x6D
-#define KEY_B 0x42
-#define KEY_F 0x46
-#define KEY_L 0x4C
-#define KEY_N 0x4E
-#define KEY_O 0x4F
-#define KEY_T 0x54
+    constexpr auto KEY_ESCAPE = VK_ESCAPE;
+    //constexpr auto KEY_F1  = VK_F1;
+    //constexpr auto KEY_F2  = VK_F2;
+    //constexpr auto KEY_F3  = VK_F3;
+    //constexpr auto KEY_F4  = VK_F4;
+    //constexpr auto KEY_F5  = VK_F5;
+    constexpr auto KEY_W  = 0x57;
+    constexpr auto KEY_A  = 0x41;
+    constexpr auto KEY_S  = 0x53;
+    constexpr auto KEY_D  = 0x44;
+    constexpr auto KEY_P  = 0x50;
+    //constexpr auto KEY_SPACE  = 0x20;
+    //constexpr auto KEY_KPADD  = 0x6B;
+    //constexpr auto KEY_KPSUB  = 0x6D;
+    //constexpr auto KEY_B  = 0x42;
+    //constexpr auto KEY_F  = 0x46;
+    //constexpr auto KEY_L  = 0x4C;
+    //constexpr auto KEY_N  = 0x4E;
+    //constexpr auto KEY_O  = 0x4F;
+    //constexpr auto KEY_T  = 0x54;
 
     void HandleMessage(HWND window, uint32_t msg, WPARAM wParam, LPARAM lParam) {
         if (VK_NULL_HANDLE == _main.GetDevice())
@@ -215,6 +215,8 @@ namespace Vk {
             case KEY_ESCAPE:
                 PostQuitMessage(0);
                 break;
+            default:
+                break;
             }
 
             if (Camera::CameraType::FirstPerson == _camera.type) {
@@ -230,6 +232,8 @@ namespace Vk {
                     break;
                 case KEY_D:
                     _camera.keys.right = true;
+                    break;
+                default:
                     break;
                 }
             }
@@ -249,6 +253,8 @@ namespace Vk {
                     break;
                 case KEY_D:
                     _camera.keys.right = false;
+                    break;
+                default:
                     break;
                 }
             }
@@ -300,6 +306,8 @@ namespace Vk {
         case WM_EXITSIZEMOVE:
             resizing = false;
             break;
+        default:
+            return;
         }
     }
 }

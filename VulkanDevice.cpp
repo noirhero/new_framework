@@ -131,7 +131,7 @@ namespace Vk
 		}
 
 		// Create the logical device representation
-		std::vector<const char*> deviceExtensions(enabledExtensions);
+		std::vector<const char*> deviceExtensions(std::move(enabledExtensions));
 		deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
 		VkDeviceCreateInfo deviceCreateInfo = {};
@@ -140,8 +140,8 @@ namespace Vk
 		deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
 		deviceCreateInfo.pEnabledFeatures = &inEnabledFeatures;
 
-		if (deviceExtensions.size() > 0) {
-			deviceCreateInfo.enabledExtensionCount = (uint32_t)deviceExtensions.size();
+		if (false == deviceExtensions.empty()) {
+			deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 			deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 		}
 
