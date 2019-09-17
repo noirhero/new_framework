@@ -5,23 +5,20 @@
 
 #include "VkUtils.h"
 
-namespace Vk
-{
-	bool PipelineCache::Initialize(VkDevice device)
-	{
-		VkPipelineCacheCreateInfo info{};
-		info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-		VK_CHECK_RESULT(vkCreatePipelineCache(device, &info, nullptr, &_pipelineCache));
+namespace Vk {
+    bool PipelineCache::Initialize(VkDevice device) {
+        VkPipelineCacheCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+        VK_CHECK_RESULT(vkCreatePipelineCache(device, &info, nullptr, &_pipelineCache));
 
-		return true;
-	}
+        return (VK_NULL_HANDLE == _pipelineCache) ? false : true;
+    }
 
-	void PipelineCache::Release(VkDevice device)
-	{
-		if (VK_NULL_HANDLE == _pipelineCache)
-			return;
+    void PipelineCache::Release(VkDevice device) {
+        if (VK_NULL_HANDLE == _pipelineCache)
+            return;
 
-		vkDestroyPipelineCache(device, _pipelineCache, nullptr);
-		_pipelineCache = VK_NULL_HANDLE;
-	}
+        vkDestroyPipelineCache(device, _pipelineCache, nullptr);
+        _pipelineCache = VK_NULL_HANDLE;
+    }
 }

@@ -7,7 +7,7 @@ namespace Vk {
 
     Settings&   GetSettings();
 
-    bool        Initialize();
+    bool        Initialize(std::string&& assetPath);
     void        Release();
 
     void        Prepare(HINSTANCE instance, HWND window);

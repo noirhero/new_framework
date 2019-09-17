@@ -255,28 +255,28 @@ namespace Vk
 
 		struct Vertex
 		{
-			glm::vec3 pos;
-			glm::vec3 normal;
-			glm::vec2 uv0;
-			glm::vec2 uv1;
-			glm::vec4 joint0;
-			glm::vec4 weight0;
+			glm::vec3 pos{};
+			glm::vec3 normal{};
+			glm::vec2 uv0{};
+			glm::vec2 uv1{};
+			glm::vec4 joint0{};
+			glm::vec4 weight0{};
 		};
 
 		struct Vertices
 		{
 			VkBuffer buffer = VK_NULL_HANDLE;
-			VkDeviceMemory memory;
+			VkDeviceMemory memory = VK_NULL_HANDLE;
 		} vertices;
 
 		struct Indices
 		{
 			int count;
 			VkBuffer buffer = VK_NULL_HANDLE;
-			VkDeviceMemory memory;
+			VkDeviceMemory memory = NULL;
 		} indices;
 
-		glm::mat4 aabb;
+		glm::mat4 aabb{ glm::identity<glm::mat4>() };
 
 		std::vector<Node*> nodes;
 		std::vector<Node*> linearNodes;

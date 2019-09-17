@@ -13,8 +13,17 @@
 
 namespace Vk {
     enum class PBRWorkflow : uint8_t {
-        METALLIC_ROUGHNESS = 0,
-        SPECULAR_GLOSINESS = 1
+        MetallicRoughness = 0,
+        SpecularGlosiness = 1
+    };
+
+    enum MaterialType : uint32_t {
+        Albedo = 0,
+        MetalRoughness,
+        Normal,
+        AO,
+        Emissive,
+        Count
     };
 
     struct MaterialConstantData {
@@ -35,31 +44,20 @@ namespace Vk {
     };
 
     constexpr bool displayBackground = true;
-    const std::string assetpath{ "./../data/" };
 
     Texture2D empty;
     Texture2D lutBrdf;
 
-    void CheckToDataPath() {
-        struct stat info {};
-
-        if (0 != stat(assetpath.c_str(), &info)) {
-            std::string msg = "Could not locate asset path in \"" + assetpath + "\".\nMake sure binary is run from correct relative directory!";
-            std::cerr << msg << std::endl;
-            exit(-1);
-        }
-    }
-
     void LoadEmptyTexture(const Main& main, std::string&& filename) {
         if (VK_NULL_HANDLE != empty.image)
-            empty.destroy();
+            empty.Destroy();
 
         empty.loadFromFile(filename, VK_FORMAT_R8G8B8A8_UNORM, &main.GetVulkanDevice(), main.GetGPUQueue());
     }
 
     void GenerateBRDFLUT(const Main& main) {
         if (VK_NULL_HANDLE != lutBrdf.image)
-            lutBrdf.destroy();
+            lutBrdf.Destroy();
 
         VkDevice device = main.GetDevice();
         VkQueue queue = main.GetGPUQueue();
@@ -126,7 +124,7 @@ namespace Vk {
 
                 if (primitive->material.pbrWorkflows.metallicRoughness) {
                     // Metallic roughness workflow
-                    pushConstBlockMaterial.workflow = static_cast<float>(PBRWorkflow::METALLIC_ROUGHNESS);
+                    pushConstBlockMaterial.workflow = static_cast<float>(PBRWorkflow::MetallicRoughness);
                     pushConstBlockMaterial.baseColorFactor = primitive->material.baseColorFactor;
                     pushConstBlockMaterial.metallicFactor = primitive->material.metallicFactor;
                     pushConstBlockMaterial.roughnessFactor = primitive->material.roughnessFactor;
@@ -136,7 +134,7 @@ namespace Vk {
 
                 if (primitive->material.pbrWorkflows.specularGlossiness) {
                     // Specular glossiness workflow
-                    pushConstBlockMaterial.workflow = static_cast<float>(PBRWorkflow::SPECULAR_GLOSINESS);
+                    pushConstBlockMaterial.workflow = static_cast<float>(PBRWorkflow::SpecularGlosiness);
                     pushConstBlockMaterial.PhysicalDescriptorTextureSet = primitive->material.extension.specularGlossinessTexture != nullptr ? primitive->material.texCoordSets.specularGlossiness : -1;
                     pushConstBlockMaterial.colorTextureSet = primitive->material.extension.diffuseTexture != nullptr ? primitive->material.texCoordSets.baseColor : -1;
                     pushConstBlockMaterial.diffuseFactor = primitive->material.extension.diffuseFactor;
@@ -296,7 +294,7 @@ namespace Vk {
     }
 
     void Scene::SetupMaterialDescriptorSet(const Main & main) {
-        auto device = main.GetDevice();
+        const auto device = main.GetDevice();
 
         // Per-Material descriptor sets
         for (auto& material : _scene.materials) {
@@ -315,35 +313,34 @@ namespace Vk {
                 material.emissiveTexture ? material.emissiveTexture->descriptor : empty.descriptor
             };
 
-            // TODO: glTF specs states that metallic roughness should be preferred, even if specular glosiness is present
-
+            // TODO: glTF specs states that metallic roughness should be preferred, even if specular glossiness is present
             if (material.pbrWorkflows.metallicRoughness) {
                 if (material.baseColorTexture)
-                    imageDescriptors[0] = material.baseColorTexture->descriptor;
+                    imageDescriptors[MaterialType::Albedo] = material.baseColorTexture->descriptor;
 
                 if (material.metallicRoughnessTexture)
-                    imageDescriptors[1] = material.metallicRoughnessTexture->descriptor;
+                    imageDescriptors[MaterialType::MetalRoughness] = material.metallicRoughnessTexture->descriptor;
             }
 
             if (material.pbrWorkflows.specularGlossiness) {
                 if (material.extension.diffuseTexture)
-                    imageDescriptors[0] = material.extension.diffuseTexture->descriptor;
+                    imageDescriptors[MaterialType::Albedo] = material.extension.diffuseTexture->descriptor;
 
                 if (material.extension.specularGlossinessTexture)
-                    imageDescriptors[1] = material.extension.specularGlossinessTexture->descriptor;
+                    imageDescriptors[MaterialType::MetalRoughness] = material.extension.specularGlossinessTexture->descriptor;
             }
 
-            std::array<VkWriteDescriptorSet, 5> writeDescriptorSets{};
-            for (size_t i = 0; i < imageDescriptors.size(); i++) {
+            std::array<VkWriteDescriptorSet, MaterialType::Count> writeDescriptorSets{};
+            for (uint32_t i = 0; i < MaterialType::Count; ++i) {
                 writeDescriptorSets[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 writeDescriptorSets[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 writeDescriptorSets[i].descriptorCount = 1;
                 writeDescriptorSets[i].dstSet = material.descriptorSet;
-                writeDescriptorSets[i].dstBinding = static_cast<uint32_t>(i);
+                writeDescriptorSets[i].dstBinding = i;
                 writeDescriptorSets[i].pImageInfo = &imageDescriptors[i];
             }
 
-            vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
+            vkUpdateDescriptorSets(device, MaterialType::Count, writeDescriptorSets.data(), 0, nullptr);
         }
     }
 
@@ -494,13 +491,10 @@ namespace Vk {
     void Scene::LoadScene(const Main& main, std::string&& filename) {
         Timer timer;
 
-        auto* vulkanDevice = &main.GetVulkanDevice();
-        auto gpuQueue = main.GetGPUQueue();
-        _scene.loadFromFile(filename, vulkanDevice, gpuQueue);
+        _scene.loadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
 
         std::cout << "Loading scene from took " << timer.Update() << " ms" << std::endl;
 
-        SetupSceneDescriptorSet(main);
         SetupMaterialDescriptorSet(main);
         SetupNodeDescriptorSet(main);
     }
@@ -522,8 +516,6 @@ namespace Vk {
 
 
     bool Scene::Initialize(const Main& main, std::string&& environmentMapPath) {
-        CheckToDataPath();
-
         LoadEmptyTexture(main, Path::Apply("textures/empty.ktx"s));
         GenerateBRDFLUT(main);
 
@@ -539,6 +531,8 @@ namespace Vk {
         CreatePipelines(main);
 
         _sceneShaderValue.prefilteredCubeMipLevels = _cubeMap.GetPrefilteredCubeMipLevels();
+
+        SetupSceneDescriptorSet(main);
 
         return true;
     }
@@ -572,8 +566,8 @@ namespace Vk {
         }
         _scene.destroy(device);
 
-        lutBrdf.destroy();
-        empty.destroy();
+        lutBrdf.Destroy();
+        empty.Destroy();
     }
 
     void Scene::UpdateUniformDatas(const glm::mat4& view, const glm::mat4& perspective, const glm::vec3& cameraPos, const glm::vec4& lightDir) {

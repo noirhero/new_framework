@@ -33,7 +33,7 @@ namespace Vk {
 
     class Scene {
     public:
-        bool                        Initialize(const Main& main, std::string&& skyboxPath);
+        bool                        Initialize(const Main& main, std::string&& environmentMapPath);
         void                        Release(const Main& main);
 
         void                        LoadScene(const Main& main, std::string&& filename);

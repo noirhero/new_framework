@@ -2,17 +2,15 @@
 
 #pragma once
 
-namespace Vk
-{
-	class Instance
-	{
-	public:
-		bool		Initialize(bool isValidation);
-		void		Release();
+namespace Vk {
+    class Instance {
+    public:
+        bool        Initialize(bool isValidation);
+        void        Release();
 
-		VkInstance	Get() const { return _instance; }
+        VkInstance  Get() const { return _instance; }
 
-	private:
-		VkInstance	_instance = VK_NULL_HANDLE;
-	};
+    private:
+        VkInstance  _instance = VK_NULL_HANDLE;
+    };
 }

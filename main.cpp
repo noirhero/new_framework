@@ -17,7 +17,7 @@ int32_t APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int32_t) {
     Vk::GetSettings().validation = true;
 #endif
 
-    if(false == Vk::Initialize()) {
+    if(false == Vk::Initialize("./../data/"s)) {
         return 0;
     }
 

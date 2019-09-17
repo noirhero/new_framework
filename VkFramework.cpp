@@ -54,8 +54,8 @@ namespace Vk {
         return _main.GetSettings();
     }
 
-    bool Initialize() {
-        if (false == Path::SetAssetPath("./../data/"s)) {
+    bool Initialize(std::string&& assetPath) {
+        if (false == Path::SetAssetPath(std::move(assetPath))) {
             return false;
         }
 

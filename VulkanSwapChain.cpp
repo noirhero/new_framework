@@ -276,7 +276,7 @@ namespace Vk
 
 		VK_CHECK_RESULT(fpCreateSwapchainKHR(device, &swapchainCI, nullptr, &swapChain));
 
-		// If an existing swap chain is re-created, destroy the old swap chain
+		// If an existing swap chain is re-created, Destroy the old swap chain
 		// This also cleans up all the presentable images
 		if (oldSwapchain != VK_NULL_HANDLE)
 		{

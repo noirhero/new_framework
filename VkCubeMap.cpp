@@ -608,7 +608,7 @@ namespace Vk {
     void CubeMap::Release(VkDevice device) {
         const auto safeDeleteFn = [](TextureCubeMap& src) {
             if (VK_NULL_HANDLE != src.image) {
-                src.destroy();
+                src.Destroy();
                 src.image = VK_NULL_HANDLE;
             }
         };
