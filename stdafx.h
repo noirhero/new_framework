@@ -47,3 +47,5 @@ using namespace std::literals::string_literals;
 #include <vulkan/vulkan.h>
 
 #include <vulkan/vk_mem_alloc.h>
+
+#include <entt/entt.hpp>
