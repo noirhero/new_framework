@@ -248,7 +248,7 @@ namespace Vk {
         struct Indices {
             int count;
             VkBuffer buffer = VK_NULL_HANDLE;
-            VkDeviceMemory memory = NULL;
+            VkDeviceMemory memory = VK_NULL_HANDLE;
         } indices;
 
         glm::mat4 aabb{ glm::identity<glm::mat4>() };

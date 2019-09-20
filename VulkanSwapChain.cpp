@@ -7,14 +7,12 @@
 
 namespace Vk {
     void VulkanSwapChain::InitSurface(void* platformHandle, void* platformWindow) {
-        VkResult err = VK_SUCCESS;
-
         // Create the os-specific surface
         VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
         surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
         surfaceCreateInfo.hinstance = (HINSTANCE)platformHandle;
         surfaceCreateInfo.hwnd = (HWND)platformWindow;
-        err = vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
+        VkResult err = vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
 
         if (err != VK_SUCCESS) {
             std::cerr << "Could not Create surface!" << std::endl;

@@ -45,12 +45,6 @@
     <ClInclude Include="VkTexture.h">
       <Filter>vulkan\legacy</Filter>
     </ClInclude>
-    <ClInclude Include="VkBuffer.h">
-      <Filter>vulkan\legacy</Filter>
-    </ClInclude>
-    <ClInclude Include="VkCamera.h">
-      <Filter>vulkan\legacy</Filter>
-    </ClInclude>
     <ClInclude Include="VulkanSwapChain.h">
       <Filter>vulkan\legacy</Filter>
     </ClInclude>
@@ -62,6 +56,12 @@
     </ClInclude>
     <ClInclude Include="Path.h">
       <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="VkCamera.h">
+      <Filter>vulkan\legacy</Filter>
+    </ClInclude>
+    <ClInclude Include="VkBuffer.h">
+      <Filter>vulkan\legacy</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -109,12 +109,6 @@
     <ClCompile Include="VkTexture.cpp">
       <Filter>vulkan\legacy</Filter>
     </ClCompile>
-    <ClCompile Include="VkBuffer.cpp">
-      <Filter>vulkan\legacy</Filter>
-    </ClCompile>
-    <ClCompile Include="VkCamera.cpp">
-      <Filter>vulkan\legacy</Filter>
-    </ClCompile>
     <ClCompile Include="VulkanSwapChain.cpp">
       <Filter>vulkan\legacy</Filter>
     </ClCompile>
@@ -126,6 +120,12 @@
     </ClCompile>
     <ClCompile Include="Path.cpp">
       <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="VkCamera.cpp">
+      <Filter>vulkan\legacy</Filter>
+    </ClCompile>
+    <ClCompile Include="VkBuffer.cpp">
+      <Filter>vulkan\legacy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

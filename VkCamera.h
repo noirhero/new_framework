@@ -48,7 +48,7 @@ namespace Vk {
         void Translate(glm::vec3 delta);
         void Update(float deltaTime);
 
-        // Update camera passing separate axis data (gamepad)
+        // Update camera passing separate axis data (game pad)
         // Returns true if view or position has been changed
         bool UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime);
 

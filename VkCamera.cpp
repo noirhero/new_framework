@@ -13,7 +13,7 @@ namespace Vk {
 
         const auto transM = glm::translate(glm::mat4(1.0f), position * glm::vec3(1.0f, 1.0f, -1.0f));
 
-        if (type == CameraType::FirstPerson) {
+        if (CameraType::FirstPerson == type) {
             matrices.view = rotM * transM;
         }
         else {
@@ -61,44 +61,51 @@ namespace Vk {
 
     void Camera::Update(float deltaTime) {
         updated = false;
-        if (type == CameraType::FirstPerson) {
-            if (Moving()) {
-                glm::vec3 camFront;
-                camFront.x = -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y));
-                camFront.y = sin(glm::radians(rotation.x));
-                camFront.z = cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));
-                camFront = glm::normalize(camFront);
 
-                const float moveSpeed = deltaTime * movementSpeed;
-
-                if (keys.up)
-                    position += camFront * moveSpeed;
-                if (keys.down)
-                    position -= camFront * moveSpeed;
-                if (keys.left)
-                    position -= glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
-                if (keys.right)
-                    position += glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
-
-                UpdateViewMatrix();
-            }
+        if (CameraType::FirstPerson != type) {
+            return;
         }
+
+        if (false == Moving()) {
+            return;
+        }
+
+        glm::vec3 camFront{
+            -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y)),
+            sin(glm::radians(rotation.x)),
+            cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y))
+        };
+        camFront = glm::normalize(camFront);
+
+        const float moveSpeed = deltaTime * movementSpeed;
+
+        if (keys.up)
+            position += camFront * moveSpeed;
+        if (keys.down)
+            position -= camFront * moveSpeed;
+        if (keys.left)
+            position -= glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+        if (keys.right)
+            position += glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+
+        UpdateViewMatrix();
     }
 
     bool Camera::UpdatePad(glm::vec2 axisLeft, glm::vec2 axisRight, float deltaTime) {
         bool retVal = false;
 
-        if (type == CameraType::FirstPerson) {
-            // Use the common console thumbstick layout		
+        if (CameraType::FirstPerson == type) {
+            // Use the common console thumb stick layout		
             // Left = view, right = move
 
             const float deadZone = 0.0015f;
             const float range = 1.0f - deadZone;
 
-            glm::vec3 camFront;
-            camFront.x = -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y));
-            camFront.y = sin(glm::radians(rotation.x));
-            camFront.z = cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));
+            glm::vec3 camFront{
+                -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y)),
+                sin(glm::radians(rotation.x)),
+                cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y))
+            };
             camFront = glm::normalize(camFront);
 
             const float moveSpeed = deltaTime * movementSpeed * 2.0f;
@@ -146,5 +153,4 @@ namespace Vk {
             position.z * glm::cos(glm::radians(rotation.y)) * glm::cos(glm::radians(rotation.x))
         };
     }
-
 }

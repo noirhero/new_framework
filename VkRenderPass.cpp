@@ -51,16 +51,16 @@ namespace Vk {
             attachments[3].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             attachments[3].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-            VkAttachmentReference colorReference = {};
+            VkAttachmentReference colorReference;
             colorReference.attachment = 0;
             colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-            VkAttachmentReference depthReference = {};
+            VkAttachmentReference depthReference;
             depthReference.attachment = 2;
             depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
             // Resolve attachment reference for the color attachment
-            VkAttachmentReference resolveReference = {};
+            VkAttachmentReference resolveReference;
             resolveReference.attachment = 1;
             resolveReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -121,11 +121,11 @@ namespace Vk {
             attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-            VkAttachmentReference colorReference = {};
+            VkAttachmentReference colorReference;
             colorReference.attachment = 0;
             colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-            VkAttachmentReference depthReference = {};
+            VkAttachmentReference depthReference;
             depthReference.attachment = 1;
             depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 

@@ -18,32 +18,7 @@ namespace Vk {
         COUNT,
     };
 
-    struct SkyboxUniformData {
-        glm::mat4 projection{ glm::identity<glm::mat4>() };
-        glm::mat4 model{ glm::identity<glm::mat4>() };
-        glm::mat4 view{ glm::identity<glm::mat4>() };
-        glm::vec3 camPos{};
-    };
-
-    Model                           skybox;
-    Buffers                         skyboxUniBufs;
-    SkyboxUniformData               skyboxUniData;
-    std::vector<VkDescriptorSet>    skyboxDescSets;
-    VkPipeline                      skyboxPipeline = VK_NULL_HANDLE;
-
-    void LoadSkybox(const Main& main, std::string&& filename) {
-        // model
-        skybox.Destroy(main.GetDevice());
-        skybox.LoadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
-
-        // uniform buffer
-        skyboxUniBufs.resize(main.GetVulkanSwapChain().imageCount);
-        for (auto& uniformBuffer : skyboxUniBufs) {
-            uniformBuffer.Create(&main.GetVulkanDevice(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(SkyboxUniformData));
-        }
-    }
-
-    TextureCubeMap GenerateCubeMap(float& prefilteredCubeMipLevels, TextureCubeMap& environmentCube, const Main& main, CubeMapTarget target) {
+    TextureCubeMap GenerateCubeMap(float& prefilteredCubeMipLevels, TextureCubeMap& environmentCube, const Main& main, Model& skybox, CubeMapTarget target) {
         VkFormat format = VK_FORMAT_UNDEFINED;
         int32_t dim = 0;
 
@@ -594,11 +569,19 @@ namespace Vk {
     }
 
     bool CubeMap::Initialize(const Main& main, std::string&& environmentMapPath) {
-        LoadSkybox(main, Path::Apply("models/Box/glTF-Embedded/Box.gltf"s));
+        // model
+        _skybox.Destroy(main.GetDevice());
+        _skybox.LoadFromFile(Path::Apply("models/Box/glTF-Embedded/Box.gltf"s), &main.GetVulkanDevice(), main.GetGPUQueue());
+
+        // uniform buffer
+        _skyboxUniBufs.resize(main.GetVulkanSwapChain().imageCount);
+        for (auto& uniformBuffer : _skyboxUniBufs) {
+            uniformBuffer.Create(&main.GetVulkanDevice(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(SkyboxUniformData));
+        }
 
         _environmentCube.loadFromFile(Path::Apply(std::move(environmentMapPath)), VK_FORMAT_R16G16B16A16_SFLOAT, &main.GetVulkanDevice(), main.GetGPUQueue());
-        _irradianceCube = GenerateCubeMap(_prefilteredCubeMipLevels, _environmentCube, main, CubeMapTarget::IRRADIANCE);
-        _prefilteredCube = GenerateCubeMap(_prefilteredCubeMipLevels, _environmentCube, main, CubeMapTarget::PREFILTEREDENV);
+        _irradianceCube = GenerateCubeMap(_prefilteredCubeMipLevels, _environmentCube, main, _skybox, CubeMapTarget::IRRADIANCE);
+        _prefilteredCube = GenerateCubeMap(_prefilteredCubeMipLevels, _environmentCube, main, _skybox, CubeMapTarget::PREFILTEREDENV);
 
         return true;
     }
@@ -614,22 +597,22 @@ namespace Vk {
         safeDeleteFn(_irradianceCube);
         safeDeleteFn(_environmentCube);
 
-        if (VK_NULL_HANDLE != skyboxPipeline) {
-            vkDestroyPipeline(device, skyboxPipeline, nullptr);
-            skyboxPipeline = VK_NULL_HANDLE;
+        if (VK_NULL_HANDLE != _skyboxPipeline) {
+            vkDestroyPipeline(device, _skyboxPipeline, nullptr);
+            _skyboxPipeline = VK_NULL_HANDLE;
         }
-        for (auto& buffer : skyboxUniBufs) {
+        for (auto& buffer : _skyboxUniBufs) {
             buffer.Destroy();
         }
-        skyboxUniBufs.clear();
-        skybox.Destroy(device);
+        _skyboxUniBufs.clear();
+        _skybox.Destroy(device);
     }
 
-    void CubeMap::CreateAndSetupSkyboxDescriptorSet(const Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout) const {
-        const VkDevice device = main.GetDevice();
+    void CubeMap::CreateAndSetupSkyboxDescriptorSet(const Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout) {
+        VkDevice device = main.GetDevice();
 
         const auto imageCount = main.GetVulkanSwapChain().imageCount;
-        skyboxDescSets.resize(imageCount);
+        _skyboxDescSets.resize(imageCount);
 
         for (std::remove_const<decltype(imageCount)>::type i = 0; i < imageCount; ++i) {
             VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
@@ -637,28 +620,28 @@ namespace Vk {
             descriptorSetAllocInfo.descriptorPool = descPool;
             descriptorSetAllocInfo.pSetLayouts = &descSetLayout;
             descriptorSetAllocInfo.descriptorSetCount = 1;
-            CheckResult(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &skyboxDescSets[i]));
+            CheckResult(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &_skyboxDescSets[i]));
 
             std::array<VkWriteDescriptorSet, 3> writeDescriptorSets{};
 
             writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             writeDescriptorSets[0].descriptorCount = 1;
-            writeDescriptorSets[0].dstSet = skyboxDescSets[i];
+            writeDescriptorSets[0].dstSet = _skyboxDescSets[i];
             writeDescriptorSets[0].dstBinding = 0;
-            writeDescriptorSets[0].pBufferInfo = &skyboxUniBufs[i].descriptor;
+            writeDescriptorSets[0].pBufferInfo = &_skyboxUniBufs[i].descriptor;
 
             writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             writeDescriptorSets[1].descriptorCount = 1;
-            writeDescriptorSets[1].dstSet = skyboxDescSets[i];
+            writeDescriptorSets[1].dstSet = _skyboxDescSets[i];
             writeDescriptorSets[1].dstBinding = 1;
             writeDescriptorSets[1].pBufferInfo = &shaderParamUniBufs[i].descriptor;
 
             writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             writeDescriptorSets[2].descriptorCount = 1;
-            writeDescriptorSets[2].dstSet = skyboxDescSets[i];
+            writeDescriptorSets[2].dstSet = _skyboxDescSets[i];
             writeDescriptorSets[2].dstBinding = 2;
             writeDescriptorSets[2].pImageInfo = &_prefilteredCube.descriptor;
 
@@ -678,39 +661,27 @@ namespace Vk {
         info.stageCount = static_cast<uint32_t>(shaderStages.size());
         info.pStages = shaderStages.data();
 
-        CheckResult(vkCreateGraphicsPipelines(device, pipelineCache, 1, &info, nullptr, &skyboxPipeline));
+        CheckResult(vkCreateGraphicsPipelines(device, pipelineCache, 1, &info, nullptr, &_skyboxPipeline));
 
         for (auto shaderStage : shaderStages)
             vkDestroyShaderModule(device, shaderStage.module, nullptr);
     }
 
     void CubeMap::UpdateSkyboxUniformData(const glm::mat4& view, const glm::mat4& perspective) {
-        skyboxUniData.projection = perspective;
-        skyboxUniData.view = view;
-        skyboxUniData.model = glm::mat4(glm::mat3(view));
+        _skyboxUniData.projection = perspective;
+        _skyboxUniData.view = view;
+        _skyboxUniData.model = glm::mat4(glm::mat3(view));
     }
 
     void CubeMap::OnSkyboxUniformBuffrSet(uint32_t currentBuffer) {
         constexpr auto skyboxUniDataSize = sizeof(SkyboxUniformData);
-        memcpy_s(skyboxUniBufs[currentBuffer].mapped, skyboxUniDataSize, &skyboxUniData, skyboxUniDataSize);
+        memcpy_s(_skyboxUniBufs[currentBuffer].mapped, skyboxUniDataSize, &_skyboxUniData, skyboxUniDataSize);
     }
 
     void CubeMap::RenderSkybox(uint32_t currentBuffer, VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout) {
-        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &skyboxDescSets[currentBuffer], 0, nullptr);
-        vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipeline);
+        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &_skyboxDescSets[currentBuffer], 0, nullptr);
+        vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _skyboxPipeline);
 
-        skybox.Draw(cmdBuf);
-    }
-
-    Model& CubeMap::GetSkybox() const {
-        return skybox;
-    }
-
-    Buffers& CubeMap::GetSkyboxUniformBuffers() const {
-        return skyboxUniBufs;
-    }
-
-    VkDescriptorSet* CubeMap::GetSkyboxDescSets() const {
-        return skyboxDescSets.data();
+        _skybox.Draw(cmdBuf);
     }
 }

@@ -413,7 +413,6 @@ namespace Vk {
             translation = glm::make_vec3(node.translation.data());
             newNode->translation = translation;
         }
-        glm::mat4 rotation = glm::mat4(1.0f);
         if (node.rotation.size() == 4) {
             glm::quat q = glm::make_quat(node.rotation.data());
             newNode->rotation = glm::mat4(q);
@@ -605,7 +604,7 @@ namespace Vk {
     void Model::LoadTextures(tinygltf::Model& gltfModel, Vk::VulkanDevice* inDevice, VkQueue transferQueue) {
         for (tinygltf::Texture& tex : gltfModel.textures) {
             tinygltf::Image image = gltfModel.images[tex.source];
-            TextureSampler textureSampler{};
+            TextureSampler textureSampler;
             if (tex.sampler == -1) {
                 // No sampler specified, use a default one
                 textureSampler.magFilter = VK_FILTER_LINEAR;

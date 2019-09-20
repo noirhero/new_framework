@@ -37,19 +37,19 @@ namespace Vk {
         info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         info.commandBufferCount = count;
 
-        _cmdBufs.resize(count, VK_NULL_HANDLE);
-        CheckResult(vkAllocateCommandBuffers(device, &info, _cmdBufs.data()));
+        _cmdBuffers.resize(count, VK_NULL_HANDLE);
+        CheckResult(vkAllocateCommandBuffers(device, &info, _cmdBuffers.data()));
 
-        return (VK_NULL_HANDLE == _cmdBufs.front()) ? false : true;
+        return (VK_NULL_HANDLE == _cmdBuffers.front()) ? false : true;
     }
 
     void CommandBuffer::Release(VkDevice device, VkCommandPool cmdPool) {
-        const auto count = static_cast<uint32_t>(_cmdBufs.size());
+        const auto count = static_cast<uint32_t>(_cmdBuffers.size());
         if (0 == count)
             return;
 
-        vkFreeCommandBuffers(device, cmdPool, count, _cmdBufs.data());
-        _cmdBufs.clear();
+        vkFreeCommandBuffers(device, cmdPool, count, _cmdBuffers.data());
+        _cmdBuffers.clear();
     }
 
     // Frame buffer
@@ -63,7 +63,7 @@ namespace Vk {
         */
         if (true == _isMultiSampling) {
             // Check if device supports requested sample count for color and depth frame buffer
-            //assert((deviceProperties.limits.framebufferColorSampleCounts >= sampleCount) && (deviceProperties.limits.framebufferDepthSampleCounts >= sampleCount));
+            //assert((deviceProperties.limits.frame bufferColorSampleCounts >= sampleCount) && (deviceProperties.limits.frame bufferDepthSampleCounts >= sampleCount));
 
             VkImageCreateInfo imageCI{};
             imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -222,23 +222,23 @@ namespace Vk {
         frameBufferCI.layers = 1;
 
         // Create frame buffers for every swap chain image
-        _frameBufs.resize(swapChain.imageCount);
-        for (uint32_t i = 0; i < _frameBufs.size(); i++) {
+        _frameBuffers.resize(swapChain.imageCount);
+        for (uint32_t i = 0; i < _frameBuffers.size(); i++) {
             if (settings.multiSampling)
                 attachments[1] = swapChain.buffers[i].view;
             else
                 attachments[0] = swapChain.buffers[i].view;
 
-            CheckResult(vkCreateFramebuffer(device, &frameBufferCI, nullptr, &_frameBufs[i]));
+            CheckResult(vkCreateFramebuffer(device, &frameBufferCI, nullptr, &_frameBuffers[i]));
         }
 
         return true;
     }
 
     void FrameBuffer::Release(VkDevice device) {
-        for (auto& frameBuffer : _frameBufs)
+        for (auto& frameBuffer : _frameBuffers)
             vkDestroyFramebuffer(device, frameBuffer, nullptr);
-        _frameBufs.clear();
+        _frameBuffers.clear();
 
         const auto deleteFn = [device](VkImage image, VkImageView view, VkDeviceMemory memory) {
             if (VK_NULL_HANDLE != memory)
