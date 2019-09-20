@@ -674,8 +674,10 @@ namespace Vk {
     }
 
     void CubeMap::OnSkyboxUniformBuffrSet(uint32_t currentBuffer) {
-        constexpr auto skyboxUniDataSize = sizeof(SkyboxUniformData);
-        memcpy_s(_skyboxUniBufs[currentBuffer].mapped, skyboxUniDataSize, &_skyboxUniData, skyboxUniDataSize);
+        if(false == _skyboxUniBufs.empty()) {
+            constexpr auto skyboxUniDataSize = sizeof(SkyboxUniformData);
+            memcpy_s(_skyboxUniBufs[currentBuffer].mapped, skyboxUniDataSize, &_skyboxUniData, skyboxUniDataSize);
+        }
     }
 
     void CubeMap::RenderSkybox(uint32_t currentBuffer, VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout) {

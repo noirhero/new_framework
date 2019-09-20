@@ -677,11 +677,15 @@ namespace Vk {
     }
 
     void Scene::OnUniformBufferSets(uint32_t currentBuffer) {
-        constexpr auto uniDataSize = sizeof(UniformData);
-        memcpy_s(_sceneUniBufs[currentBuffer].mapped, uniDataSize, &_sceneUniData, uniDataSize);
+        if(false == _sceneUniBufs.empty()) {
+            constexpr auto uniDataSize = sizeof(UniformData);
+            memcpy_s(_sceneUniBufs[currentBuffer].mapped, uniDataSize, &_sceneUniData, uniDataSize);
+        }
 
-        constexpr auto shaderValueSize = sizeof(ShaderValues);
-        memcpy_s(_sceneShaderValueUniBufs[currentBuffer].mapped, shaderValueSize, &_sceneShaderValue, shaderValueSize);
+        if(false == _sceneShaderValueUniBufs.empty()) {
+            constexpr auto shaderValueSize = sizeof(ShaderValues);
+            memcpy_s(_sceneShaderValueUniBufs[currentBuffer].mapped, shaderValueSize, &_sceneShaderValue, shaderValueSize);
+        }
 
         _cubeMap.OnSkyboxUniformBuffrSet(currentBuffer);
     }

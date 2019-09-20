@@ -63,6 +63,12 @@
     <ClInclude Include="VkBuffer.h">
       <Filter>vulkan\legacy</Filter>
     </ClInclude>
+    <ClInclude Include="RenderSceneSystem.h">
+      <Filter>system</Filter>
+    </ClInclude>
+    <ClInclude Include="System.h">
+      <Filter>system</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -127,6 +133,12 @@
     <ClCompile Include="VkBuffer.cpp">
       <Filter>vulkan\legacy</Filter>
     </ClCompile>
+    <ClCompile Include="RenderSceneSystem.cpp">
+      <Filter>system</Filter>
+    </ClCompile>
+    <ClCompile Include="System.cpp">
+      <Filter>system</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="vulkan">
@@ -137,6 +149,9 @@
     </Filter>
     <Filter Include="utility">
       <UniqueIdentifier>{159c6211-d478-4e05-8e59-f0cb5d062e76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="system">
+      <UniqueIdentifier>{50d193dc-a8c1-4a1e-b3a5-50f197d4d6e5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
