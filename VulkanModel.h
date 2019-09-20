@@ -3,7 +3,7 @@
 #pragma once
 
 // Changing this value here also requires changing it in the vertex shader
-#define MAX_NUM_JOINTS 128u
+constexpr auto MAX_NUM_JOINTS = 128u;
 
 namespace tinygltf
 {

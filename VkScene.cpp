@@ -64,7 +64,7 @@ namespace Vk {
 
         const auto tStart = std::chrono::high_resolution_clock::now();
 
-        lutBrdf = GenerateBRDFLUT(device, queue, pipelineCache, vulkanDevice);
+        lutBrdf = GenerateBRDFLookupTable(device, queue, pipelineCache, vulkanDevice);
 
         const auto tEnd = std::chrono::high_resolution_clock::now();
         const auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
@@ -461,8 +461,8 @@ namespace Vk {
 
         // PBR pipeline
         const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {
-            loadShader(device, "pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-            loadShader(device, "pbr_khr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+            LoadShader(device, "pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+            LoadShader(device, "pbr_khr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
         };
         pipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
         pipelineCI.pStages = shaderStages.data();
@@ -507,9 +507,9 @@ namespace Vk {
         const auto uniBufUsagFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
         const auto uniBufMemPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         for (auto& uniformBuffer : _sceneUniBufs)
-            uniformBuffer.create(vulkanDevice, uniBufUsagFlags, uniBufMemPropertyFlags, sizeof(UniformData));
+            uniformBuffer.Create(vulkanDevice, uniBufUsagFlags, uniBufMemPropertyFlags, sizeof(UniformData));
         for (auto& uniformBuffer : _sceneShaderValueUniBufs)
-            uniformBuffer.create(vulkanDevice, uniBufUsagFlags, uniBufMemPropertyFlags, sizeof(ShaderValues));
+            uniformBuffer.Create(vulkanDevice, uniBufUsagFlags, uniBufMemPropertyFlags, sizeof(ShaderValues));
     }
 
 
@@ -552,15 +552,15 @@ namespace Vk {
         vkDestroyDescriptorPool(device, _descriptorPool, nullptr);
 
         for (auto& buffer : _cubeMap.GetSkyboxUniformBuffers()) {
-            buffer.destroy();
+            buffer.Destroy();
         }
         _cubeMap.Release(device);
 
         for (auto& buffer : _sceneShaderValueUniBufs) {
-            buffer.destroy();
+            buffer.Destroy();
         }
         for (auto& buffer : _sceneUniBufs) {
-            buffer.destroy();
+            buffer.Destroy();
         }
         _scene.destroy(device);
 

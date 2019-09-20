@@ -8,7 +8,7 @@
 
 namespace Vk
 {
-	VkPipelineShaderStageCreateInfo loadShader(VkDevice device, const std::string& filename, VkShaderStageFlagBits stage)
+	VkPipelineShaderStageCreateInfo LoadShader(VkDevice device, const std::string& filename, VkShaderStageFlagBits stage)
 	{
 		VkPipelineShaderStageCreateInfo shaderStage{};
 		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -40,7 +40,7 @@ namespace Vk
 		return shaderStage;
 	}
 
-	void readDirectory(const std::string& directory, const std::string &pattern, std::map<std::string, std::string> &filelist, bool recursive)
+	void ReadDirectory(const std::string& directory, const std::string &pattern, std::map<std::string, std::string> &filelist, bool recursive)
 	{
 		std::string searchpattern(directory + "/" + pattern);
 		WIN32_FIND_DATAA data;
@@ -63,7 +63,7 @@ namespace Vk
 						strcat_s(subdir, "/");
 						strcat_s(subdir, data.cFileName);
 						if ((strcmp(data.cFileName, ".") != 0) && (strcmp(data.cFileName, "..") != 0)) {
-							readDirectory(subdir, pattern, filelist, recursive);
+							ReadDirectory(subdir, pattern, filelist, recursive);
 						}
 					}
 				} while (FindNextFileA(hFind, &data) != 0);
@@ -72,7 +72,7 @@ namespace Vk
 		}
 	}
 
-	Texture2D GenerateBRDFLUT(VkDevice device, VkQueue queue, VkPipelineCache pipelineCache, VulkanDevice& vulkanDevice)
+	Texture2D GenerateBRDFLookupTable(VkDevice device, VkQueue queue, VkPipelineCache pipelineCache, VulkanDevice& vulkanDevice)
 	{
 		Texture2D lutBrdf;
 
@@ -253,8 +253,8 @@ namespace Vk
 		emptyInputStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
 		const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{
-            loadShader(device, "genbrdflut.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-            loadShader(device, "genbrdflut.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+            LoadShader(device, "genbrdflut.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+            LoadShader(device, "genbrdflut.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
 		};
 
 		VkGraphicsPipelineCreateInfo pipelineCI{};

@@ -134,7 +134,7 @@ namespace Vk {
         const std::vector<const char*> enabledExtensions{};
         VkResult res = _device->createLogicalDevice(enabledFeatures, enabledExtensions);
         if (res != VK_SUCCESS) {
-            std::cerr << "Could not create Vulkan device!" << std::endl;
+            std::cerr << "Could not Create Vulkan device!" << std::endl;
             exit(res);
         }
 

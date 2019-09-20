@@ -116,7 +116,7 @@ namespace Vk
 		if (requestedQueueTypes & VK_QUEUE_COMPUTE_BIT) {
 			queueFamilyIndices.compute = getQueueFamilyIndex(VK_QUEUE_COMPUTE_BIT);
 			if (queueFamilyIndices.compute != queueFamilyIndices.graphics) {
-				// If compute family index differs, we need an additional queue create info for the compute queue
+				// If compute family index differs, we need an additional queue Create info for the compute queue
 				VkDeviceQueueCreateInfo queueInfo{};
 				queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 				queueInfo.queueFamilyIndex = queueFamilyIndices.compute;
@@ -176,13 +176,13 @@ namespace Vk
 		memAlloc.memoryTypeIndex = getMemoryType(memReqs.memoryTypeBits, memoryPropertyFlags);
 		CheckResult(vkAllocateMemory(logicalDevice, &memAlloc, nullptr, memory));
 
-		// If a pointer to the buffer data has been passed, map the buffer and copy over the data
+		// If a pointer to the buffer data has been passed, Map the buffer and copy over the data
 		if (data != nullptr)
 		{
 			void *mapped;
 			CheckResult(vkMapMemory(logicalDevice, *memory, 0, size, 0, &mapped));
 			memcpy(mapped, data, size);
-			// If host coherency hasn't been requested, do a manual flush to make writes visible
+			// If host coherency hasn't been requested, do a manual Flush to make writes visible
 			if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
 			{
 				VkMappedMemoryRange mappedRange{};

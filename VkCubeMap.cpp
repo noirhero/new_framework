@@ -39,7 +39,7 @@ namespace Vk {
         // uniform buffer
         skyboxUniBufs.resize(main.GetVulkanSwapChain().imageCount);
         for (auto& uniformBuffer : skyboxUniBufs) {
-            uniformBuffer.create(&main.GetVulkanDevice(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(SkyboxUniformData));
+            uniformBuffer.Create(&main.GetVulkanDevice(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(SkyboxUniformData));
         }
     }
 
@@ -375,8 +375,8 @@ namespace Vk {
 
         const auto shaderName = (CubeMapTarget::IRRADIANCE == target) ? "irradiancecube.frag.spv" : "prefilterenvmap.frag.spv";
         const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{
-            loadShader(device, "filtercube.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-            loadShader(device, shaderName, VK_SHADER_STAGE_FRAGMENT_BIT)
+            LoadShader(device, "filtercube.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+            LoadShader(device, shaderName, VK_SHADER_STAGE_FRAGMENT_BIT)
         };
 
         VkGraphicsPipelineCreateInfo pipelineCI{};
@@ -427,8 +427,8 @@ namespace Vk {
         VkCommandBuffer cmdBuf = vulkanDevice.createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
 
         VkViewport viewport{};
-        viewport.width = (float)dim;
-        viewport.height = (float)dim;
+        viewport.width = static_cast<float>(dim);
+        viewport.height = static_cast<float>(dim);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
 
@@ -475,19 +475,19 @@ namespace Vk {
                 // Pass parameters for current pass using a push constant block
                 switch (target) {
                 case CubeMapTarget::IRRADIANCE:
-                    pushBlockIrradiance.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
+                    pushBlockIrradiance.mvp = glm::perspective(static_cast<float>(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
                     vkCmdPushConstants(cmdBuf, pipelinelayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlockIrradiance), &pushBlockIrradiance);
                     break;
                 case CubeMapTarget::PREFILTEREDENV:
-                    pushBlockPrefilterEnv.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
-                    pushBlockPrefilterEnv.roughness = (float)m / (float)(numMips - 1);
+                    pushBlockPrefilterEnv.mvp = glm::perspective(static_cast<float>(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
+                    pushBlockPrefilterEnv.roughness = m / static_cast<float>(numMips - 1);
                     vkCmdPushConstants(cmdBuf, pipelinelayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlockPrefilterEnv), &pushBlockPrefilterEnv);
                     break;
                 default:;
                 };
 
                 vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-                vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelinelayout, 0, 1, &descriptorset, 0, NULL);
+                vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelinelayout, 0, 1, &descriptorset, 0, nullptr);
 
                 //VkDeviceSize offsets[1] = { 0 };
 
@@ -619,14 +619,14 @@ namespace Vk {
             skyboxPipeline = VK_NULL_HANDLE;
         }
         for (auto& buffer : skyboxUniBufs) {
-            buffer.destroy();
+            buffer.Destroy();
         }
         skyboxUniBufs.clear();
         skybox.destroy(device);
     }
 
-    void CubeMap::CreateAndSetupSkyboxDescriptorSet(const Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout) {
-        VkDevice device = main.GetDevice();
+    void CubeMap::CreateAndSetupSkyboxDescriptorSet(const Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout) const {
+        const VkDevice device = main.GetDevice();
 
         const auto imageCount = main.GetVulkanSwapChain().imageCount;
         skyboxDescSets.resize(imageCount);
@@ -672,8 +672,8 @@ namespace Vk {
 
         const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages =
         {
-            loadShader(device, "skybox.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-            loadShader(device, "skybox.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+            LoadShader(device, "skybox.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+            LoadShader(device, "skybox.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
         };
         info.stageCount = static_cast<uint32_t>(shaderStages.size());
         info.pStages = shaderStages.data();

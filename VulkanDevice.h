@@ -89,7 +89,7 @@ namespace Vk
 		/**
 		* Create a command pool for allocation command buffers from
 		*
-		* @param queueFamilyIndex Family index of the queue to create the command pool for
+		* @param queueFamilyIndex Family index of the queue to Create the command pool for
 		* @param createFlags (Optional) Command pool creation flags (Defaults to VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)
 		*
 		* @note Command buffers allocated from the created pool can only be submitted to a queue with the same family index
@@ -113,7 +113,7 @@ namespace Vk
 		/**
 		* Finish command buffer recording and submit it to a queue
 		*
-		* @param commandBuffer Command buffer to flush
+		* @param commandBuffer Command buffer to Flush
 		* @param queue Queue to submit the command buffer to
 		* @param free (Optional) Free the command buffer once it has been submitted (Defaults to true)
 		*

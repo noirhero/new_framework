@@ -47,7 +47,7 @@ namespace Vk
 		*
 		* @param inInstance Vulkan inInstance to use
 		* @param inPhysicalDevice Physical inDevice used to query properties and formats relevant to the swapchain
-		* @param inDevice Logical representation of the inDevice to create the swapchain for
+		* @param inDevice Logical representation of the inDevice to Create the swapchain for
 		*
 		*/
 		void connect(VkInstance inInstance, VkPhysicalDevice inPhysicalDevice, VkDevice inDevice);

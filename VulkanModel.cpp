@@ -197,7 +197,7 @@ namespace Vk
 		vkFreeMemory(inDevice->logicalDevice, stagingMemory, nullptr);
 		vkDestroyBuffer(inDevice->logicalDevice, stagingBuffer, nullptr);
 
-		// Generate the mip chain (glTF uses jpg and png, so we need to create this manually)
+		// Generate the mip chain (glTF uses jpg and png, so we need to Create this manually)
 		VkCommandBuffer blitCmd = inDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 		for (uint32_t i = 1; i < mipLevels; i++) {
 			VkImageBlit imageBlit{};

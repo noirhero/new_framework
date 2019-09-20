@@ -19,7 +19,7 @@ namespace Vk
 		err = vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
 
 		if (err != VK_SUCCESS) {
-			std::cerr << "Could not create surface!" << std::endl;
+			std::cerr << "Could not Create surface!" << std::endl;
 			exit(err);
 		}
 
@@ -140,7 +140,7 @@ namespace Vk
 	}
 
     template<typename T>
-    T GetInstanceProcedureAddress(const VkInstance instance, const char* fnName) {
+    T GetInstanceProcedureAddress(VkInstance instance, const char* fnName) {
         const auto fn = vkGetInstanceProcAddr(instance, fnName);
         if (nullptr == fn)
             exit(1);
@@ -149,7 +149,7 @@ namespace Vk
     }
 
     template<typename T>
-    T GetDeviceProcedureAddress(const VkDevice device, const char* fnName) {
+    T GetDeviceProcedureAddress(VkDevice device, const char* fnName) {
         const auto fn = vkGetDeviceProcAddr(device, fnName);
         if (nullptr == fn)
             exit(1);

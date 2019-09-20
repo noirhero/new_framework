@@ -82,11 +82,11 @@ namespace Vk {
 
         const float aspect = _main.GetSettings().width / static_cast<float>(_main.GetSettings().height);
         _camera.type = Camera::CameraType::LookAt;
-        _camera.setPerspective(45.0f, aspect, 0.1f, 256.0f);
+        _camera.SetPerspective(45.0f, aspect, 0.1f, 256.0f);
         _camera.rotationSpeed = 0.25f;
         _camera.movementSpeed = 0.1f;
-        _camera.setPosition({ 0.0f, 0.0f, 1.0f });
-        _camera.setRotation({ 0.0f, 0.0f, 0.0f });
+        _camera.SetPosition({ 0.0f, 0.0f, 1.0f });
+        _camera.SetRotation({ 0.0f, 0.0f, 0.0f });
     }
 
     void WindowResize() {
@@ -102,7 +102,7 @@ namespace Vk {
         _scene.RecordBuffers(_main);
 
         const float aspect = _main.GetSettings().width / static_cast<float>(_main.GetSettings().height);
-        _camera.updateAspectRatio(aspect);
+        _camera.UpdateAspectRatio(aspect);
 
         prepared = true;
     }
@@ -152,7 +152,7 @@ namespace Vk {
                     Render();
                 }
 
-                _camera.update(_timer.Delta());
+                _camera.Update(_timer.Delta());
             }
         }
     }
@@ -162,13 +162,13 @@ namespace Vk {
         const auto dy = static_cast<int32_t>(mousePos.y - y);
 
         if (true == mouseButtons.left)
-            _camera.rotate(glm::vec3(dy * _camera.rotationSpeed, -dx * _camera.rotationSpeed, 0.0f));
+            _camera.Rotate(glm::vec3(dy * _camera.rotationSpeed, -dx * _camera.rotationSpeed, 0.0f));
 
         if (true == mouseButtons.right)
-            _camera.translate(glm::vec3(-0.0f, 0.0f, dy * .005f * _camera.movementSpeed));
+            _camera.Translate(glm::vec3(-0.0f, 0.0f, dy * .005f * _camera.movementSpeed));
 
         if (true == mouseButtons.middle)
-            _camera.translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
+            _camera.Translate(glm::vec3(-dx * 0.01f, -dy * 0.01f, 0.0f));
 
         mousePos = glm::vec2(static_cast<float>(x), static_cast<float>(y));
     }
@@ -283,7 +283,7 @@ namespace Vk {
         case WM_MOUSEWHEEL:
         {
             const auto wheelDelta = static_cast<float>(GET_WHEEL_DELTA_WPARAM(wParam));
-            _camera.translate(glm::vec3(0.0f, 0.0f, -wheelDelta * 0.005f * _camera.movementSpeed));
+            _camera.Translate(glm::vec3(0.0f, 0.0f, -wheelDelta * 0.005f * _camera.movementSpeed));
             break;
         }
         case WM_MOUSEMOVE:

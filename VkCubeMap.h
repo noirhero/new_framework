@@ -23,7 +23,7 @@ namespace Vk {
         Buffers&                    GetSkyboxUniformBuffers() const;
         VkDescriptorSet*            GetSkyboxDescSets() const;
 
-        void                        CreateAndSetupSkyboxDescriptorSet(const Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout);
+        void                        CreateAndSetupSkyboxDescriptorSet(const Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout) const;
         void                        PrepareSkyboxPipeline(const Main& main, VkGraphicsPipelineCreateInfo& info);
         void                        UpdateSkyboxUniformData(const glm::mat4& view, const glm::mat4& perspective);
         void                        OnSkyboxUniformBuffrSet(uint32_t currentBuffer);

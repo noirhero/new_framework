@@ -16,11 +16,11 @@ namespace Vk {
         int32_t count = 0;
         void* mapped = nullptr;
 
-        void create(VulkanDevice* inDevice, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, bool map = true);
-        void destroy();
-        void map();
-        void unmap();
-        void flush(VkDeviceSize size = VK_WHOLE_SIZE);
+        void Create(VulkanDevice* inDevice, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, bool map = true);
+        void Destroy();
+        void Map();
+        void UnMap();
+        void Flush(VkDeviceSize size = VK_WHOLE_SIZE) const;
     };
 
     using Buffers = std::vector<Buffer>;
