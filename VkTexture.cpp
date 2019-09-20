@@ -47,7 +47,7 @@ namespace Vk {
         VkMemoryRequirements memReqs;
 
         // Use a separate command buffer for texture loading
-        VkCommandBuffer copyCmd = inDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+        VkCommandBuffer copyCmd = inDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
         // Create a host-visible staging buffer that contains the raw image data
         VkBuffer stagingBuffer;
@@ -67,7 +67,7 @@ namespace Vk {
 
         memAllocInfo.allocationSize = memReqs.size;
         // Get memory type index for a host visible buffer
-        memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        memAllocInfo.memoryTypeIndex = inDevice->GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
         CheckResult(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
@@ -121,7 +121,7 @@ namespace Vk {
 
         memAllocInfo.allocationSize = memReqs.size;
 
-        memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        memAllocInfo.memoryTypeIndex = inDevice->GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
         CheckResult(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
 
@@ -169,7 +169,7 @@ namespace Vk {
             vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
         }
 
-        inDevice->flushCommandBuffer(copyCmd, copyQueue);
+        inDevice->FlushCommandBuffer(copyCmd, copyQueue);
 
         // Clean up staging resources
         vkFreeMemory(inDevice->logicalDevice, stagingMemory, nullptr);
@@ -227,7 +227,7 @@ namespace Vk {
         memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         VkMemoryRequirements memReqs;
         // Use a separate command buffer for texture loading
-        VkCommandBuffer copyCmd = inDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+        VkCommandBuffer copyCmd = inDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
         // Create a host-visible staging buffer that contains the raw image data
         VkBuffer stagingBuffer;
@@ -247,7 +247,7 @@ namespace Vk {
 
         memAllocInfo.allocationSize = memReqs.size;
         // Get memory type index for a host visible buffer
-        memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        memAllocInfo.memoryTypeIndex = inDevice->GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
         CheckResult(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
@@ -291,7 +291,7 @@ namespace Vk {
 
         memAllocInfo.allocationSize = memReqs.size;
 
-        memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        memAllocInfo.memoryTypeIndex = inDevice->GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
         CheckResult(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
 
@@ -335,7 +335,7 @@ namespace Vk {
             vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
         }
 
-        inDevice->flushCommandBuffer(copyCmd, copyQueue);
+        inDevice->FlushCommandBuffer(copyCmd, copyQueue);
 
         // Clean up staging resources
         vkFreeMemory(inDevice->logicalDevice, stagingMemory, nullptr);
@@ -411,7 +411,7 @@ namespace Vk {
 
         memAllocInfo.allocationSize = memReqs.size;
         // Get memory type index for a host visible buffer
-        memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        memAllocInfo.memoryTypeIndex = inDevice->GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
         CheckResult(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
@@ -472,13 +472,13 @@ namespace Vk {
         vkGetImageMemoryRequirements(inDevice->logicalDevice, image, &memReqs);
 
         memAllocInfo.allocationSize = memReqs.size;
-        memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        memAllocInfo.memoryTypeIndex = inDevice->GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
         CheckResult(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
 
         // Use a separate command buffer for texture loading
-        VkCommandBuffer copyCmd = inDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+        VkCommandBuffer copyCmd = inDevice->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
         // Image barrier for optimal image (target)
         // Set initial layout for all array layers (faces) of the optimal (target) tiled texture
@@ -523,7 +523,7 @@ namespace Vk {
             vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
         }
 
-        inDevice->flushCommandBuffer(copyCmd, copyQueue);
+        inDevice->FlushCommandBuffer(copyCmd, copyQueue);
 
         // Create sampler
         VkSamplerCreateInfo samplerCreateInfo{};

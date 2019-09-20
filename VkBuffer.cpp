@@ -10,7 +10,7 @@ namespace Vk {
     void Buffer::Create(VulkanDevice* inDevice, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, bool map) {
         device = inDevice->logicalDevice;
 
-        inDevice->createBuffer(usageFlags, memoryPropertyFlags, size, &buffer, &memory);
+        inDevice->CreateBuffer(usageFlags, memoryPropertyFlags, size, &buffer, &memory);
         descriptor = { buffer, 0, size };
         if (map) {
             CheckResult(vkMapMemory(inDevice->logicalDevice, memory, 0, size, 0, &mapped));

@@ -40,8 +40,8 @@ namespace Vk {
     }
 
     void Main::Prepare(HINSTANCE instance, HWND window) {
-        _swapChain->initSurface(instance, window);
-        _swapChain->create(&_settings.width, &_settings.height, _settings.vsync);
+        _swapChain->InitSurface(instance, window);
+        _swapChain->Create(&_settings.width, &_settings.height, _settings.vsync);
 
         _cmdPool.Initialize(_swapChain->queueNodeIndex, _logicalDevice);
         _renderPass.Initialize(_swapChain->colorFormat, _depthFormat, _logicalDevice, _settings.multiSampling, _settings.sampleCount);
@@ -70,7 +70,7 @@ namespace Vk {
     void Main::RecreateSwapChain() {
         vkDeviceWaitIdle(_logicalDevice);
 
-        _swapChain->create(&_settings.width, &_settings.height, _settings.vsync);
+        _swapChain->Create(&_settings.width, &_settings.height, _settings.vsync);
 
         _frameBufs.Release(_logicalDevice);
         _frameBufs.Initialize(*_device, *_swapChain, _depthFormat, _renderPass.Get(), _settings);
@@ -80,7 +80,7 @@ namespace Vk {
         CheckResult(vkWaitForFences(_logicalDevice, 1, &_waitFences[frameIndex], VK_TRUE, UINT64_MAX));
         CheckResult(vkResetFences(_logicalDevice, 1, &_waitFences[frameIndex]));
 
-        return _swapChain->acquireNextImage(_presentCompleteSemaphores[frameIndex], &currentBuffer);
+        return _swapChain->AcquireNextImage(_presentCompleteSemaphores[frameIndex], &currentBuffer);
     }
 
     VkResult Main::QueuePresent(uint32_t currentBuffer, uint32_t frameIndex) {
@@ -97,7 +97,7 @@ namespace Vk {
         submitInfo.commandBufferCount = 1;
         CheckResult(vkQueueSubmit(_gpuQueue, 1, &submitInfo, _waitFences[frameIndex]));
 
-        return _swapChain->queuePresent(_gpuQueue, currentBuffer, _renderCompleteSemaphores[frameIndex]);
+        return _swapChain->QueuePresent(_gpuQueue, currentBuffer, _renderCompleteSemaphores[frameIndex]);
     }
 
     bool Main::InitializePhysicalGroup() {
@@ -132,7 +132,7 @@ namespace Vk {
             enabledFeatures.samplerAnisotropy = VK_TRUE;
 
         const std::vector<const char*> enabledExtensions{};
-        VkResult res = _device->createLogicalDevice(enabledFeatures, enabledExtensions);
+        VkResult res = _device->CreateLogicalDevice(enabledFeatures, enabledExtensions);
         if (res != VK_SUCCESS) {
             std::cerr << "Could not Create Vulkan device!" << std::endl;
             exit(res);
@@ -147,14 +147,14 @@ namespace Vk {
         }
 
         _swapChain = new VulkanSwapChain;
-        _swapChain->connect(_instanceHandle, _selectDevice, _logicalDevice);
+        _swapChain->Connect(_instanceHandle, _selectDevice, _logicalDevice);
 
         return true;
     }
 
     void Main::ReleaseLogicalGroup() {
         if (nullptr != _swapChain) {
-            _swapChain->cleanup();
+            _swapChain->Cleanup();
             delete _swapChain;
             _swapChain = nullptr;
         }

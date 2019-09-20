@@ -5,14 +5,13 @@
 
 namespace Vk {
     void Camera::UpdateViewMatrix() {
-        glm::mat4 rotM = glm::mat4(1.0f);
-        glm::mat4 transM;
+        glm::mat4 rotM{ glm::identity<glm::mat4>() };
 
         rotM = glm::rotate(rotM, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
         rotM = glm::rotate(rotM, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
         rotM = glm::rotate(rotM, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 
-        transM = glm::translate(glm::mat4(1.0f), position * glm::vec3(1.0f, 1.0f, -1.0f));
+        const auto transM = glm::translate(glm::mat4(1.0f), position * glm::vec3(1.0f, 1.0f, -1.0f));
 
         if (type == CameraType::FirstPerson) {
             matrices.view = rotM * transM;
@@ -25,9 +24,9 @@ namespace Vk {
     }
 
     void Camera::SetPerspective(float inFov, float aspect, float inZNear, float inZFar) {
-        this->_fov = inFov;
-        this->_zNear = inZNear;
-        this->_zFar = inZFar;
+        _fov = inFov;
+        _zNear = inZNear;
+        _zFar = inZFar;
         matrices.perspective = glm::perspective(glm::radians(inFov), aspect, inZNear, inZFar);
     };
 
@@ -36,27 +35,27 @@ namespace Vk {
     }
 
     void Camera::SetPosition(glm::vec3 inPosition) {
-        this->position = inPosition;
+        position = inPosition;
         UpdateViewMatrix();
     }
 
     void Camera::SetRotation(glm::vec3 inRotation) {
-        this->rotation = inRotation;
+        rotation = inRotation;
         UpdateViewMatrix();
     };
 
     void Camera::Rotate(glm::vec3 delta) {
-        this->rotation += delta;
+        rotation += delta;
         UpdateViewMatrix();
     }
 
     void Camera::SetTranslation(glm::vec3 translation) {
-        this->position = translation;
+        position = translation;
         UpdateViewMatrix();
     };
 
     void Camera::Translate(glm::vec3 delta) {
-        this->position += delta;
+        position += delta;
         UpdateViewMatrix();
     }
 

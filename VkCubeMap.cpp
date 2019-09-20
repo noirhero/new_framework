@@ -33,8 +33,8 @@ namespace Vk {
 
     void LoadSkybox(const Main& main, std::string&& filename) {
         // model
-        skybox.destroy(main.GetDevice());
-        skybox.loadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
+        skybox.Destroy(main.GetDevice());
+        skybox.LoadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
 
         // uniform buffer
         skyboxUniBufs.resize(main.GetVulkanSwapChain().imageCount);
@@ -93,7 +93,7 @@ namespace Vk {
             VkMemoryAllocateInfo memAllocInfo{};
             memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
             memAllocInfo.allocationSize = memReqs.size;
-            memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            memAllocInfo.memoryTypeIndex = vulkanDevice.GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             CheckResult(vkAllocateMemory(device, &memAllocInfo, nullptr, &cubemap.deviceMemory));
             CheckResult(vkBindImageMemory(device, cubemap.image, cubemap.deviceMemory, 0));
 
@@ -203,7 +203,7 @@ namespace Vk {
             VkMemoryAllocateInfo memAllocInfo{};
             memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
             memAllocInfo.allocationSize = memReqs.size;
-            memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            memAllocInfo.memoryTypeIndex = vulkanDevice.GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             CheckResult(vkAllocateMemory(device, &memAllocInfo, nullptr, &offscreen.memory));
             CheckResult(vkBindImageMemory(device, offscreen.image, offscreen.memory, 0));
 
@@ -233,7 +233,7 @@ namespace Vk {
             framebufferCI.layers = 1;
             CheckResult(vkCreateFramebuffer(device, &framebufferCI, nullptr, &offscreen.framebuffer));
 
-            VkCommandBuffer layoutCmd = vulkanDevice.createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+            VkCommandBuffer layoutCmd = vulkanDevice.CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
             VkImageMemoryBarrier imageMemoryBarrier{};
             imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
             imageMemoryBarrier.image = offscreen.image;
@@ -243,7 +243,7 @@ namespace Vk {
             imageMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
             imageMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
             vkCmdPipelineBarrier(layoutCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-            vulkanDevice.flushCommandBuffer(layoutCmd, queue, true);
+            vulkanDevice.FlushCommandBuffer(layoutCmd, queue, true);
         }
 
         // Descriptors
@@ -424,7 +424,7 @@ namespace Vk {
             glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
         };
 
-        VkCommandBuffer cmdBuf = vulkanDevice.createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
+        VkCommandBuffer cmdBuf = vulkanDevice.CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
 
         VkViewport viewport{};
         viewport.width = static_cast<float>(dim);
@@ -444,7 +444,7 @@ namespace Vk {
 
         // Change image layout for all cubemap faces to transfer destination
         {
-            vulkanDevice.beginCommandBuffer(cmdBuf);
+            vulkanDevice.BeginCommandBuffer(cmdBuf);
 
             VkImageMemoryBarrier imageMemoryBarrier{};
             imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -456,13 +456,13 @@ namespace Vk {
             imageMemoryBarrier.subresourceRange = subresourceRange;
 
             vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-            vulkanDevice.flushCommandBuffer(cmdBuf, queue, false);
+            vulkanDevice.FlushCommandBuffer(cmdBuf, queue, false);
         }
 
         for (uint32_t m = 0; m < numMips; m++) {
             for (uint32_t f = 0; f < 6; f++) {
 
-                vulkanDevice.beginCommandBuffer(cmdBuf);
+                vulkanDevice.BeginCommandBuffer(cmdBuf);
 
                 viewport.width = static_cast<float>(dim * std::pow(0.5f, m));
                 viewport.height = static_cast<float>(dim * std::pow(0.5f, m));
@@ -491,7 +491,7 @@ namespace Vk {
 
                 //VkDeviceSize offsets[1] = { 0 };
 
-                skybox.draw(cmdBuf);
+                skybox.Draw(cmdBuf);
 
                 vkCmdEndRenderPass(cmdBuf);
 
@@ -545,12 +545,12 @@ namespace Vk {
                     vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
                 }
 
-                vulkanDevice.flushCommandBuffer(cmdBuf, queue, false);
+                vulkanDevice.FlushCommandBuffer(cmdBuf, queue, false);
             }
         }
 
         {
-            vulkanDevice.beginCommandBuffer(cmdBuf);
+            vulkanDevice.BeginCommandBuffer(cmdBuf);
             VkImageMemoryBarrier imageMemoryBarrier{};
             imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
             imageMemoryBarrier.image = cubemap.image;
@@ -560,7 +560,7 @@ namespace Vk {
             imageMemoryBarrier.dstAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
             imageMemoryBarrier.subresourceRange = subresourceRange;
             vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-            vulkanDevice.flushCommandBuffer(cmdBuf, queue, false);
+            vulkanDevice.FlushCommandBuffer(cmdBuf, queue, false);
         }
 
 
@@ -622,7 +622,7 @@ namespace Vk {
             buffer.Destroy();
         }
         skyboxUniBufs.clear();
-        skybox.destroy(device);
+        skybox.Destroy(device);
     }
 
     void CubeMap::CreateAndSetupSkyboxDescriptorSet(const Main& main, Buffers& shaderParamUniBufs, VkDescriptorPool descPool, VkDescriptorSetLayout descSetLayout) const {
@@ -699,7 +699,7 @@ namespace Vk {
         vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &skyboxDescSets[currentBuffer], 0, nullptr);
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipeline);
 
-        skybox.draw(cmdBuf);
+        skybox.Draw(cmdBuf);
     }
 
     Model& CubeMap::GetSkybox() const {

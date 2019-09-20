@@ -89,9 +89,9 @@ namespace Vk {
             memAllocInfo.allocationSize = memReqs.size;
 
             VkBool32 lazyMemTypePresent;
-            memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT, &lazyMemTypePresent);
+            memAllocInfo.memoryTypeIndex = vulkanDevice.GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT, &lazyMemTypePresent);
             if (!lazyMemTypePresent)
-                memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                memAllocInfo.memoryTypeIndex = vulkanDevice.GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
             CheckResult(vkAllocateMemory(device, &memAllocInfo, nullptr, &_multiSampleTarget.color.memory));
             vkBindImageMemory(device, _multiSampleTarget.color.image, _multiSampleTarget.color.memory, 0);
@@ -130,9 +130,9 @@ namespace Vk {
 
             memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
             memAllocInfo.allocationSize = memReqs.size;
-            memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT, &lazyMemTypePresent);
+            memAllocInfo.memoryTypeIndex = vulkanDevice.GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT, &lazyMemTypePresent);
             if (!lazyMemTypePresent)
-                memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                memAllocInfo.memoryTypeIndex = vulkanDevice.GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
             CheckResult(vkAllocateMemory(device, &memAllocInfo, nullptr, &_multiSampleTarget.depth.memory));
             vkBindImageMemory(device, _multiSampleTarget.depth.image, _multiSampleTarget.depth.memory, 0);
@@ -191,7 +191,7 @@ namespace Vk {
 
         vkGetImageMemoryRequirements(device, _depthStencil.image, &memReqs);
         mem_alloc.allocationSize = memReqs.size;
-        mem_alloc.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        mem_alloc.memoryTypeIndex = vulkanDevice.GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         CheckResult(vkAllocateMemory(device, &mem_alloc, nullptr, &_depthStencil.mem));
         CheckResult(vkBindImageMemory(device, _depthStencil.image, _depthStencil.mem, 0));

@@ -489,7 +489,7 @@ namespace Vk {
     void Scene::LoadScene(const Main& main, std::string&& filename) {
         Timer timer;
 
-        _scene.loadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
+        _scene.LoadFromFile(filename, &main.GetVulkanDevice(), main.GetGPUQueue());
 
         std::cout << "Loading scene from took " << timer.Update() << " ms" << std::endl;
 
@@ -562,7 +562,7 @@ namespace Vk {
         for (auto& buffer : _sceneUniBufs) {
             buffer.Destroy();
         }
-        _scene.destroy(device);
+        _scene.Destroy(device);
 
         lutBrdf.Destroy();
         empty.Destroy();
