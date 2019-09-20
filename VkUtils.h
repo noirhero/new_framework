@@ -6,35 +6,14 @@
 
 namespace Vk
 {
-#define VK_CHECK_RESULT(f) \
-	{ \
-		VkResult res = (f); \
-		if (res != VK_SUCCESS) \
-		{ \
-			std::cout << "Fatal : VkResult is \"" << res << "\" in " << __FILE__ << " at line " << __LINE__ << std::endl; \
-			assert(res == VK_SUCCESS); \
-		} \
-	}
+    struct VulkanDevice;
 
-#define GET_INSTANCE_PROC_ADDR(inst, entrypoint) \
-	{ \
-		fp##entrypoint = reinterpret_cast<PFN_vk##entrypoint>(vkGetInstanceProcAddr(inst, "vk"#entrypoint)); \
-		if (fp##entrypoint == nullptr) \
-		{ \
-			exit(1); \
-		} \
-	}
-
-#define GET_DEVICE_PROC_ADDR(dev, entrypoint) \
-	{ \
-		fp##entrypoint = reinterpret_cast<PFN_vk##entrypoint>(vkGetDeviceProcAddr(dev, "vk"#entrypoint)); \
-		if (fp##entrypoint == nullptr) \
-		{ \
-			exit(1); \
-		} \
-	}
-	
-	struct VulkanDevice;
+    constexpr void CheckResult(const VkResult res) {
+        if(VK_SUCCESS != res) {
+            std::cout << "Fatal : VkResult is \"" << res << "\" in " << __FILE__ << " at line " << __LINE__ << std::endl;
+            assert(res == VK_SUCCESS);
+        }
+    }
 
 	VkPipelineShaderStageCreateInfo loadShader(VkDevice device, const std::string& filename, VkShaderStageFlagBits stage);
 

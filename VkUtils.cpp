@@ -92,7 +92,7 @@ namespace Vk
 		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		VK_CHECK_RESULT(vkCreateImage(device, &imageCI, nullptr, &lutBrdf.image));
+		CheckResult(vkCreateImage(device, &imageCI, nullptr, &lutBrdf.image));
 
 		VkMemoryRequirements memReqs;
 		vkGetImageMemoryRequirements(device, lutBrdf.image, &memReqs);
@@ -101,8 +101,8 @@ namespace Vk
 		memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		memAllocInfo.allocationSize = memReqs.size;
 		memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		VK_CHECK_RESULT(vkAllocateMemory(device, &memAllocInfo, nullptr, &lutBrdf.deviceMemory));
-		VK_CHECK_RESULT(vkBindImageMemory(device, lutBrdf.image, lutBrdf.deviceMemory, 0));
+		CheckResult(vkAllocateMemory(device, &memAllocInfo, nullptr, &lutBrdf.deviceMemory));
+		CheckResult(vkBindImageMemory(device, lutBrdf.image, lutBrdf.deviceMemory, 0));
 
 		// View
 		VkImageViewCreateInfo viewCI{};
@@ -114,7 +114,7 @@ namespace Vk
 		viewCI.subresourceRange.levelCount = 1;
 		viewCI.subresourceRange.layerCount = 1;
 		viewCI.image = lutBrdf.image;
-		VK_CHECK_RESULT(vkCreateImageView(device, &viewCI, nullptr, &lutBrdf.view));
+		CheckResult(vkCreateImageView(device, &viewCI, nullptr, &lutBrdf.view));
 
 		// Sampler
 		VkSamplerCreateInfo samplerCI{};
@@ -129,7 +129,7 @@ namespace Vk
 		samplerCI.maxLod = 1.0f;
 		samplerCI.maxAnisotropy = 1.0f;
 		samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-		VK_CHECK_RESULT(vkCreateSampler(device, &samplerCI, nullptr, &lutBrdf.sampler));
+		CheckResult(vkCreateSampler(device, &samplerCI, nullptr, &lutBrdf.sampler));
 
 		// FB, Att, RP, Pipe, etc.
 		VkAttachmentDescription attDesc{};
@@ -177,7 +177,7 @@ namespace Vk
 		renderPassCI.pDependencies = dependencies.data();
 
 		VkRenderPass renderpass = VK_NULL_HANDLE;
-		VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassCI, nullptr, &renderpass));
+		CheckResult(vkCreateRenderPass(device, &renderPassCI, nullptr, &renderpass));
 
 		VkFramebufferCreateInfo framebufferCI{};
 		framebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -189,13 +189,13 @@ namespace Vk
 		framebufferCI.layers = 1;
 
 		VkFramebuffer framebuffer = VK_NULL_HANDLE;
-		VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferCI, nullptr, &framebuffer));
+		CheckResult(vkCreateFramebuffer(device, &framebufferCI, nullptr, &framebuffer));
 
 		// Desriptors
 		VkDescriptorSetLayout descriptorsetlayout;
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI{};
 		descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorsetlayout));
+		CheckResult(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorsetlayout));
 
 		// Pipeline layout
 		VkPipelineLayout pipelinelayout;
@@ -203,7 +203,7 @@ namespace Vk
 		pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutCI.setLayoutCount = 1;
 		pipelineLayoutCI.pSetLayouts = &descriptorsetlayout;
-		VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &pipelinelayout));
+		CheckResult(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &pipelinelayout));
 
 		// Pipeline
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI{};
@@ -274,7 +274,7 @@ namespace Vk
 
 		// Look-up-table (from BRDF) pipeline
 		VkPipeline pipeline = VK_NULL_HANDLE;
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipeline));
+		CheckResult(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipeline));
 
 		for (auto shaderStage : shaderStages)
 			vkDestroyShaderModule(device, shaderStage.module, nullptr);

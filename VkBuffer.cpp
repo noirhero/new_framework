@@ -14,7 +14,7 @@ namespace Vk
 		inDevice->createBuffer(usageFlags, memoryPropertyFlags, size, &buffer, &memory);
 		descriptor = { buffer, 0, size };
 		if (map) {
-			VK_CHECK_RESULT(vkMapMemory(inDevice->logicalDevice, memory, 0, size, 0, &mapped));
+			CheckResult(vkMapMemory(inDevice->logicalDevice, memory, 0, size, 0, &mapped));
 		}
 	}
 
@@ -31,7 +31,7 @@ namespace Vk
 
 	void Buffer::map()
 	{
-		VK_CHECK_RESULT(vkMapMemory(device, memory, 0, VK_WHOLE_SIZE, 0, &mapped));
+		CheckResult(vkMapMemory(device, memory, 0, VK_WHOLE_SIZE, 0, &mapped));
 	}
 
 	void Buffer::unmap()
@@ -48,6 +48,6 @@ namespace Vk
 		mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		mappedRange.memory = memory;
 		mappedRange.size = size;
-		VK_CHECK_RESULT(vkFlushMappedMemoryRanges(device, 1, &mappedRange));
+		CheckResult(vkFlushMappedMemoryRanges(device, 1, &mappedRange));
 	}
 }

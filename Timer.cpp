@@ -8,7 +8,7 @@ float Timer::Update() {
     _delta = std::chrono::duration<float, std::milli>(now - _prev).count();
     _prev = now;
 
-    _accum += _delta;
+    _accumulation += _delta;
     _second += _delta;
     if(1.0f <= _second) {
         _second = 0.0f;

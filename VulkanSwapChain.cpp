@@ -91,11 +91,11 @@ namespace Vk
 
 		// Get list of supported surface formats
 		uint32_t formatCount;
-		VK_CHECK_RESULT(fpGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, NULL));
+		CheckResult(fpGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, NULL));
 		assert(formatCount > 0);
 
 		std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
-		VK_CHECK_RESULT(fpGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, surfaceFormats.data()));
+		CheckResult(fpGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, surfaceFormats.data()));
 
 		// If the surface format list only includes one entry with VK_FORMAT_UNDEFINED,
 		// there is no preferered format, so we assume VK_FORMAT_B8G8R8A8_UNORM
@@ -139,20 +139,40 @@ namespace Vk
 
 	}
 
+    template<typename T>
+    T GetInstanceProcedureAddress(const VkInstance instance, const char* fnName) {
+        const auto fn = vkGetInstanceProcAddr(instance, fnName);
+        if (nullptr == fn)
+            exit(1);
+
+        return reinterpret_cast<T>(fn);
+    }
+
+    template<typename T>
+    T GetDeviceProcedureAddress(const VkDevice device, const char* fnName) {
+        const auto fn = vkGetDeviceProcAddr(device, fnName);
+        if (nullptr == fn)
+            exit(1);
+
+        return reinterpret_cast<T>(fn);
+	}
+
 	void VulkanSwapChain::connect(VkInstance inInstance, VkPhysicalDevice inPhysicalDevice, VkDevice inDevice)
 	{
-		this->instance = inInstance;
-		this->physicalDevice = inPhysicalDevice;
-		this->device = inDevice;
-		GET_INSTANCE_PROC_ADDR(inInstance, GetPhysicalDeviceSurfaceSupportKHR);
-		GET_INSTANCE_PROC_ADDR(inInstance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
-		GET_INSTANCE_PROC_ADDR(inInstance, GetPhysicalDeviceSurfaceFormatsKHR);
-		GET_INSTANCE_PROC_ADDR(inInstance, GetPhysicalDeviceSurfacePresentModesKHR);
-		GET_DEVICE_PROC_ADDR(inDevice, CreateSwapchainKHR);
-		GET_DEVICE_PROC_ADDR(inDevice, DestroySwapchainKHR);
-		GET_DEVICE_PROC_ADDR(inDevice, GetSwapchainImagesKHR);
-		GET_DEVICE_PROC_ADDR(inDevice, AcquireNextImageKHR);
-		GET_DEVICE_PROC_ADDR(inDevice, QueuePresentKHR);
+        fpGetPhysicalDeviceSurfaceSupportKHR = GetInstanceProcedureAddress<PFN_vkGetPhysicalDeviceSurfaceSupportKHR>(inInstance, "vkGetPhysicalDeviceSurfaceSupportKHR");
+        fpGetPhysicalDeviceSurfaceCapabilitiesKHR = GetInstanceProcedureAddress<PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR>(inInstance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
+        fpGetPhysicalDeviceSurfaceFormatsKHR = GetInstanceProcedureAddress<PFN_vkGetPhysicalDeviceSurfaceFormatsKHR>(inInstance, "vkGetPhysicalDeviceSurfaceFormatsKHR");
+        fpGetPhysicalDeviceSurfacePresentModesKHR = GetInstanceProcedureAddress<PFN_vkGetPhysicalDeviceSurfacePresentModesKHR>(inInstance, "vkGetPhysicalDeviceSurfacePresentModesKHR");
+
+        fpCreateSwapchainKHR = GetDeviceProcedureAddress<PFN_vkCreateSwapchainKHR>(inDevice, "vkCreateSwapchainKHR");
+        fpDestroySwapchainKHR = GetDeviceProcedureAddress<PFN_vkDestroySwapchainKHR>(inDevice, "vkDestroySwapchainKHR");
+        fpGetSwapchainImagesKHR = GetDeviceProcedureAddress<PFN_vkGetSwapchainImagesKHR>(inDevice, "vkGetSwapchainImagesKHR");
+        fpAcquireNextImageKHR = GetDeviceProcedureAddress<PFN_vkAcquireNextImageKHR>(inDevice, "vkAcquireNextImageKHR");
+        fpQueuePresentKHR = GetDeviceProcedureAddress<PFN_vkQueuePresentKHR>(inDevice, "vkQueuePresentKHR");
+
+		instance = inInstance;
+		physicalDevice = inPhysicalDevice;
+		device = inDevice;
 	}
 
 	void VulkanSwapChain::create(uint32_t *width, uint32_t *height, bool vsync)
@@ -161,15 +181,15 @@ namespace Vk
 
 		// Get physical device surface properties and formats
 		VkSurfaceCapabilitiesKHR surfCaps;
-		VK_CHECK_RESULT(fpGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfCaps));
+		CheckResult(fpGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfCaps));
 
 		// Get available present modes
 		uint32_t presentModeCount;
-		VK_CHECK_RESULT(fpGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, NULL));
+		CheckResult(fpGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, NULL));
 		assert(presentModeCount > 0);
 
 		std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-		VK_CHECK_RESULT(fpGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data()));
+		CheckResult(fpGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data()));
 
 		// If width (and height) equals the special value 0xFFFFFFFF, the size of the surface will be set by the swapchain
 		if (surfCaps.currentExtent.width == (uint32_t)-1)
@@ -274,7 +294,7 @@ namespace Vk
 			swapchainCI.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		}
 
-		VK_CHECK_RESULT(fpCreateSwapchainKHR(device, &swapchainCI, nullptr, &swapChain));
+		CheckResult(fpCreateSwapchainKHR(device, &swapchainCI, nullptr, &swapChain));
 
 		// If an existing swap chain is re-created, Destroy the old swap chain
 		// This also cleans up all the presentable images
@@ -286,11 +306,11 @@ namespace Vk
 			}
 			fpDestroySwapchainKHR(device, oldSwapchain, nullptr);
 		}
-		VK_CHECK_RESULT(fpGetSwapchainImagesKHR(device, swapChain, &imageCount, NULL));
+		CheckResult(fpGetSwapchainImagesKHR(device, swapChain, &imageCount, NULL));
 
 		// Get the swap chain images
 		images.resize(imageCount);
-		VK_CHECK_RESULT(fpGetSwapchainImagesKHR(device, swapChain, &imageCount, images.data()));
+		CheckResult(fpGetSwapchainImagesKHR(device, swapChain, &imageCount, images.data()));
 
 		// Get the swap chain buffers containing the image and imageview
 		buffers.resize(imageCount);
@@ -318,7 +338,7 @@ namespace Vk
 
 			colorAttachmentView.image = buffers[i].image;
 
-			VK_CHECK_RESULT(vkCreateImageView(device, &colorAttachmentView, nullptr, &buffers[i].view));
+			CheckResult(vkCreateImageView(device, &colorAttachmentView, nullptr, &buffers[i].view));
 		}
 	}
 

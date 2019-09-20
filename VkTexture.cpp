@@ -60,7 +60,7 @@ namespace Vk {
         bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        VK_CHECK_RESULT(vkCreateBuffer(inDevice->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
+        CheckResult(vkCreateBuffer(inDevice->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
 
         // Get memory requirements for the staging buffer (alignment, memory type bits)
         vkGetBufferMemoryRequirements(inDevice->logicalDevice, stagingBuffer, &memReqs);
@@ -69,12 +69,12 @@ namespace Vk {
         // Get memory type index for a host visible buffer
         memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        VK_CHECK_RESULT(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
-        VK_CHECK_RESULT(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
+        CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
+        CheckResult(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
 
         // Copy texture data into staging buffer
         uint8_t *data;
-        VK_CHECK_RESULT(vkMapMemory(inDevice->logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data));
+        CheckResult(vkMapMemory(inDevice->logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data));
         memcpy(data, tex2D.data(), tex2D.size());
         vkUnmapMemory(inDevice->logicalDevice, stagingMemory);
 
@@ -115,15 +115,15 @@ namespace Vk {
         if (!(imageCreateInfo.usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
             imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         }
-        VK_CHECK_RESULT(vkCreateImage(inDevice->logicalDevice, &imageCreateInfo, nullptr, &image));
+        CheckResult(vkCreateImage(inDevice->logicalDevice, &imageCreateInfo, nullptr, &image));
 
         vkGetImageMemoryRequirements(inDevice->logicalDevice, image, &memReqs);
 
         memAllocInfo.allocationSize = memReqs.size;
 
         memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        VK_CHECK_RESULT(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
-        VK_CHECK_RESULT(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
+        CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
+        CheckResult(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
 
         VkImageSubresourceRange subresourceRange = {};
         subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -190,7 +190,7 @@ namespace Vk {
         samplerCreateInfo.maxAnisotropy = inDevice->enabledFeatures.samplerAnisotropy ? inDevice->properties.limits.maxSamplerAnisotropy : 1.0f;
         samplerCreateInfo.anisotropyEnable = inDevice->enabledFeatures.samplerAnisotropy;
         samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VK_CHECK_RESULT(vkCreateSampler(inDevice->logicalDevice, &samplerCreateInfo, nullptr, &sampler));
+        CheckResult(vkCreateSampler(inDevice->logicalDevice, &samplerCreateInfo, nullptr, &sampler));
 
         VkImageViewCreateInfo viewCreateInfo{};
         viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -200,7 +200,7 @@ namespace Vk {
         viewCreateInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
         viewCreateInfo.subresourceRange.levelCount = mipLevels;
         viewCreateInfo.image = image;
-        VK_CHECK_RESULT(vkCreateImageView(inDevice->logicalDevice, &viewCreateInfo, nullptr, &view));
+        CheckResult(vkCreateImageView(inDevice->logicalDevice, &viewCreateInfo, nullptr, &view));
 
         UpdateDescriptor();
     }
@@ -240,7 +240,7 @@ namespace Vk {
         bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        VK_CHECK_RESULT(vkCreateBuffer(inDevice->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
+        CheckResult(vkCreateBuffer(inDevice->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
 
         // Get memory requirements for the staging buffer (alignment, memory type bits)
         vkGetBufferMemoryRequirements(inDevice->logicalDevice, stagingBuffer, &memReqs);
@@ -249,12 +249,12 @@ namespace Vk {
         // Get memory type index for a host visible buffer
         memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        VK_CHECK_RESULT(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
-        VK_CHECK_RESULT(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
+        CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
+        CheckResult(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
 
         // Copy texture data into staging buffer
         uint8_t *data;
-        VK_CHECK_RESULT(vkMapMemory(inDevice->logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data));
+        CheckResult(vkMapMemory(inDevice->logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data));
         memcpy(data, buffer, bufferSize);
         vkUnmapMemory(inDevice->logicalDevice, stagingMemory);
 
@@ -285,15 +285,15 @@ namespace Vk {
         if (!(imageCreateInfo.usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
             imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         }
-        VK_CHECK_RESULT(vkCreateImage(inDevice->logicalDevice, &imageCreateInfo, nullptr, &image));
+        CheckResult(vkCreateImage(inDevice->logicalDevice, &imageCreateInfo, nullptr, &image));
 
         vkGetImageMemoryRequirements(inDevice->logicalDevice, image, &memReqs);
 
         memAllocInfo.allocationSize = memReqs.size;
 
         memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        VK_CHECK_RESULT(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
-        VK_CHECK_RESULT(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
+        CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
+        CheckResult(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
 
         VkImageSubresourceRange subresourceRange = {};
         subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -355,7 +355,7 @@ namespace Vk {
         samplerCreateInfo.minLod = 0.0f;
         samplerCreateInfo.maxLod = 0.0f;
         samplerCreateInfo.maxAnisotropy = 1.0f;
-        VK_CHECK_RESULT(vkCreateSampler(inDevice->logicalDevice, &samplerCreateInfo, nullptr, &sampler));
+        CheckResult(vkCreateSampler(inDevice->logicalDevice, &samplerCreateInfo, nullptr, &sampler));
 
         // Create image view
         VkImageViewCreateInfo viewCreateInfo = {};
@@ -367,7 +367,7 @@ namespace Vk {
         viewCreateInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
         viewCreateInfo.subresourceRange.levelCount = 1;
         viewCreateInfo.image = image;
-        VK_CHECK_RESULT(vkCreateImageView(inDevice->logicalDevice, &viewCreateInfo, nullptr, &view));
+        CheckResult(vkCreateImageView(inDevice->logicalDevice, &viewCreateInfo, nullptr, &view));
 
         // Update descriptor image info member that can be used for setting up descriptor sets
         UpdateDescriptor();
@@ -404,7 +404,7 @@ namespace Vk {
         bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        VK_CHECK_RESULT(vkCreateBuffer(inDevice->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
+        CheckResult(vkCreateBuffer(inDevice->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
 
         // Get memory requirements for the staging buffer (alignment, memory type bits)
         vkGetBufferMemoryRequirements(inDevice->logicalDevice, stagingBuffer, &memReqs);
@@ -413,12 +413,12 @@ namespace Vk {
         // Get memory type index for a host visible buffer
         memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        VK_CHECK_RESULT(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
-        VK_CHECK_RESULT(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
+        CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
+        CheckResult(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
 
         // Copy texture data into staging buffer
         uint8_t *data;
-        VK_CHECK_RESULT(vkMapMemory(inDevice->logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data));
+        CheckResult(vkMapMemory(inDevice->logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data));
         memcpy(data, texCube.data(), texCube.size());
         vkUnmapMemory(inDevice->logicalDevice, stagingMemory);
 
@@ -467,15 +467,15 @@ namespace Vk {
         imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 
-        VK_CHECK_RESULT(vkCreateImage(inDevice->logicalDevice, &imageCreateInfo, nullptr, &image));
+        CheckResult(vkCreateImage(inDevice->logicalDevice, &imageCreateInfo, nullptr, &image));
 
         vkGetImageMemoryRequirements(inDevice->logicalDevice, image, &memReqs);
 
         memAllocInfo.allocationSize = memReqs.size;
         memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        VK_CHECK_RESULT(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
-        VK_CHECK_RESULT(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
+        CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
+        CheckResult(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
 
         // Use a separate command buffer for texture loading
         VkCommandBuffer copyCmd = inDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
@@ -541,7 +541,7 @@ namespace Vk {
         samplerCreateInfo.minLod = 0.0f;
         samplerCreateInfo.maxLod = (float)mipLevels;
         samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VK_CHECK_RESULT(vkCreateSampler(inDevice->logicalDevice, &samplerCreateInfo, nullptr, &sampler));
+        CheckResult(vkCreateSampler(inDevice->logicalDevice, &samplerCreateInfo, nullptr, &sampler));
 
         // Create image view
         VkImageViewCreateInfo viewCreateInfo{};
@@ -553,7 +553,7 @@ namespace Vk {
         viewCreateInfo.subresourceRange.layerCount = 6;
         viewCreateInfo.subresourceRange.levelCount = mipLevels;
         viewCreateInfo.image = image;
-        VK_CHECK_RESULT(vkCreateImageView(inDevice->logicalDevice, &viewCreateInfo, nullptr, &view));
+        CheckResult(vkCreateImageView(inDevice->logicalDevice, &viewCreateInfo, nullptr, &view));
 
         // Clean up staging resources
         vkFreeMemory(inDevice->logicalDevice, stagingMemory, nullptr);

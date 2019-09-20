@@ -36,7 +36,7 @@ namespace Vk {
             info.ppEnabledLayerNames = validationLayerNames;
         }
 
-        VK_CHECK_RESULT(vkCreateInstance(&info, nullptr, &_instance));
+        CheckResult(vkCreateInstance(&info, nullptr, &_instance));
 
         return (VK_NULL_HANDLE == _instance) ? false : true;
     }

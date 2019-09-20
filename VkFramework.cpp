@@ -115,7 +115,7 @@ namespace Vk {
         if (VK_ERROR_OUT_OF_DATE_KHR == acquire || VK_SUBOPTIMAL_KHR == acquire)
             WindowResize();
         else
-            VK_CHECK_RESULT(acquire);
+            CheckResult(acquire);
 
         UpdateUniformBuffers();
         _scene.OnUniformBufferSets(currentBuffer);
@@ -127,7 +127,7 @@ namespace Vk {
                 return;
             }
             else {
-                VK_CHECK_RESULT(present);
+                CheckResult(present);
             }
         }
 
@@ -179,11 +179,11 @@ namespace Vk {
     //constexpr auto KEY_F3  = VK_F3;
     //constexpr auto KEY_F4  = VK_F4;
     //constexpr auto KEY_F5  = VK_F5;
-    constexpr auto KEY_W  = 0x57;
-    constexpr auto KEY_A  = 0x41;
-    constexpr auto KEY_S  = 0x53;
-    constexpr auto KEY_D  = 0x44;
-    constexpr auto KEY_P  = 0x50;
+    constexpr auto KEY_W = 0x57;
+    constexpr auto KEY_A = 0x41;
+    constexpr auto KEY_S = 0x53;
+    constexpr auto KEY_D = 0x44;
+    constexpr auto KEY_P = 0x50;
     //constexpr auto KEY_SPACE  = 0x20;
     //constexpr auto KEY_KPADD  = 0x6B;
     //constexpr auto KEY_KPSUB  = 0x6D;
@@ -260,15 +260,15 @@ namespace Vk {
             }
             break;
         case WM_LBUTTONDOWN:
-            mousePos = glm::vec2((float)LOWORD(lParam), (float)HIWORD(lParam));
+            mousePos = glm::vec2(static_cast<float>(LOWORD(lParam)), static_cast<float>(HIWORD(lParam)));
             mouseButtons.left = true;
             break;
         case WM_RBUTTONDOWN:
-            mousePos = glm::vec2((float)LOWORD(lParam), (float)HIWORD(lParam));
+            mousePos = glm::vec2(static_cast<float>(LOWORD(lParam)), static_cast<float>(HIWORD(lParam)));
             mouseButtons.right = true;
             break;
         case WM_MBUTTONDOWN:
-            mousePos = glm::vec2((float)LOWORD(lParam), (float)HIWORD(lParam));
+            mousePos = glm::vec2(static_cast<float>(LOWORD(lParam)), static_cast<float>(HIWORD(lParam)));
             mouseButtons.middle = true;
             break;
         case WM_LBUTTONUP:

@@ -37,7 +37,7 @@ namespace Vk {
             VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
             MsgCallback, nullptr
         };
-        VK_CHECK_RESULT(createFn(instance, &info, nullptr, &_handle));
+        CheckResult(createFn(instance, &info, nullptr, &_handle));
 
         return (VK_NULL_HANDLE == _handle) ? false : true;
     }

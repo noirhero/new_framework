@@ -98,7 +98,7 @@ namespace Vk {
             renderPassCI.pSubpasses = &subpass;
             renderPassCI.dependencyCount = 2;
             renderPassCI.pDependencies = dependencies.data();
-            VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassCI, nullptr, &_renderPass));
+            CheckResult(vkCreateRenderPass(device, &renderPassCI, nullptr, &_renderPass));
         }
         else {
             std::array<VkAttachmentDescription, 2> attachments = {};
@@ -167,7 +167,7 @@ namespace Vk {
             renderPassCI.pSubpasses = &subpassDescription;
             renderPassCI.dependencyCount = static_cast<uint32_t>(dependencies.size());
             renderPassCI.pDependencies = dependencies.data();
-            VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassCI, nullptr, &_renderPass));
+            CheckResult(vkCreateRenderPass(device, &renderPassCI, nullptr, &_renderPass));
         }
 
         return (VK_NULL_HANDLE == _renderPass) ? false : true;

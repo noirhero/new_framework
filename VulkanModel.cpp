@@ -118,15 +118,15 @@ namespace Vk
 		bufferCreateInfo.size = bufferSize;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		VK_CHECK_RESULT(vkCreateBuffer(inDevice->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
+		CheckResult(vkCreateBuffer(inDevice->logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
 		vkGetBufferMemoryRequirements(inDevice->logicalDevice, stagingBuffer, &memReqs);
 		memAllocInfo.allocationSize = memReqs.size;
 		memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		VK_CHECK_RESULT(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
-		VK_CHECK_RESULT(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
+		CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
+		CheckResult(vkBindBufferMemory(inDevice->logicalDevice, stagingBuffer, stagingMemory, 0));
 
 		uint8_t *data;
-		VK_CHECK_RESULT(vkMapMemory(inDevice->logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data));
+		CheckResult(vkMapMemory(inDevice->logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **)&data));
 		memcpy(data, buffer, bufferSize);
 		vkUnmapMemory(inDevice->logicalDevice, stagingMemory);
 
@@ -143,12 +143,12 @@ namespace Vk
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageCreateInfo.extent = { width, height, 1 };
 		imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		VK_CHECK_RESULT(vkCreateImage(inDevice->logicalDevice, &imageCreateInfo, nullptr, &image));
+		CheckResult(vkCreateImage(inDevice->logicalDevice, &imageCreateInfo, nullptr, &image));
 		vkGetImageMemoryRequirements(inDevice->logicalDevice, image, &memReqs);
 		memAllocInfo.allocationSize = memReqs.size;
 		memAllocInfo.memoryTypeIndex = inDevice->getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		VK_CHECK_RESULT(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
-		VK_CHECK_RESULT(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
+		CheckResult(vkAllocateMemory(inDevice->logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
+		CheckResult(vkBindImageMemory(inDevice->logicalDevice, image, deviceMemory, 0));
 
 		VkCommandBuffer copyCmd = inDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
@@ -281,7 +281,7 @@ namespace Vk
 		samplerInfo.maxLod = (float)mipLevels;
 		samplerInfo.maxAnisotropy = 8.0f;
 		samplerInfo.anisotropyEnable = VK_TRUE;
-		VK_CHECK_RESULT(vkCreateSampler(inDevice->logicalDevice, &samplerInfo, nullptr, &sampler));
+		CheckResult(vkCreateSampler(inDevice->logicalDevice, &samplerInfo, nullptr, &sampler));
 
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -292,7 +292,7 @@ namespace Vk
 		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		viewInfo.subresourceRange.layerCount = 1;
 		viewInfo.subresourceRange.levelCount = mipLevels;
-		VK_CHECK_RESULT(vkCreateImageView(inDevice->logicalDevice, &viewInfo, nullptr, &view));
+		CheckResult(vkCreateImageView(inDevice->logicalDevice, &viewInfo, nullptr, &view));
 
 		descriptor.sampler = sampler;
 		descriptor.imageView = view;
@@ -308,14 +308,14 @@ namespace Vk
 	{
 		this->device = device;
 		this->uniformBlock.matrix = matrix;
-		VK_CHECK_RESULT(device->createBuffer(
+		CheckResult(device->createBuffer(
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			sizeof(uniformBlock),
 			&uniformBuffer.buffer,
 			&uniformBuffer.memory,
 			&uniformBlock));
-		VK_CHECK_RESULT(vkMapMemory(device->logicalDevice, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.mapped));
+		CheckResult(vkMapMemory(device->logicalDevice, uniformBuffer.memory, 0, sizeof(uniformBlock), 0, &uniformBuffer.mapped));
 		uniformBuffer.descriptor = { uniformBuffer.buffer, 0, sizeof(uniformBlock) };
 	};
 
@@ -953,7 +953,7 @@ namespace Vk
 
 		// Create staging buffers
 		// Vertex data
-		VK_CHECK_RESULT(inDevice->createBuffer(
+		CheckResult(inDevice->createBuffer(
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			vertexBufferSize,
@@ -962,7 +962,7 @@ namespace Vk
 			vertexBuffer.data()));
 		// Index data
 		if (indexBufferSize > 0) {
-			VK_CHECK_RESULT(inDevice->createBuffer(
+			CheckResult(inDevice->createBuffer(
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				indexBufferSize,
@@ -973,7 +973,7 @@ namespace Vk
 
 		// Create inDevice local buffers
 		// Vertex buffer
-		VK_CHECK_RESULT(inDevice->createBuffer(
+		CheckResult(inDevice->createBuffer(
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			vertexBufferSize,
@@ -981,7 +981,7 @@ namespace Vk
 			&vertices.memory));
 		// Index buffer
 		if (indexBufferSize > 0) {
-			VK_CHECK_RESULT(inDevice->createBuffer(
+			CheckResult(inDevice->createBuffer(
 				VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				indexBufferSize,

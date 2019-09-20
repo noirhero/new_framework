@@ -8,7 +8,7 @@
 namespace Vk {
     bool PhysicalDevice::Initialize(VkInstance instance) {
         uint32_t gpuCount = 0;
-        VK_CHECK_RESULT(vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr));
+        CheckResult(vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr));
         assert(gpuCount > 0);
 
         _devices.resize(gpuCount, VK_NULL_HANDLE);

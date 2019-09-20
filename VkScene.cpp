@@ -73,7 +73,7 @@ namespace Vk {
 
     void SetNodeDescriptorSet(Node& node, VkDevice device, const VkDescriptorSetAllocateInfo& descSetInfo) {
         if (node.mesh) {
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descSetInfo, &node.mesh->uniformBuffer.descriptorSet));
+            CheckResult(vkAllocateDescriptorSets(device, &descSetInfo, &node.mesh->uniformBuffer.descriptorSet));
 
             VkWriteDescriptorSet writeDescriptorSet{};
             writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -185,7 +185,7 @@ namespace Vk {
         descriptorPoolCI.poolSizeCount = 2;
         descriptorPoolCI.pPoolSizes = poolSizes.data();
         descriptorPoolCI.maxSets = (2 + materialCount + meshCount) * imageCount;
-        VK_CHECK_RESULT(vkCreateDescriptorPool(main.GetDevice(), &descriptorPoolCI, nullptr, &_descriptorPool));
+        CheckResult(vkCreateDescriptorPool(main.GetDevice(), &descriptorPoolCI, nullptr, &_descriptorPool));
     }
 
     void Scene::CreateSceneDescriptorLayout(const Main& main) {
@@ -203,7 +203,7 @@ namespace Vk {
         descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
         descriptorSetLayoutCI.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &_sceneDescLayout));
+        CheckResult(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &_sceneDescLayout));
     }
 
     void Scene::CreateMaterialDescriptorLayout(const Main& main) {
@@ -222,7 +222,7 @@ namespace Vk {
         descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
         descriptorSetLayoutCI.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
 
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &_materialDescLayout));
+        CheckResult(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &_materialDescLayout));
     }
 
     void Scene::CreateNodeDescriptorLayout(const Main& main) {
@@ -235,7 +235,7 @@ namespace Vk {
         descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
         descriptorSetLayoutCI.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
 
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(main.GetDevice(), &descriptorSetLayoutCI, nullptr, &_nodeDescLayout));
+        CheckResult(vkCreateDescriptorSetLayout(main.GetDevice(), &descriptorSetLayoutCI, nullptr, &_nodeDescLayout));
     }
 
     void Scene::SetupSceneDescriptorSet(const Main& main) {
@@ -248,7 +248,7 @@ namespace Vk {
             descriptorSetAllocInfo.descriptorPool = _descriptorPool;
             descriptorSetAllocInfo.pSetLayouts = &_sceneDescLayout;
             descriptorSetAllocInfo.descriptorSetCount = 1;
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &_sceneDescSets[i]));
+            CheckResult(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &_sceneDescSets[i]));
 
             std::array<VkWriteDescriptorSet, 5> writeDescriptorSets{};
 
@@ -301,7 +301,7 @@ namespace Vk {
             descriptorSetAllocInfo.descriptorPool = _descriptorPool;
             descriptorSetAllocInfo.pSetLayouts = &_materialDescLayout;
             descriptorSetAllocInfo.descriptorSetCount = 1;
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material.descriptorSet));
+            CheckResult(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &material.descriptorSet));
 
             std::vector<VkDescriptorImageInfo> imageDescriptors = {
                 empty.descriptor,
@@ -422,7 +422,7 @@ namespace Vk {
         pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         pipelineLayoutCI.pushConstantRangeCount = 1;
         pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
-        VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &_pipelineLayout));
+        CheckResult(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &_pipelineLayout));
 
         // Vertex bindings an attributes
         const VkVertexInputBindingDescription vertexInputBinding = { 0, sizeof(Model::Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
@@ -469,7 +469,7 @@ namespace Vk {
 
         depthStencilStateCI.depthWriteEnable = VK_TRUE;
         depthStencilStateCI.depthTestEnable = VK_TRUE;
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &_opaquePipeline));
+        CheckResult(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &_opaquePipeline));
 
         rasterizationStateCI.cullMode = VK_CULL_MODE_NONE;
         blendAttachmentState.blendEnable = VK_TRUE;
@@ -480,7 +480,7 @@ namespace Vk {
         blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
         blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
         blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &_alphaBlendPipeline));
+        CheckResult(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &_alphaBlendPipeline));
 
         for (auto shaderStage : shaderStages)
             vkDestroyShaderModule(device, shaderStage.module, nullptr);
@@ -626,7 +626,7 @@ namespace Vk {
 
             VkCommandBuffer currentCB = cmdBuffers.Get(i);
 
-            VK_CHECK_RESULT(vkBeginCommandBuffer(currentCB, &cmdBufferBeginInfo));
+            CheckResult(vkBeginCommandBuffer(currentCB, &cmdBufferBeginInfo));
             vkCmdBeginRenderPass(currentCB, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
             VkViewport viewport{};
@@ -670,7 +670,7 @@ namespace Vk {
             }
 
             vkCmdEndRenderPass(currentCB);
-            VK_CHECK_RESULT(vkEndCommandBuffer(currentCB));
+            CheckResult(vkEndCommandBuffer(currentCB));
         }
 
         vkDeviceWaitIdle(main.GetDevice());

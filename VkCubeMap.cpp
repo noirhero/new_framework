@@ -56,6 +56,7 @@ namespace Vk {
             format = VK_FORMAT_R16G16B16A16_SFLOAT;
             dim = 512;
             break;
+        default:;
         };
 
         VkDevice device = main.GetDevice();
@@ -84,7 +85,7 @@ namespace Vk {
             imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
             imageCI.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             imageCI.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-            VK_CHECK_RESULT(vkCreateImage(device, &imageCI, nullptr, &cubemap.image));
+            CheckResult(vkCreateImage(device, &imageCI, nullptr, &cubemap.image));
 
             VkMemoryRequirements memReqs;
             vkGetImageMemoryRequirements(device, cubemap.image, &memReqs);
@@ -93,8 +94,8 @@ namespace Vk {
             memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
             memAllocInfo.allocationSize = memReqs.size;
             memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-            VK_CHECK_RESULT(vkAllocateMemory(device, &memAllocInfo, nullptr, &cubemap.deviceMemory));
-            VK_CHECK_RESULT(vkBindImageMemory(device, cubemap.image, cubemap.deviceMemory, 0));
+            CheckResult(vkAllocateMemory(device, &memAllocInfo, nullptr, &cubemap.deviceMemory));
+            CheckResult(vkBindImageMemory(device, cubemap.image, cubemap.deviceMemory, 0));
 
             // View
             VkImageViewCreateInfo viewCI{};
@@ -106,7 +107,7 @@ namespace Vk {
             viewCI.subresourceRange.levelCount = numMips;
             viewCI.subresourceRange.layerCount = 6;
             viewCI.image = cubemap.image;
-            VK_CHECK_RESULT(vkCreateImageView(device, &viewCI, nullptr, &cubemap.view));
+            CheckResult(vkCreateImageView(device, &viewCI, nullptr, &cubemap.view));
 
             // Sampler
             VkSamplerCreateInfo samplerCI{};
@@ -121,7 +122,7 @@ namespace Vk {
             samplerCI.maxLod = static_cast<float>(numMips);
             samplerCI.maxAnisotropy = 1.0f;
             samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            VK_CHECK_RESULT(vkCreateSampler(device, &samplerCI, nullptr, &cubemap.sampler));
+            CheckResult(vkCreateSampler(device, &samplerCI, nullptr, &cubemap.sampler));
         }
 
         // FB, Att, RP, Pipe, etc.
@@ -171,7 +172,7 @@ namespace Vk {
         renderPassCI.pDependencies = dependencies.data();
 
         VkRenderPass renderpass = VK_NULL_HANDLE;
-        VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassCI, nullptr, &renderpass));
+        CheckResult(vkCreateRenderPass(device, &renderPassCI, nullptr, &renderpass));
 
         // Create offscreen framebuffer
         struct Offscreen {
@@ -196,15 +197,15 @@ namespace Vk {
             imageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
             imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            VK_CHECK_RESULT(vkCreateImage(device, &imageCI, nullptr, &offscreen.image));
+            CheckResult(vkCreateImage(device, &imageCI, nullptr, &offscreen.image));
             VkMemoryRequirements memReqs;
             vkGetImageMemoryRequirements(device, offscreen.image, &memReqs);
             VkMemoryAllocateInfo memAllocInfo{};
             memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
             memAllocInfo.allocationSize = memReqs.size;
             memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-            VK_CHECK_RESULT(vkAllocateMemory(device, &memAllocInfo, nullptr, &offscreen.memory));
-            VK_CHECK_RESULT(vkBindImageMemory(device, offscreen.image, offscreen.memory, 0));
+            CheckResult(vkAllocateMemory(device, &memAllocInfo, nullptr, &offscreen.memory));
+            CheckResult(vkBindImageMemory(device, offscreen.image, offscreen.memory, 0));
 
             // View
             VkImageViewCreateInfo viewCI{};
@@ -219,7 +220,7 @@ namespace Vk {
             viewCI.subresourceRange.baseArrayLayer = 0;
             viewCI.subresourceRange.layerCount = 1;
             viewCI.image = offscreen.image;
-            VK_CHECK_RESULT(vkCreateImageView(device, &viewCI, nullptr, &offscreen.view));
+            CheckResult(vkCreateImageView(device, &viewCI, nullptr, &offscreen.view));
 
             // Framebuffer
             VkFramebufferCreateInfo framebufferCI{};
@@ -230,7 +231,7 @@ namespace Vk {
             framebufferCI.width = dim;
             framebufferCI.height = dim;
             framebufferCI.layers = 1;
-            VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferCI, nullptr, &offscreen.framebuffer));
+            CheckResult(vkCreateFramebuffer(device, &framebufferCI, nullptr, &offscreen.framebuffer));
 
             VkCommandBuffer layoutCmd = vulkanDevice.createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
             VkImageMemoryBarrier imageMemoryBarrier{};
@@ -252,7 +253,7 @@ namespace Vk {
         descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         descriptorSetLayoutCI.pBindings = &setLayoutBinding;
         descriptorSetLayoutCI.bindingCount = 1;
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorsetlayout));
+        CheckResult(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorsetlayout));
 
         // Descriptor Pool
         VkDescriptorPoolSize poolSize = { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 };
@@ -262,7 +263,7 @@ namespace Vk {
         descriptorPoolCI.pPoolSizes = &poolSize;
         descriptorPoolCI.maxSets = 2;
         VkDescriptorPool descriptorpool = VK_NULL_HANDLE;
-        VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolCI, nullptr, &descriptorpool));
+        CheckResult(vkCreateDescriptorPool(device, &descriptorPoolCI, nullptr, &descriptorpool));
 
         // Descriptor sets
         VkDescriptorSet descriptorset = VK_NULL_HANDLE;
@@ -271,7 +272,7 @@ namespace Vk {
         descriptorSetAllocInfo.descriptorPool = descriptorpool;
         descriptorSetAllocInfo.pSetLayouts = &descriptorsetlayout;
         descriptorSetAllocInfo.descriptorSetCount = 1;
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &descriptorset));
+        CheckResult(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &descriptorset));
 
         VkWriteDescriptorSet writeDescriptorSet{};
         writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -306,6 +307,7 @@ namespace Vk {
         case CubeMapTarget::PREFILTEREDENV:
             pushConstantRange.size = sizeof(PushBlockPrefilterEnv);
             break;
+        default:;
         };
 
         VkPipelineLayoutCreateInfo pipelineLayoutCI{};
@@ -314,7 +316,7 @@ namespace Vk {
         pipelineLayoutCI.pSetLayouts = &descriptorsetlayout;
         pipelineLayoutCI.pushConstantRangeCount = 1;
         pipelineLayoutCI.pPushConstantRanges = &pushConstantRange;
-        VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &pipelinelayout));
+        CheckResult(vkCreatePipelineLayout(device, &pipelineLayoutCI, nullptr, &pipelinelayout));
 
         // Pipeline
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI{};
@@ -372,7 +374,7 @@ namespace Vk {
         vertexInputStateCI.pVertexAttributeDescriptions = &vertexInputAttribute;
 
         const auto shaderName = (CubeMapTarget::IRRADIANCE == target) ? "irradiancecube.frag.spv" : "prefilterenvmap.frag.spv";
-        const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages {
+        const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{
             loadShader(device, "filtercube.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
             loadShader(device, shaderName, VK_SHADER_STAGE_FRAGMENT_BIT)
         };
@@ -394,7 +396,7 @@ namespace Vk {
         pipelineCI.renderPass = renderpass;
 
         VkPipeline pipeline;
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipeline));
+        CheckResult(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCI, nullptr, &pipeline));
 
         for (auto shaderStage : shaderStages)
             vkDestroyShaderModule(device, shaderStage.module, nullptr);
@@ -481,6 +483,7 @@ namespace Vk {
                     pushBlockPrefilterEnv.roughness = (float)m / (float)(numMips - 1);
                     vkCmdPushConstants(cmdBuf, pipelinelayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlockPrefilterEnv), &pushBlockPrefilterEnv);
                     break;
+                default:;
                 };
 
                 vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
@@ -580,6 +583,7 @@ namespace Vk {
         case CubeMapTarget::PREFILTEREDENV:
             prefilteredCubeMipLevels = static_cast<float>(numMips);
             break;
+        default:;
         };
 
         const auto tEnd = std::chrono::high_resolution_clock::now();
@@ -610,7 +614,7 @@ namespace Vk {
         safeDeleteFn(_irradianceCube);
         safeDeleteFn(_environmentCube);
 
-        if(VK_NULL_HANDLE != skyboxPipeline) {
+        if (VK_NULL_HANDLE != skyboxPipeline) {
             vkDestroyPipeline(device, skyboxPipeline, nullptr);
             skyboxPipeline = VK_NULL_HANDLE;
         }
@@ -633,7 +637,7 @@ namespace Vk {
             descriptorSetAllocInfo.descriptorPool = descPool;
             descriptorSetAllocInfo.pSetLayouts = &descSetLayout;
             descriptorSetAllocInfo.descriptorSetCount = 1;
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &skyboxDescSets[i]));
+            CheckResult(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &skyboxDescSets[i]));
 
             std::array<VkWriteDescriptorSet, 3> writeDescriptorSets{};
 
@@ -662,7 +666,7 @@ namespace Vk {
         }
     }
 
-    void CubeMap::PrepareSkyboxPipeline(const Main & main, VkGraphicsPipelineCreateInfo & info) {
+    void CubeMap::PrepareSkyboxPipeline(const Main& main, VkGraphicsPipelineCreateInfo& info) {
         VkDevice device = main.GetDevice();
         VkPipelineCache pipelineCache = main.GetPipelineCache();
 
@@ -674,7 +678,7 @@ namespace Vk {
         info.stageCount = static_cast<uint32_t>(shaderStages.size());
         info.pStages = shaderStages.data();
 
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &info, nullptr, &skyboxPipeline));
+        CheckResult(vkCreateGraphicsPipelines(device, pipelineCache, 1, &info, nullptr, &skyboxPipeline));
 
         for (auto shaderStage : shaderStages)
             vkDestroyShaderModule(device, shaderStage.module, nullptr);

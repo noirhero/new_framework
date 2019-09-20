@@ -16,7 +16,7 @@ namespace Vk {
         info.queueFamilyIndex = queueNodeIdx;
         info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-        VK_CHECK_RESULT(vkCreateCommandPool(device, &info, nullptr, &_cmdPool));
+        CheckResult(vkCreateCommandPool(device, &info, nullptr, &_cmdPool));
 
         return (VK_NULL_HANDLE == _cmdPool) ? false : true;
     }
@@ -38,7 +38,7 @@ namespace Vk {
         info.commandBufferCount = count;
 
         _cmdBufs.resize(count, VK_NULL_HANDLE);
-        VK_CHECK_RESULT(vkAllocateCommandBuffers(device, &info, _cmdBufs.data()));
+        CheckResult(vkAllocateCommandBuffers(device, &info, _cmdBufs.data()));
 
         return (VK_NULL_HANDLE == _cmdBufs.front()) ? false : true;
     }
@@ -53,7 +53,7 @@ namespace Vk {
     }
 
     // Frame buffer
-    bool FrameBuffer::Initialize(VulkanDevice & vulkanDevice, VulkanSwapChain & swapChain, VkFormat depthFormat, VkRenderPass renderPass, const Settings& settings) {
+    bool FrameBuffer::Initialize(VulkanDevice& vulkanDevice, VulkanSwapChain& swapChain, VkFormat depthFormat, VkRenderPass renderPass, const Settings& settings) {
         _isMultiSampling = settings.multiSampling;
 
         const auto device = vulkanDevice.logicalDevice;
@@ -79,7 +79,7 @@ namespace Vk {
             imageCI.samples = settings.sampleCount;
             imageCI.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             imageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            VK_CHECK_RESULT(vkCreateImage(device, &imageCI, nullptr, &_multiSampleTarget.color.image));
+            CheckResult(vkCreateImage(device, &imageCI, nullptr, &_multiSampleTarget.color.image));
 
             VkMemoryRequirements memReqs;
             vkGetImageMemoryRequirements(device, _multiSampleTarget.color.image, &memReqs);
@@ -93,7 +93,7 @@ namespace Vk {
             if (!lazyMemTypePresent)
                 memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            VK_CHECK_RESULT(vkAllocateMemory(device, &memAllocInfo, nullptr, &_multiSampleTarget.color.memory));
+            CheckResult(vkAllocateMemory(device, &memAllocInfo, nullptr, &_multiSampleTarget.color.memory));
             vkBindImageMemory(device, _multiSampleTarget.color.image, _multiSampleTarget.color.memory, 0);
 
             // Create image view for the MSAA target
@@ -109,7 +109,7 @@ namespace Vk {
             imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             imageViewCI.subresourceRange.levelCount = 1;
             imageViewCI.subresourceRange.layerCount = 1;
-            VK_CHECK_RESULT(vkCreateImageView(device, &imageViewCI, nullptr, &_multiSampleTarget.color.view));
+            CheckResult(vkCreateImageView(device, &imageViewCI, nullptr, &_multiSampleTarget.color.view));
 
             // Depth target
             imageCI.imageType = VK_IMAGE_TYPE_2D;
@@ -124,7 +124,7 @@ namespace Vk {
             imageCI.samples = settings.sampleCount;
             imageCI.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             imageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            VK_CHECK_RESULT(vkCreateImage(device, &imageCI, nullptr, &_multiSampleTarget.depth.image));
+            CheckResult(vkCreateImage(device, &imageCI, nullptr, &_multiSampleTarget.depth.image));
 
             vkGetImageMemoryRequirements(device, _multiSampleTarget.depth.image, &memReqs);
 
@@ -134,7 +134,7 @@ namespace Vk {
             if (!lazyMemTypePresent)
                 memAllocInfo.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            VK_CHECK_RESULT(vkAllocateMemory(device, &memAllocInfo, nullptr, &_multiSampleTarget.depth.memory));
+            CheckResult(vkAllocateMemory(device, &memAllocInfo, nullptr, &_multiSampleTarget.depth.memory));
             vkBindImageMemory(device, _multiSampleTarget.depth.image, _multiSampleTarget.depth.memory, 0);
 
             // Create image view for the MSAA target
@@ -148,7 +148,7 @@ namespace Vk {
             imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
             imageViewCI.subresourceRange.levelCount = 1;
             imageViewCI.subresourceRange.layerCount = 1;
-            VK_CHECK_RESULT(vkCreateImageView(device, &imageViewCI, nullptr, &_multiSampleTarget.depth.view));
+            CheckResult(vkCreateImageView(device, &imageViewCI, nullptr, &_multiSampleTarget.depth.view));
         }
 
 
@@ -187,17 +187,17 @@ namespace Vk {
         depthStencilView.subresourceRange.layerCount = 1;
 
         VkMemoryRequirements memReqs;
-        VK_CHECK_RESULT(vkCreateImage(device, &image, nullptr, &_depthStencil.image));
+        CheckResult(vkCreateImage(device, &image, nullptr, &_depthStencil.image));
 
         vkGetImageMemoryRequirements(device, _depthStencil.image, &memReqs);
         mem_alloc.allocationSize = memReqs.size;
         mem_alloc.memoryTypeIndex = vulkanDevice.getMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        VK_CHECK_RESULT(vkAllocateMemory(device, &mem_alloc, nullptr, &_depthStencil.mem));
-        VK_CHECK_RESULT(vkBindImageMemory(device, _depthStencil.image, _depthStencil.mem, 0));
+        CheckResult(vkAllocateMemory(device, &mem_alloc, nullptr, &_depthStencil.mem));
+        CheckResult(vkBindImageMemory(device, _depthStencil.image, _depthStencil.mem, 0));
 
         depthStencilView.image = _depthStencil.image;
-        VK_CHECK_RESULT(vkCreateImageView(device, &depthStencilView, nullptr, &_depthStencil.view));
+        CheckResult(vkCreateImageView(device, &depthStencilView, nullptr, &_depthStencil.view));
 
         //
 
@@ -229,7 +229,7 @@ namespace Vk {
             else
                 attachments[0] = swapChain.buffers[i].view;
 
-            VK_CHECK_RESULT(vkCreateFramebuffer(device, &frameBufferCI, nullptr, &_frameBufs[i]));
+            CheckResult(vkCreateFramebuffer(device, &frameBufferCI, nullptr, &_frameBufs[i]));
         }
 
         return true;

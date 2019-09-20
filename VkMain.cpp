@@ -77,8 +77,8 @@ namespace Vk {
     }
 
     VkResult Main::AcquireNextImage(uint32_t & currentBuffer, uint32_t frameIndex) {
-        VK_CHECK_RESULT(vkWaitForFences(_logicalDevice, 1, &_waitFences[frameIndex], VK_TRUE, UINT64_MAX));
-        VK_CHECK_RESULT(vkResetFences(_logicalDevice, 1, &_waitFences[frameIndex]));
+        CheckResult(vkWaitForFences(_logicalDevice, 1, &_waitFences[frameIndex], VK_TRUE, UINT64_MAX));
+        CheckResult(vkResetFences(_logicalDevice, 1, &_waitFences[frameIndex]));
 
         return _swapChain->acquireNextImage(_presentCompleteSemaphores[frameIndex], &currentBuffer);
     }
@@ -95,7 +95,7 @@ namespace Vk {
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pCommandBuffers = &_cmdBufs.GetPtr()[currentBuffer];
         submitInfo.commandBufferCount = 1;
-        VK_CHECK_RESULT(vkQueueSubmit(_gpuQueue, 1, &submitInfo, _waitFences[frameIndex]));
+        CheckResult(vkQueueSubmit(_gpuQueue, 1, &submitInfo, _waitFences[frameIndex]));
 
         return _swapChain->queuePresent(_gpuQueue, currentBuffer, _renderCompleteSemaphores[frameIndex]);
     }
@@ -172,19 +172,19 @@ namespace Vk {
         _waitFences.resize(_settings.renderAhead);
         for (auto &waitFence : _waitFences) {
             VkFenceCreateInfo fenceCI{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT };
-            VK_CHECK_RESULT(vkCreateFence(_logicalDevice, &fenceCI, nullptr, &waitFence));
+            CheckResult(vkCreateFence(_logicalDevice, &fenceCI, nullptr, &waitFence));
         }
 
         _presentCompleteSemaphores.resize(_settings.renderAhead);
         for (auto &semaphore : _presentCompleteSemaphores) {
             VkSemaphoreCreateInfo semaphoreCI{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
-            VK_CHECK_RESULT(vkCreateSemaphore(_logicalDevice, &semaphoreCI, nullptr, &semaphore));
+            CheckResult(vkCreateSemaphore(_logicalDevice, &semaphoreCI, nullptr, &semaphore));
         }
 
         _renderCompleteSemaphores.resize(_settings.renderAhead);
         for (auto &semaphore : _renderCompleteSemaphores) {
             VkSemaphoreCreateInfo semaphoreCI{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
-            VK_CHECK_RESULT(vkCreateSemaphore(_logicalDevice, &semaphoreCI, nullptr, &semaphore));
+            CheckResult(vkCreateSemaphore(_logicalDevice, &semaphoreCI, nullptr, &semaphore));
         }
     }
 
