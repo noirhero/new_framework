@@ -75,7 +75,7 @@ namespace Vk {
         _main.Prepare(instance, window);
 
         _scene.Initialize(_main, "environments/papermill.ktx"s);
-        //_scene.LoadScene(_main, Path::Apply("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf"s));
+        _scene.LoadScene(_main, Path::Apply("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf"s));
         _scene.RecordBuffers(_main);
 
         prepared = true;

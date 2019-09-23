@@ -4651,8 +4651,8 @@ static bool ParseAnimation(Animation *animation, std::string *err,
 static bool ParseSampler(Sampler *sampler, std::string *err, const json &o) {
   ParseStringProperty(&sampler->name, err, o, "name", false);
 
-  int minFilter = -1;
-  int magFilter = -1;
+  int minFilter = TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR;
+  int magFilter = TINYGLTF_TEXTURE_FILTER_LINEAR;
   int wrapS = TINYGLTF_TEXTURE_WRAP_REPEAT;
   int wrapT = TINYGLTF_TEXTURE_WRAP_REPEAT;
   int wrapR = TINYGLTF_TEXTURE_WRAP_REPEAT;
