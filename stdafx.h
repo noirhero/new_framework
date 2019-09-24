@@ -22,6 +22,7 @@
 #include <map>
 #include <chrono>
 #include <filesystem>
+#include <thread>
 #include <string>
 using namespace std::literals::string_literals;
 
@@ -49,3 +50,5 @@ using namespace std::literals::string_literals;
 #include <vulkan/vk_mem_alloc.h>
 
 #include <entt/entt.hpp>
+
+#include <gsl/gsl>

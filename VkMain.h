@@ -45,8 +45,10 @@ namespace Vk {
 
         VkDevice                GetDevice() const { return _logicalDevice; }
         VkQueue                 GetGPUQueue() const { return _gpuQueue; }
+        VkCommandPool           GetCommandPool() const { return _cmdPool.Get(); }
         VkRenderPass            GetRenderPass() const { return _renderPass.Get(); }
         VkPipelineCache         GetPipelineCache() const { return _pipelineCache.Get(); }
+        constexpr VkFormat      GetDepthFormat() const { return _depthFormat; }
 
         const CommandBuffer&    GetCommandBuffer() const { return _cmdBufs; }
         const FrameBuffer&      GetFrameBuffer() const { return _frameBufs; }
