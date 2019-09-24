@@ -2,12 +2,10 @@
 
 #pragma once
 
-namespace Framework {
-    namespace Win {
-        bool        Initialize(std::string&& assetPath, HINSTANCE instance);
-        void        Release();
+namespace Framework::Win {
+    bool Initialize(std::string&& assetPath, HINSTANCE instance);
+    void Release();
 
-        void        Prepare();
-        void        RenderLoop();
-    }
+    void Prepare();
+    void RenderLoop();
 }

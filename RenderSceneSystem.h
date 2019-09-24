@@ -2,15 +2,18 @@
 
 #pragma once
 
-#include "VkMain.h"
+#include "VkCommand.h"
+
+namespace Vk {
+    class Main;
+}
 
 class RenderSceneSystem {
 public:
-    bool                            Initialize(HINSTANCE instance, HWND handle);
-    void                            Release();
+    bool                            Initialize(const Vk::Main& main);
+    void                            Release(const Vk::Main& main);
 
 private:
-    Vk::Main                        _main;
     std::vector<Vk::FrameBuffer>    _frameBuffers;
     std::vector<Vk::CommandBuffer>  _commandBuffers;
 };

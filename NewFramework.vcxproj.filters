@@ -153,6 +153,9 @@
     <Filter Include="system">
       <UniqueIdentifier>{50d193dc-a8c1-4a1e-b3a5-50f197d4d6e5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="component">
+      <UniqueIdentifier>{7c825ae7-bf2f-4412-92c3-7365635188ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
