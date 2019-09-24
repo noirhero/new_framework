@@ -171,7 +171,7 @@
     <ClInclude Include="Timer.h" />
     <ClInclude Include="VkBuffer.h" />
     <ClInclude Include="VkCubeMap.h" />
-    <ClInclude Include="VkFramework.h" />
+    <ClInclude Include="FrameworkWin.h" />
     <ClInclude Include="VkCamera.h" />
     <ClInclude Include="VkCommand.h" />
     <ClInclude Include="VkDebug.h" />
@@ -204,7 +204,7 @@
     <ClCompile Include="VkCamera.cpp" />
     <ClCompile Include="VkCubeMap.cpp" />
     <ClCompile Include="VulkanDevice.cpp" />
-    <ClCompile Include="VkFramework.cpp" />
+    <ClCompile Include="FrameworkWin.cpp" />
     <ClCompile Include="VkCommand.cpp" />
     <ClCompile Include="VkDebug.cpp" />
     <ClCompile Include="VkInstance.cpp" />

@@ -47,4 +47,3 @@ void RenderSceneSystem::Release() {
 
     _main.Release();
 }
-

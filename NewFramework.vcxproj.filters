@@ -30,9 +30,6 @@
     <ClInclude Include="VkScene.h">
       <Filter>vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="VkFramework.h">
-      <Filter>vulkan</Filter>
-    </ClInclude>
     <ClInclude Include="VkCubeMap.h">
       <Filter>vulkan</Filter>
     </ClInclude>
@@ -69,6 +66,9 @@
     <ClInclude Include="System.h">
       <Filter>system</Filter>
     </ClInclude>
+    <ClInclude Include="FrameworkWin.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -98,9 +98,6 @@
       <Filter>vulkan</Filter>
     </ClCompile>
     <ClCompile Include="VkScene.cpp">
-      <Filter>vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="VkFramework.cpp">
       <Filter>vulkan</Filter>
     </ClCompile>
     <ClCompile Include="VkCubeMap.cpp">
@@ -138,6 +135,9 @@
     </ClCompile>
     <ClCompile Include="System.cpp">
       <Filter>system</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameworkWin.cpp">
+      <Filter>utility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
