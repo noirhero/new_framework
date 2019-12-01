@@ -4,12 +4,10 @@
 #include "Path.h"
 
 namespace Path {
-    using namespace std::experimental;
-
     std::string _assetPath;
 
     bool SetAssetPath(std::string&& assetPath) {
-        if(false == filesystem::exists(assetPath)) {
+        if(false == std::filesystem::exists(assetPath)) {
             return false;
         }
 
