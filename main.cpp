@@ -1,17 +1,28 @@
-﻿// Copyright 2018-2019 TAP, Inc. All Rights Reserved.
+// Copyright 2018-202 TAP, Inc. All Rights Reserved.
 
-#include "stdafx.h"
+#include "pch.h"
+#include "main.h"
 
-#include "FrameworkWin.h"
+#include "Renderer/renderer.h"
 
-int32_t WINAPI wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE, _In_ wchar_t*, _In_ int32_t) {
-    if (false == Framework::Win::Initialize("./../data/"s, instance)) {
-        return 0;
+namespace Main {
+    void Resize(uint32_t /*width*/, uint32_t /*height*/) {
+        // Todo : Implement.
     }
 
-    Framework::Win::Prepare();
-    Framework::Win::RenderLoop();
-    Framework::Win::Release();
+    bool Initialize() {
+        if(false == Renderer::Initialize()) {
+            return false;
+        }
 
-    return 0;
+        return true;
+    }
+
+    bool Run() {
+        return true;
+    }
+
+    void Finalize() {
+        Renderer::Release();
+    }
 }
