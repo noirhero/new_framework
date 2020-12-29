@@ -12,6 +12,8 @@ namespace Renderer {
     using VkExtensionPropArray = std::vector<VkExtensionProperties>;
     using VkPhysicalDevices = std::vector<VkPhysicalDevice>;
     using VkQueueFamilyPropArray = std::vector<VkQueueFamilyProperties>;
+    using VkImages = std::vector<VkImage>;
+    using VkImageViews = std::vector<VkImageView>;
 
     struct InstanceLayer {
         VkLayerProperties    property{};
@@ -259,10 +261,15 @@ namespace Renderer {
         VkFormat                        format = VK_FORMAT_UNDEFINED;
         VkPresentModeKHR                presentMode = VK_PRESENT_MODE_FIFO_KHR;
         VkSurfaceTransformFlagBitsKHR   preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+
+        VkSwapchainKHR                  handle = VK_NULL_HANDLE;
+        VkImages                        images;
+        VkImageViews                    imageViews;
     };
     Swapchain g_swapchain;
 
     bool CreateSwapchain() {
+        // Surface.
         VkWin32SurfaceCreateInfoKHR surfaceInfo{};
         surfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
         surfaceInfo.hinstance = Win::Instance();
@@ -271,15 +278,6 @@ namespace Renderer {
         if (VK_SUCCESS != vkCreateWin32SurfaceKHR(g_instance, &surfaceInfo, Allocator::CPU(), &g_swapchain.surface)) {
             return false;
         }
-
-        //PFN_vkDestroySurfaceKHR(vkGetInstanceProcAddr(g_instance, "vkDestroySurfaceKHR"));
-
-        //PFN_vkCreateSwapchainKHR(vkGetInstanceProcAddr(g_instance, "vkCreateSwapchainKHR"));
-        //PFN_vkDestroySwapchainKHR(vkGetInstanceProcAddr(g_instance, "vkDestroySwapchainKHR"));
-        //PFN_vkGetSwapchainImagesKHR(vkGetInstanceProcAddr(g_instance, "vkGetSwapchainImagesKHR"));
-        //PFN_vkAcquireNextImageKHR(vkGetInstanceProcAddr(g_instance, "vkAcquireNextImageKHR"));
-        //PFN_vkQueuePresentKHR(vkGetInstanceProcAddr(g_instance, "vkQueuePresentKHR"));
-
 
         // Present queue index.
         auto* getSurfaceSupportFn = PFN_vkGetPhysicalDeviceSurfaceSupportKHR(vkGetInstanceProcAddr(g_instance, "vkGetPhysicalDeviceSurfaceSupportKHR"));
@@ -380,7 +378,88 @@ namespace Renderer {
             }
         }
 
+        // Swapchain.
+        //PFN_vkAcquireNextImageKHR(vkGetInstanceProcAddr(g_instance, "vkAcquireNextImageKHR"));
+        //PFN_vkQueuePresentKHR(vkGetInstanceProcAddr(g_instance, "vkQueuePresentKHR"));
+
+        VkSwapchainCreateInfoKHR swapchainInfo{};
+        swapchainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        swapchainInfo.surface = g_swapchain.surface;
+        swapchainInfo.minImageCount = g_swapchain.imageCount;
+        swapchainInfo.imageFormat = g_swapchain.format;
+        swapchainInfo.imageExtent = { g_swapchain.width, g_swapchain.height };
+        swapchainInfo.preTransform = g_swapchain.preTransform;
+        swapchainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        swapchainInfo.imageArrayLayers = 1;
+        swapchainInfo.presentMode = g_swapchain.presentMode;
+        swapchainInfo.clipped = VK_TRUE;
+        swapchainInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+        swapchainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+        auto* createSwapchainFn = PFN_vkCreateSwapchainKHR(vkGetInstanceProcAddr(g_instance, "vkCreateSwapchainKHR"));
+        if(VK_SUCCESS != createSwapchainFn(g_device.device, &swapchainInfo, Allocator::CPU(), &g_swapchain.handle)) {
+            return false;
+        }
+
+        // Swapchain image.
+        auto* getSwapchainImageFn = PFN_vkGetSwapchainImagesKHR(vkGetInstanceProcAddr(g_instance, "vkGetSwapchainImagesKHR"));
+        uint32_t imageCount = 0;
+        getSwapchainImageFn(g_device.device, g_swapchain.handle, &imageCount, nullptr);
+        if(0 == imageCount) {
+            return false;
+        }
+
+        g_swapchain.images.resize(imageCount);
+        getSwapchainImageFn(g_device.device, g_swapchain.handle, &imageCount, g_swapchain.images.data());
+
+        // Swapchain image view.
+        g_swapchain.imageViews.resize(imageCount);
+        uint32_t imageViewIndex = 0;
+        for(auto image : g_swapchain.images) {
+            VkImageViewCreateInfo imageViewInfo{};
+            imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            imageViewInfo.format = g_swapchain.format;
+            imageViewInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+            imageViewInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+            imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+            imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+            imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageViewInfo.subresourceRange.baseMipLevel = 0;
+            imageViewInfo.subresourceRange.levelCount = 1;
+            imageViewInfo.subresourceRange.baseArrayLayer = 0;
+            imageViewInfo.subresourceRange.layerCount = 1;
+            imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            imageViewInfo.image = image;
+            if(VK_SUCCESS != vkCreateImageView(g_device.device, &imageViewInfo, Allocator::CPU(), &g_swapchain.imageViews[imageViewIndex++])) {
+                return false;
+            }
+        }
+
         return true;
+    }
+
+    void DestroySwapchain() {
+        for(auto imageView : g_swapchain.imageViews) {
+            if(VK_NULL_HANDLE == imageView) {
+                continue;
+            }
+
+            vkDestroyImageView(g_device.device, imageView, Allocator::CPU());
+        }
+        g_swapchain.imageViews.clear();
+        g_swapchain.images.clear();
+
+        if(VK_NULL_HANDLE != g_swapchain.handle) {
+            auto* destroySwapchainFn = PFN_vkDestroySwapchainKHR(vkGetInstanceProcAddr(g_instance, "vkDestroySwapchainKHR"));
+            destroySwapchainFn(g_device.device, g_swapchain.handle, Allocator::CPU());
+            g_swapchain.handle = VK_NULL_HANDLE;
+        }
+
+        if(VK_NULL_HANDLE != g_swapchain.surface) {
+            auto* destroySurfaceFn = PFN_vkDestroySurfaceKHR(vkGetInstanceProcAddr(g_instance, "vkDestroySurfaceKHR"));
+            destroySurfaceFn(g_instance, g_swapchain.surface, Allocator::CPU());
+            g_swapchain.surface = VK_NULL_HANDLE;
+        }
     }
 
     bool Initialize() {
@@ -430,6 +509,8 @@ namespace Renderer {
     }
 
     void Release() {
+        DestroySwapchain();
+
         DestroyGPUCommandPool();
         DestroyDevice();
 
