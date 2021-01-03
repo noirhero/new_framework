@@ -12,19 +12,19 @@ namespace Renderer {
         VkDebugReportFlagsEXT /*flags*/, VkDebugReportObjectTypeEXT /*objectType*/, uint64_t /*object*/, size_t /*location*/, int32_t messageCode,
         const char* layerPrefix, const char* message, void* /*userData*/) {
         if(VK_DEBUG_REPORT_ERROR_BIT_EXT & messageCode) {
-            OutputDebugStringA(fmt::format("[Vulkan] ERROR [{}] : {}\n", layerPrefix, message).c_str());
+            Output::Print(fmt::format("[Vulkan] ERROR [{}] : {}\n", layerPrefix, message));
         }
         else if(VK_DEBUG_REPORT_WARNING_BIT_EXT & messageCode) {
-            OutputDebugStringA(fmt::format("[Vulkan] WARNING [{}] : {}\n", layerPrefix, message).c_str());
+            Output::Print(fmt::format("[Vulkan] WARNING [{}] : {}\n", layerPrefix, message));
         }
         else if(VK_DEBUG_REPORT_INFORMATION_BIT_EXT & messageCode) {
-            OutputDebugStringA(fmt::format("[Vulkan] INFORMATION [{}] : {}\n", layerPrefix, message).c_str());
+            Output::Print(fmt::format("[Vulkan] INFORMATION [{}] : {}\n", layerPrefix, message));
         }
         else if(VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT & messageCode) {
-            OutputDebugStringA(fmt::format("[Vulkan] PERFORMANCE [{}] : {}\n", layerPrefix, message).c_str());
+            Output::Print(fmt::format("[Vulkan] PERFORMANCE [{}] : {}\n", layerPrefix, message));
         }
         else if(VK_DEBUG_REPORT_DEBUG_BIT_EXT & messageCode) {
-            OutputDebugStringA(fmt::format("[Vulkan] DEBUG [{}] : {}\n", layerPrefix, message).c_str());
+            Output::Print(fmt::format("[Vulkan] DEBUG [{}] : {}\n", layerPrefix, message));
         }
         else {
             VK_FALSE;

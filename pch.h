@@ -1,4 +1,4 @@
-﻿// Copyright 2018-2020 TAP, Inc. All Rights Reserved.
+﻿// Copyright 2018-2021 TAP, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -12,6 +12,8 @@
 #include <iostream>
 #include <vector>
 #include <functional>
+#include <string>
+using namespace std::string_literals;
 
 #include "Resource.h"
 
@@ -20,4 +22,13 @@
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
+
+#pragma warning(disable : 4100)
+#pragma warning(disable : 4127)
+#pragma warning(disable : 4324)
 #include <third_party/VulkanMemoryAllocator/vk_mem_alloc.h>
+#pragma warning(default : 4100)
+#pragma warning(default : 4127)
+#pragma warning(default : 4324)
+
+#include "util_output.h"

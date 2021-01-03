@@ -162,9 +162,11 @@
     <ClInclude Include="main.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Renderer\allocator_cpu.h" />
+    <ClInclude Include="renderer\allocator_vma.h" />
     <ClInclude Include="renderer\debugger.h" />
     <ClInclude Include="Renderer\renderer.h" />
     <ClInclude Include="Renderer\renderer_common.h" />
+    <ClInclude Include="renderer\renderer_util.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="third_party\fmt\args.h" />
@@ -181,13 +183,17 @@
     <ClInclude Include="third_party\fmt\printf.h" />
     <ClInclude Include="third_party\fmt\ranges.h" />
     <ClInclude Include="third_party\VulkanMemoryAllocator\vk_mem_alloc.h" />
+    <ClInclude Include="util_output.h" />
     <ClInclude Include="win_handle.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Renderer\allocator_cpu.cpp" />
+    <ClCompile Include="renderer\allocator_vma.cpp" />
     <ClCompile Include="renderer\debugger.cpp" />
     <ClCompile Include="Renderer\renderer.cpp" />
+    <ClCompile Include="renderer\renderer_util.cpp" />
+    <ClCompile Include="util_output.cpp" />
     <ClCompile Include="win_handle.cpp" />
     <ClCompile Include="win_main.cpp" />
     <ClCompile Include="pch.cpp">

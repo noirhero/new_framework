@@ -66,6 +66,13 @@
       <Filter>third_party\fmt</Filter>
     </ClInclude>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="renderer\renderer_util.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\allocator_vma.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="util_output.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win_main.cpp">
@@ -85,6 +92,13 @@
       <Filter>renderer</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="renderer\renderer_util.cpp">
+      <Filter>renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\allocator_vma.cpp">
+      <Filter>renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="util_output.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win32">
