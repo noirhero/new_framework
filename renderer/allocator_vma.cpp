@@ -9,8 +9,11 @@
 
 namespace Renderer {
     VmaAllocator g_vmaAllocator = VK_NULL_HANDLE;
+    VmaAllocator Allocator::VMA() {
+        return g_vmaAllocator;
+    }
 
-    bool Allocator::InitializeVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device) {
+    bool Allocator::CreateVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device) {
         VmaAllocatorCreateInfo info{};
         info.instance = instance;
         info.physicalDevice = physicalDevice;
@@ -28,19 +31,10 @@ namespace Renderer {
         return true;
     }
 
-    //void Allocator::ReleaseVMA() {
-    //    if (g_hAllocator != VK_NULL_HANDLE) {
-    //        vmaDestroyAllocator(g_hAllocator);
-    //        g_hAllocator = nullptr;
-    //    }
-    //}
-
-    //VmaAllocator& Allocator::VMA() {
-    //    return g_vmaAllocator;
-    //}
-
-    //VmaAllocation g_depthAllocation;
-    //VmaAllocation* Allocator::VMADepth() {
-    //    return &g_depthAllocation;
-    //}
+    void Allocator::DestroyVMA() {
+        if (VK_NULL_HANDLE != g_vmaAllocator) {
+            vmaDestroyAllocator(g_vmaAllocator);
+            g_vmaAllocator = VK_NULL_HANDLE;
+        }
+    }
 }

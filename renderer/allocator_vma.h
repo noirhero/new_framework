@@ -4,10 +4,9 @@
 
 namespace Renderer {
     namespace Allocator {
-        bool InitializeVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device);
-        void ReleaseVMA();
-
         VmaAllocator VMA();
-        VmaAllocation VMADepth();
+
+        bool         CreateVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device);
+        void         DestroyVMA();
     }
 }

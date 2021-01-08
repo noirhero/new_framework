@@ -111,6 +111,7 @@ namespace Renderer {
     }
 
     VkSurfaceKHR g_surface = VK_NULL_HANDLE;
+
     bool CreateSurface() {
         VkWin32SurfaceCreateInfoKHR surfaceInfo{};
         surfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -124,13 +125,11 @@ namespace Renderer {
     }
 
     void DestroySurface() {
-        if(VK_NULL_HANDLE == g_surface) {
-            return;
+        if(VK_NULL_HANDLE != g_surface) {
+            auto* destroySurfaceFn = PFN_vkDestroySurfaceKHR(vkGetInstanceProcAddr(g_instance, "vkDestroySurfaceKHR"));
+            destroySurfaceFn(g_instance, g_surface, Allocator::CPU());
+            g_surface = VK_NULL_HANDLE;
         }
-
-        auto* destroySurfaceFn = PFN_vkDestroySurfaceKHR(vkGetInstanceProcAddr(g_instance, "vkDestroySurfaceKHR"));
-        destroySurfaceFn(g_instance, g_surface, Allocator::CPU());
-        g_surface = VK_NULL_HANDLE;
     }
 
     struct PhysicalDevice {
@@ -202,6 +201,7 @@ namespace Renderer {
         VkPhysicalDevice gpuDevice{ VK_NULL_HANDLE };
         uint32_t         gpuQueueIndex{ 0 };
         VkQueue          gpuQueue{ VK_NULL_HANDLE };
+        VkQueue          presentQueue{ VK_NULL_HANDLE };
     };
     Device g_device;
 
@@ -244,10 +244,13 @@ namespace Renderer {
             return false;
         }
 
-        VkQueue queue = VK_NULL_HANDLE;
-        vkGetDeviceQueue(device, gpuQueueIndex, 0, &queue);
+        VkQueue gpuQueue = VK_NULL_HANDLE;
+        vkGetDeviceQueue(device, gpuQueueIndex, 0, &gpuQueue);
 
-        g_device = { device, gpuDevice, gpuQueueIndex, queue };
+        VkQueue presentQueue = VK_NULL_HANDLE;
+        vkGetDeviceQueue(device, Util::GetPresentQueueIndex(), 0, &presentQueue);
+
+        g_device = { device, gpuDevice, gpuQueueIndex, gpuQueue, presentQueue };
         return true;
     }
 
@@ -296,7 +299,6 @@ namespace Renderer {
     }
 
     struct Swapchain {
-        VkSurfaceKHR                    surface = VK_NULL_HANDLE;
         std::vector<VkSurfaceFormatKHR> supportFormats;
         VkSurfaceCapabilitiesKHR        capabilities{};
         std::vector<VkPresentModeKHR>   presentModes;
@@ -309,62 +311,27 @@ namespace Renderer {
         VkSurfaceTransformFlagBitsKHR   preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 
         VkSwapchainKHR                  handle = VK_NULL_HANDLE;
-
         VkImages                        images;
         VkImageViews                    imageViews;
 
         VkImage                         depthImage = VK_NULL_HANDLE;
+        VmaAllocation                   depthAlloc = VK_NULL_HANDLE;
+        VkImageView                     depthImageView = VK_NULL_HANDLE;
     };
     Swapchain g_swapchain;
 
     bool CreateSwapchain() {
-        // Surface.
-        VkWin32SurfaceCreateInfoKHR surfaceInfo{};
-        surfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        surfaceInfo.hinstance = Win::Instance();
-        surfaceInfo.hwnd = Win::Handle();
-
-        if (VK_SUCCESS != vkCreateWin32SurfaceKHR(g_instance, &surfaceInfo, Allocator::CPU(), &g_swapchain.surface)) {
-            return false;
-        }
-
-        // Present queue index.
-        auto* getSurfaceSupportFn = PFN_vkGetPhysicalDeviceSurfaceSupportKHR(vkGetInstanceProcAddr(g_instance, "vkGetPhysicalDeviceSurfaceSupportKHR"));
-        for (const auto& physicalDevice : g_physicalDevices) {
-            if (g_device.gpuDevice != physicalDevice.device) {
-                continue;
-            }
-
-            uint32_t queueIndex = 0;
-            for (const auto& queueProperty : physicalDevice.queueFamilyProperties) {
-                (void)queueProperty;
-
-                VkBool32 isSupportPresent = VK_FALSE;
-                getSurfaceSupportFn(g_device.gpuDevice, queueIndex, g_swapchain.surface, &isSupportPresent);
-                if (VK_FALSE == isSupportPresent) {
-                    ++queueIndex;
-                    continue;
-                }
-
-                g_swapchain.presentQueueIndex = queueIndex;
-                if (g_device.gpuQueueIndex == g_swapchain.presentQueueIndex) {
-                    break;
-                }
-            }
-            break;
-        }
-
         // Format.
         auto* getSurfaceFormatFn = PFN_vkGetPhysicalDeviceSurfaceFormatsKHR(vkGetInstanceProcAddr(g_instance, "vkGetPhysicalDeviceSurfaceFormatsKHR"));
         uint32_t formatCount = 0;
-        getSurfaceFormatFn(g_device.gpuDevice, g_swapchain.surface, &formatCount, nullptr);
+        getSurfaceFormatFn(g_device.gpuDevice, g_surface, &formatCount, nullptr);
         if (0 == formatCount) {
             return false;
         }
 
         auto& formats = g_swapchain.supportFormats;
         formats.resize(formatCount);
-        getSurfaceFormatFn(g_device.gpuDevice, g_swapchain.surface, &formatCount, formats.data());
+        getSurfaceFormatFn(g_device.gpuDevice, g_surface, &formatCount, formats.data());
 
         if (1 == formatCount && VK_FORMAT_UNDEFINED == formats[0].format) {
             g_swapchain.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -375,7 +342,7 @@ namespace Renderer {
 
         // Capabilities.
         auto* getSurfaceCapabilities = PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkGetInstanceProcAddr(g_instance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"));
-        getSurfaceCapabilities(g_device.gpuDevice, g_swapchain.surface, &g_swapchain.capabilities);
+        getSurfaceCapabilities(g_device.gpuDevice, g_surface, &g_swapchain.capabilities);
 
         if (std::numeric_limits<uint32_t>::max() == g_swapchain.capabilities.currentExtent.width) {
             RECT winRect{};
@@ -404,14 +371,14 @@ namespace Renderer {
         // Preset mode.
         auto* getSurfacePresendModeFn = PFN_vkGetPhysicalDeviceSurfacePresentModesKHR(vkGetInstanceProcAddr(g_instance, "vkGetPhysicalDeviceSurfacePresentModesKHR"));
         uint32_t presentModeCount = 0;
-        getSurfacePresendModeFn(g_device.gpuDevice, g_swapchain.surface, &presentModeCount, nullptr);
+        getSurfacePresendModeFn(g_device.gpuDevice, g_surface, &presentModeCount, nullptr);
         if (0 == presentModeCount) {
             return false;
         }
 
         auto& presentModes = g_swapchain.presentModes;
         presentModes.resize(presentModeCount);
-        getSurfacePresendModeFn(g_device.gpuDevice, g_swapchain.surface, &presentModeCount, presentModes.data());
+        getSurfacePresendModeFn(g_device.gpuDevice, g_surface, &presentModeCount, presentModes.data());
 
         for (const auto supportPresentMode : presentModes) {
             if (VK_PRESENT_MODE_FIFO_RELAXED_KHR == supportPresentMode) {
@@ -433,7 +400,7 @@ namespace Renderer {
 
         VkSwapchainCreateInfoKHR swapchainInfo{};
         swapchainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainInfo.surface = g_swapchain.surface;
+        swapchainInfo.surface = g_surface;
         swapchainInfo.minImageCount = g_swapchain.imageCount;
         swapchainInfo.imageFormat = g_swapchain.format;
         swapchainInfo.imageExtent = { g_swapchain.width, g_swapchain.height };
@@ -444,6 +411,16 @@ namespace Renderer {
         swapchainInfo.clipped = VK_TRUE;
         swapchainInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
         swapchainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+        const uint32_t queueFamilyIndices[] = { Util::GetGPUQueueIndex(), Util::GetPresentQueueIndex() };
+        if(Util::GetGPUQueueIndex() != Util::GetPresentQueueIndex()) {
+            swapchainInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+            swapchainInfo.queueFamilyIndexCount = 2;
+            swapchainInfo.pQueueFamilyIndices = queueFamilyIndices;
+        }
+        else {
+            swapchainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        }
 
         auto* createSwapchainFn = PFN_vkCreateSwapchainKHR(vkGetInstanceProcAddr(g_instance, "vkCreateSwapchainKHR"));
         if (VK_SUCCESS != createSwapchainFn(g_device.device, &swapchainInfo, Allocator::CPU(), &g_swapchain.handle)) {
@@ -496,52 +473,57 @@ namespace Renderer {
         depthInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         depthInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-        //VkFormatProperties depthFormatProperties{};
-        //vkGetPhysicalDeviceFormatProperties(g_device.gpuDevice, depthInfo.format, &depthFormatProperties);
+        VkFormatProperties depthFormatProperties{};
+        vkGetPhysicalDeviceFormatProperties(g_device.gpuDevice, depthInfo.format, &depthFormatProperties);
 
-        //if(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT & depthFormatProperties.optimalTilingFeatures) {
-        //    depthInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        //}
-        //else if(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT & depthFormatProperties.linearTilingFeatures) {
-        //    depthInfo.tiling = VK_IMAGE_TILING_LINEAR;
-        //}
-        //else {
-        //    return false;
-        //}
+        if(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT & depthFormatProperties.optimalTilingFeatures) {
+            depthInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+        }
+        else if(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT & depthFormatProperties.linearTilingFeatures) {
+            depthInfo.tiling = VK_IMAGE_TILING_LINEAR;
+        }
+        else {
+            return false;
+        }
 
-        //VmaAllocationCreateInfo depthImageAllocCreateInfo{};
-        //depthImageAllocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-        //if(VK_SUCCESS != vmaCreateImage(Allocator::VMA(), &depthInfo, &depthImageAllocCreateInfo, &g_swapchain.depthImage, Allocator::VMADepth(), nullptr)) {
-        //    return false;
-        //}
+        VmaAllocationCreateInfo depthImageAllocCreateInfo{};
+        depthImageAllocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        if(VK_SUCCESS != vmaCreateImage(Allocator::VMA(), &depthInfo, &depthImageAllocCreateInfo, &g_swapchain.depthImage, &g_swapchain.depthAlloc, nullptr)) {
+            return false;
+        }
 
-        //VkMemoryRequirements depthMemoryRequirements{};
-        //vkGetImageMemoryRequirements(g_device.device, g_swapchain.depthImage, &depthMemoryRequirements);
+        // Depth image view.
+        VkImageViewCreateInfo depthImageViewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+        depthImageViewInfo.image = g_swapchain.depthImage;
+        depthImageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        depthImageViewInfo.format = depthInfo.format;
+        depthImageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        depthImageViewInfo.subresourceRange.baseMipLevel = 0;
+        depthImageViewInfo.subresourceRange.levelCount = 1;
+        depthImageViewInfo.subresourceRange.baseArrayLayer = 0;
+        depthImageViewInfo.subresourceRange.layerCount = 1;
 
-        //VkMemoryAllocateInfo depthMemoryAllocInfo{};
-        //depthMemoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        //depthMemoryAllocInfo.allocationSize = depthMemoryRequirements.size;
-
-        //for(const auto& physicalDevice : g_physicalDevices) {
-        //    if(g_device.gpuDevice != physicalDevice.device) {
-        //        if(false == Util::MemoryTypeFromProperties(depthMemoryAllocInfo.memoryTypeIndex, physicalDevice.memoryProperty, depthMemoryRequirements.memoryTypeBits, 0)) {
-        //            return false;
-        //        }
-        //        break;
-        //    }
-        //}
-
-        //vkAllocateMemory(g_device.device, &depthMemoryAllocInfo, Allocator::CPU(), )
+        if(VK_SUCCESS != vkCreateImageView(g_device.device, &depthImageViewInfo, Allocator::CPU(), &g_swapchain.depthImageView)) {
+            return false;
+        }
 
         return true;
     }
 
     void DestroySwapchain() {
-        //if(VK_NULL_HANDLE != g_swapchain.depthImage) {
-        //    vmaDestroyImage(Allocator::VMA(), g_swapchain.depthImage, *Allocator::VMADepth());
-        //    g_swapchain.depthImage = VK_NULL_HANDLE;
-        //}
+        // Depth.
+        if (VK_NULL_HANDLE != g_swapchain.depthImageView) {
+            vkDestroyImageView(g_device.device, g_swapchain.depthImageView, Allocator::CPU());
+            g_swapchain.depthImageView = VK_NULL_HANDLE;
+        }
 
+        if(VK_NULL_HANDLE != g_swapchain.depthImage) {
+            vmaDestroyImage(Allocator::VMA(), g_swapchain.depthImage, g_swapchain.depthAlloc);
+            g_swapchain.depthImage = VK_NULL_HANDLE;
+            g_swapchain.depthAlloc = VK_NULL_HANDLE;
+        }
+
+        // Image.
         for (auto imageView : g_swapchain.imageViews) {
             if (VK_NULL_HANDLE == imageView) {
                 continue;
@@ -552,16 +534,11 @@ namespace Renderer {
         g_swapchain.imageViews.clear();
         g_swapchain.images.clear();
 
+        // Handle.
         if (VK_NULL_HANDLE != g_swapchain.handle) {
             auto* destroySwapchainFn = PFN_vkDestroySwapchainKHR(vkGetInstanceProcAddr(g_instance, "vkDestroySwapchainKHR"));
             destroySwapchainFn(g_device.device, g_swapchain.handle, Allocator::CPU());
             g_swapchain.handle = VK_NULL_HANDLE;
-        }
-
-        if (VK_NULL_HANDLE != g_swapchain.surface) {
-            auto* destroySurfaceFn = PFN_vkDestroySurfaceKHR(vkGetInstanceProcAddr(g_instance, "vkDestroySurfaceKHR"));
-            destroySurfaceFn(g_instance, g_swapchain.surface, Allocator::CPU());
-            g_swapchain.surface = VK_NULL_HANDLE;
         }
     }
 
@@ -584,7 +561,7 @@ namespace Renderer {
             return false;
         }
 
-        if(false == Allocator::InitializeVMA(g_instance, g_device.gpuDevice, g_device.device)) {
+        if(false == Allocator::CreateVMA(g_instance, g_device.gpuDevice, g_device.device)) {
             return false;
         }
 
@@ -622,8 +599,8 @@ namespace Renderer {
 
     void Release() {
         DestroySwapchain();
-
         DestroyGPUCommandPool();
+        Allocator::DestroyVMA();
         DestroyDevice();
         DestroySurface();
 

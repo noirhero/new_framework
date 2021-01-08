@@ -38,3 +38,7 @@ bin/
 
 # User files
 *.user
+
+# Vulkan memory allocator log file
+*.foz
+*.gfxr

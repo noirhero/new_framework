@@ -14,7 +14,6 @@ namespace Renderer {
         return 1 < majorVersion;
     }
 
-
     bool VK_KHR_get_physical_device_properties2_enabled = false;
     bool VK_EXT_debug_utils_enabled = false;
     void Util::CheckToInstanceExtensionProperties(const VkExtensionProperties& properties) {
@@ -149,6 +148,14 @@ namespace Renderer {
         g_SparseBindingEnabled = g_SparseBindingEnabled && std::numeric_limits<uint32_t>::max() != g_SparseBindingQueueFamilyIndex;
 
         return true;
+    }
+
+    uint32_t Util::GetGPUQueueIndex() {
+        return g_GraphicsQueueFamilyIndex;
+    }
+
+    uint32_t Util::GetPresentQueueIndex() {
+        return g_PresentQueueFamilyIndex;
     }
 
     void Util::DecorateVMAAllocateInformation(VmaAllocatorCreateInfo& info) {

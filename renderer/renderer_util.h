@@ -12,6 +12,9 @@ namespace Renderer {
         void     CheckToPhysicalDeviceFeatures(VkPhysicalDevice device);
         bool     CheckToQueueFamilyProperties(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<VkQueueFamilyProperties>& properties);
 
+        uint32_t GetGPUQueueIndex();
+        uint32_t GetPresentQueueIndex();
+
         void     DecorateVMAAllocateInformation(VmaAllocatorCreateInfo& info);
 
         bool     MemoryTypeFromProperties(uint32_t& findIndex, const VkPhysicalDeviceMemoryProperties& memoryProperties, uint32_t typeBits, VkFlags requirementsMask);
