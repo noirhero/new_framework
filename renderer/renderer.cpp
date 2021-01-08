@@ -493,15 +493,21 @@ namespace Renderer {
         }
 
         // Depth image view.
-        VkImageViewCreateInfo depthImageViewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+        VkImageViewCreateInfo depthImageViewInfo{};
+        depthImageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         depthImageViewInfo.image = g_swapchain.depthImage;
-        depthImageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         depthImageViewInfo.format = depthInfo.format;
+        depthImageViewInfo.components = { VK_COMPONENT_SWIZZLE_IDENTITY };
         depthImageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         depthImageViewInfo.subresourceRange.baseMipLevel = 0;
         depthImageViewInfo.subresourceRange.levelCount = 1;
         depthImageViewInfo.subresourceRange.baseArrayLayer = 0;
         depthImageViewInfo.subresourceRange.layerCount = 1;
+        depthImageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+
+        if(VK_FORMAT_D16_UNORM_S8_UINT == depthInfo.format || VK_FORMAT_D24_UNORM_S8_UINT == depthInfo.format || VK_FORMAT_D32_SFLOAT_S8_UINT == depthInfo.format) {
+            depthImageViewInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
 
         if(VK_SUCCESS != vkCreateImageView(g_device.device, &depthImageViewInfo, Allocator::CPU(), &g_swapchain.depthImageView)) {
             return false;

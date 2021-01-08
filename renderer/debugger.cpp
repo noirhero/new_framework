@@ -9,25 +9,25 @@ namespace Renderer {
     VkDebugReportCallbackEXT g_debugHandle = VK_NULL_HANDLE;
 
     VkBool32 VKAPI_PTR Report(
-        VkDebugReportFlagsEXT /*flags*/, VkDebugReportObjectTypeEXT /*objectType*/, uint64_t /*object*/, size_t /*location*/, int32_t messageCode,
+        VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT /*objectType*/, uint64_t /*object*/, size_t /*location*/, int32_t /*messageCode*/,
         const char* layerPrefix, const char* message, void* /*userData*/) {
-        if(VK_DEBUG_REPORT_ERROR_BIT_EXT & messageCode) {
+        if(VK_DEBUG_REPORT_ERROR_BIT_EXT & flags) {
             Output::Print(fmt::format("[Vulkan] ERROR [{}] : {}\n", layerPrefix, message));
         }
-        else if(VK_DEBUG_REPORT_WARNING_BIT_EXT & messageCode) {
+        else if(VK_DEBUG_REPORT_WARNING_BIT_EXT & flags) {
             Output::Print(fmt::format("[Vulkan] WARNING [{}] : {}\n", layerPrefix, message));
         }
-        else if(VK_DEBUG_REPORT_INFORMATION_BIT_EXT & messageCode) {
+        else if(VK_DEBUG_REPORT_INFORMATION_BIT_EXT & flags) {
             Output::Print(fmt::format("[Vulkan] INFORMATION [{}] : {}\n", layerPrefix, message));
         }
-        else if(VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT & messageCode) {
+        else if(VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT & flags) {
             Output::Print(fmt::format("[Vulkan] PERFORMANCE [{}] : {}\n", layerPrefix, message));
         }
-        else if(VK_DEBUG_REPORT_DEBUG_BIT_EXT & messageCode) {
+        else if(VK_DEBUG_REPORT_DEBUG_BIT_EXT & flags) {
             Output::Print(fmt::format("[Vulkan] DEBUG [{}] : {}\n", layerPrefix, message));
         }
         else {
-            VK_FALSE;
+            return VK_FALSE;
         }
 
         return VK_TRUE;
