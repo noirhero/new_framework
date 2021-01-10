@@ -34,7 +34,7 @@ namespace Renderer {
         return result;
     }
 
-    static void CustomCpuFree(void* userData, void* memory) {
+    void CustomCpuFree(void* userData, void* memory) {
         assert(CALLBACK_USER_DATA == userData);
         (void)userData;
 

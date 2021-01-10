@@ -395,9 +395,6 @@ namespace Renderer {
         }
 
         // Swapchain.
-        //PFN_vkAcquireNextImageKHR(vkGetInstanceProcAddr(g_instance, "vkAcquireNextImageKHR"));
-        //PFN_vkQueuePresentKHR(vkGetInstanceProcAddr(g_instance, "vkQueuePresentKHR"));
-
         VkSwapchainCreateInfoKHR swapchainInfo{};
         swapchainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         swapchainInfo.surface = g_surface;
@@ -530,12 +527,10 @@ namespace Renderer {
         }
 
         // Image.
-        for (auto imageView : g_swapchain.imageViews) {
-            if (VK_NULL_HANDLE == imageView) {
-                continue;
+        for (auto* imageView : g_swapchain.imageViews) {
+            if (VK_NULL_HANDLE != imageView) {
+                vkDestroyImageView(g_device.device, imageView, Allocator::CPU());
             }
-
-            vkDestroyImageView(g_device.device, imageView, Allocator::CPU());
         }
         g_swapchain.imageViews.clear();
         g_swapchain.images.clear();
@@ -545,6 +540,62 @@ namespace Renderer {
             auto* destroySwapchainFn = PFN_vkDestroySwapchainKHR(vkGetInstanceProcAddr(g_instance, "vkDestroySwapchainKHR"));
             destroySwapchainFn(g_device.device, g_swapchain.handle, Allocator::CPU());
             g_swapchain.handle = VK_NULL_HANDLE;
+        }
+    }
+
+    struct VertexBuffer {
+        VkBuffer      buffer = VK_NULL_HANDLE;
+        VmaAllocation allocation = VK_NULL_HANDLE;
+    };
+    VertexBuffer g_vb;
+
+    bool CreateVertexBuffer() {
+        struct VertexWithColor {
+            float x, y, z, w;
+            float r, g, b, a;
+        };
+        constexpr VertexWithColor vertices[] = {
+            { 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f },
+            { 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f },
+            { -1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f },
+        };
+        constexpr auto vertexCount = ARRAYSIZE(vertices);
+        constexpr auto vertexStride = sizeof(VertexWithColor);
+        constexpr auto vertexSize = vertexCount * vertexStride;
+
+        VkBufferCreateInfo bufferInfo{};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        bufferInfo.size = vertexSize;
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VmaAllocationCreateInfo allocInfo{};
+        allocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+        allocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+        VkBuffer stagingVertexBuffer = VK_NULL_HANDLE;
+        VmaAllocation stagingVertexBufferAlloc = VK_NULL_HANDLE;
+        VmaAllocationInfo stagingVertexBufferAllocInfo{};
+        if(VK_SUCCESS != vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &stagingVertexBuffer, &stagingVertexBufferAlloc, &stagingVertexBufferAllocInfo)) {
+            return false;
+        }
+        memcpy_s(stagingVertexBufferAllocInfo.pMappedData, vertexSize, vertices, vertexSize);
+
+        // No need to flush stagingVertexBuffer memory because CPU_ONLY memory is always HOST_COHERENT.
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        allocInfo.flags = 0;
+        const auto result = vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &g_vb.buffer, &g_vb.allocation, nullptr);
+        vmaDestroyBuffer(Allocator::VMA(), stagingVertexBuffer, stagingVertexBufferAlloc);
+
+        return VK_SUCCESS != result ? false : true;
+    }
+
+    void DestroyVertexBuffer() {
+        if(VK_NULL_HANDLE != g_vb.buffer) {
+            vmaDestroyBuffer(Allocator::VMA(), g_vb.buffer, g_vb.allocation);
+            g_vb.buffer = VK_NULL_HANDLE;
+            g_vb.allocation = VK_NULL_HANDLE;
         }
     }
 
@@ -579,6 +630,10 @@ namespace Renderer {
             return false;
         }
 
+        if(false == CreateVertexBuffer()) {
+            return false;
+        }
+
         AllocateGPUCommandBuffer();
 
         { // Command buffer
@@ -604,6 +659,7 @@ namespace Renderer {
     }
 
     void Release() {
+        DestroyVertexBuffer();
         DestroySwapchain();
         DestroyGPUCommandPool();
         Allocator::DestroyVMA();

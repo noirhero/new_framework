@@ -21,6 +21,7 @@ LRESULT CALLBACK WndProc(HWND winHandle, UINT message, WPARAM wParam, LPARAM lPa
 
 int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR /*cmdLine*/, int cmdShow) {
     constexpr wchar_t className[] = L"Framework";
+
     WNDCLASSEXW winProperties{};
     winProperties.cbSize = sizeof(WNDCLASSEX);
     winProperties.style = CS_HREDRAW | CS_VREDRAW;
@@ -41,12 +42,13 @@ int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR 
 
     ShowWindow(winHandle, cmdShow);
     UpdateWindow(winHandle);
-
     Win::Initialize(winInstance, winHandle);
+
     if (false == Main::Initialize()) {
         Main::Finalize();
         return 0;
     }
+
     MSG msg{};
     while (WM_QUIT != msg.message) {
         if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {

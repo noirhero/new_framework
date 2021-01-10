@@ -16,8 +16,4 @@
             throw std::runtime_error("TEST FAILED: " #expr); \
         } \
     } while(0)
-#endif
-
-namespace Renderer {
-    
-}
+#endif}
