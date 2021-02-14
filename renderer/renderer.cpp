@@ -52,7 +52,7 @@ namespace Renderer {
             VkExtensionPropArray extensions(extensionCount);
             vkEnumerateInstanceExtensionProperties(layer.layerName, &extensionCount, extensions.data());
 
-            for(const auto& extensionProperties : extensions) {
+            for (const auto& extensionProperties : extensions) {
                 Util::CheckToInstanceExtensionProperties(extensionProperties);
             }
 
@@ -125,7 +125,7 @@ namespace Renderer {
     }
 
     void DestroySurface() {
-        if(VK_NULL_HANDLE != g_surface) {
+        if (VK_NULL_HANDLE != g_surface) {
             auto* destroySurfaceFn = PFN_vkDestroySurfaceKHR(vkGetInstanceProcAddr(g_instance, "vkDestroySurfaceKHR"));
             destroySurfaceFn(g_instance, g_surface, Allocator::CPU());
             g_surface = VK_NULL_HANDLE;
@@ -187,7 +187,7 @@ namespace Renderer {
                 VkExtensionPropArray extensions(extensionCount);
                 vkEnumerateDeviceExtensionProperties(device, layer.layerName, &extensionCount, extensions.data());
 
-                for(const auto& extensionProperties : extensions) {
+                for (const auto& extensionProperties : extensions) {
                     Util::CheckToPhysicalDeviceExtensionProperties(extensionProperties);
                 }
 
@@ -411,7 +411,7 @@ namespace Renderer {
         swapchainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
         const uint32_t queueFamilyIndices[] = { Util::GetGPUQueueIndex(), Util::GetPresentQueueIndex() };
-        if(Util::GetGPUQueueIndex() != Util::GetPresentQueueIndex()) {
+        if (Util::GetGPUQueueIndex() != Util::GetPresentQueueIndex()) {
             swapchainInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             swapchainInfo.queueFamilyIndexCount = 2;
             swapchainInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -476,10 +476,10 @@ namespace Renderer {
         VkFormatProperties depthFormatProperties{};
         vkGetPhysicalDeviceFormatProperties(g_device.gpuDevice, depthInfo.format, &depthFormatProperties);
 
-        if(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT & depthFormatProperties.optimalTilingFeatures) {
+        if (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT & depthFormatProperties.optimalTilingFeatures) {
             depthInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         }
-        else if(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT & depthFormatProperties.linearTilingFeatures) {
+        else if (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT & depthFormatProperties.linearTilingFeatures) {
             depthInfo.tiling = VK_IMAGE_TILING_LINEAR;
         }
         else {
@@ -488,7 +488,7 @@ namespace Renderer {
 
         VmaAllocationCreateInfo depthImageAllocCreateInfo{};
         depthImageAllocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-        if(VK_SUCCESS != vmaCreateImage(Allocator::VMA(), &depthInfo, &depthImageAllocCreateInfo, &g_swapchain.depthImage, &g_swapchain.depthAlloc, nullptr)) {
+        if (VK_SUCCESS != vmaCreateImage(Allocator::VMA(), &depthInfo, &depthImageAllocCreateInfo, &g_swapchain.depthImage, &g_swapchain.depthAlloc, nullptr)) {
             return false;
         }
 
@@ -505,11 +505,11 @@ namespace Renderer {
         depthImageViewInfo.subresourceRange.layerCount = 1;
         depthImageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 
-        if(VK_FORMAT_D16_UNORM_S8_UINT == depthInfo.format || VK_FORMAT_D24_UNORM_S8_UINT == depthInfo.format || VK_FORMAT_D32_SFLOAT_S8_UINT == depthInfo.format) {
+        if (VK_FORMAT_D16_UNORM_S8_UINT == depthInfo.format || VK_FORMAT_D24_UNORM_S8_UINT == depthInfo.format || VK_FORMAT_D32_SFLOAT_S8_UINT == depthInfo.format) {
             depthImageViewInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
         }
 
-        if(VK_SUCCESS != vkCreateImageView(g_device.device, &depthImageViewInfo, Allocator::CPU(), &g_swapchain.depthImageView)) {
+        if (VK_SUCCESS != vkCreateImageView(g_device.device, &depthImageViewInfo, Allocator::CPU(), &g_swapchain.depthImageView)) {
             return false;
         }
 
@@ -523,7 +523,7 @@ namespace Renderer {
             g_swapchain.depthImageView = VK_NULL_HANDLE;
         }
 
-        if(VK_NULL_HANDLE != g_swapchain.depthImage) {
+        if (VK_NULL_HANDLE != g_swapchain.depthImage) {
             vmaDestroyImage(Allocator::VMA(), g_swapchain.depthImage, g_swapchain.depthAlloc);
             g_swapchain.depthImage = VK_NULL_HANDLE;
             g_swapchain.depthAlloc = VK_NULL_HANDLE;
@@ -579,7 +579,7 @@ namespace Renderer {
         VkBuffer stagingVertexBuffer = VK_NULL_HANDLE;
         VmaAllocation stagingVertexBufferAlloc = VK_NULL_HANDLE;
         VmaAllocationInfo stagingVertexBufferAllocInfo{};
-        if(VK_SUCCESS != vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &stagingVertexBuffer, &stagingVertexBufferAlloc, &stagingVertexBufferAllocInfo)) {
+        if (VK_SUCCESS != vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &stagingVertexBuffer, &stagingVertexBufferAlloc, &stagingVertexBufferAllocInfo)) {
             return false;
         }
         memcpy_s(stagingVertexBufferAllocInfo.pMappedData, vertexSize, vertices, vertexSize);
@@ -595,7 +595,7 @@ namespace Renderer {
     }
 
     void DestroyVertexBuffer() {
-        if(VK_NULL_HANDLE != g_vb.buffer) {
+        if (VK_NULL_HANDLE != g_vb.buffer) {
             vmaDestroyBuffer(Allocator::VMA(), g_vb.buffer, g_vb.allocation);
             g_vb.buffer = VK_NULL_HANDLE;
             g_vb.allocation = VK_NULL_HANDLE;
@@ -648,7 +648,7 @@ namespace Renderer {
         info.subpassCount = 1;
         info.pSubpasses = &subPass;
 
-        if(VK_SUCCESS != vkCreateRenderPass(g_device.device, &info, Allocator::CPU(), &g_renderPass)) {
+        if (VK_SUCCESS != vkCreateRenderPass(g_device.device, &info, Allocator::CPU(), &g_renderPass)) {
             return false;
         }
 
@@ -656,7 +656,7 @@ namespace Renderer {
     }
 
     void DestroyRenderPass() {
-        if(VK_NULL_HANDLE != g_renderPass) {
+        if (VK_NULL_HANDLE != g_renderPass) {
             vkDestroyRenderPass(g_device.device, g_renderPass, Allocator::CPU());
             g_renderPass = VK_NULL_HANDLE;
         }
@@ -676,11 +676,11 @@ namespace Renderer {
         info.height = g_swapchain.height;
         info.layers = 1;
 
-        for(auto* imageView : g_swapchain.imageViews) {
+        for (auto* imageView : g_swapchain.imageViews) {
             attachments[0] = imageView;
 
             VkFramebuffer frameBuffer = VK_NULL_HANDLE;
-            if(VK_SUCCESS != vkCreateFramebuffer(g_device.device, &info, Allocator::CPU(), &frameBuffer)) {
+            if (VK_SUCCESS != vkCreateFramebuffer(g_device.device, &info, Allocator::CPU(), &frameBuffer)) {
                 return false;
             }
 
@@ -691,7 +691,7 @@ namespace Renderer {
     }
 
     void ClearFrameBuffers() {
-        for(auto* frameBuffer : g_frameBuffers) {
+        for (auto* frameBuffer : g_frameBuffers) {
             vkDestroyFramebuffer(g_device.device, frameBuffer, Allocator::CPU());
         }
         g_frameBuffers.clear();
@@ -707,7 +707,7 @@ namespace Renderer {
         Debugger::Initialize(g_instance);
 #endif
 
-        if(false == CreateSurface()) {
+        if (false == CreateSurface()) {
             return false;
         }
 
@@ -716,7 +716,7 @@ namespace Renderer {
             return false;
         }
 
-        if(false == Allocator::CreateVMA(g_instance, g_device.gpuDevice, g_device.device)) {
+        if (false == Allocator::CreateVMA(g_instance, g_device.gpuDevice, g_device.device)) {
             return false;
         }
 
@@ -728,15 +728,15 @@ namespace Renderer {
             return false;
         }
 
-        if(false == CreateRenderPass(true, true)) {
+        if (false == CreateRenderPass(true, true)) {
             return false;
         }
 
-        if(false == CreateFrameBuffers(true)) {
+        if (false == CreateFrameBuffers(true)) {
             return false;
         }
 
-        if(false == CreateVertexBuffer()) {
+        if (false == CreateVertexBuffer()) {
             return false;
         }
 
