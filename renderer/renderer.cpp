@@ -603,7 +603,7 @@ namespace Renderer {
     }
 
     VkRenderPass g_renderPass = VK_NULL_HANDLE;
-    bool CreateRenderPass(bool isDepthSupport, bool isClear) {
+    bool CreateRenderPass(bool isSupportDepth, bool isClear) {
         const auto setAttachmentFn = [](VkAttachmentDescription& attachment, VkFormat format, bool isClear) {
             attachment.format = format;
             attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -621,7 +621,7 @@ namespace Renderer {
         attachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        if (isDepthSupport) {
+        if (isSupportDepth) {
             setAttachmentFn(attachments[1], g_swapchain.depthFormat, isClear);
             attachments[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -639,11 +639,11 @@ namespace Renderer {
         subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
         subPass.colorAttachmentCount = 1;
         subPass.pColorAttachments = &colorRef;
-        subPass.pDepthStencilAttachment = isDepthSupport ? &depthRef : nullptr;
+        subPass.pDepthStencilAttachment = isSupportDepth ? &depthRef : nullptr;
 
         VkRenderPassCreateInfo info{};
         info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        info.attachmentCount = isDepthSupport ? 2 : 1;
+        info.attachmentCount = isSupportDepth ? 2 : 1;
         info.pAttachments = attachments;
         info.subpassCount = 1;
         info.pSubpasses = &subPass;
@@ -660,6 +660,41 @@ namespace Renderer {
             vkDestroyRenderPass(g_device.device, g_renderPass, Allocator::CPU());
             g_renderPass = VK_NULL_HANDLE;
         }
+    }
+
+    using VkFramebuffers = std::vector<VkFramebuffer>;
+    VkFramebuffers g_frameBuffers;
+    bool CreateFrameBuffers(bool isIncludeDepth) {
+        VkImageView attachments[2]{ VK_NULL_HANDLE, g_swapchain.depthImageView };
+
+        VkFramebufferCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        info.renderPass = g_renderPass;
+        info.attachmentCount = isIncludeDepth ? 2 : 1;
+        info.pAttachments = attachments;
+        info.width = g_swapchain.width;
+        info.height = g_swapchain.height;
+        info.layers = 1;
+
+        for(auto* imageView : g_swapchain.imageViews) {
+            attachments[0] = imageView;
+
+            VkFramebuffer frameBuffer = VK_NULL_HANDLE;
+            if(VK_SUCCESS != vkCreateFramebuffer(g_device.device, &info, Allocator::CPU(), &frameBuffer)) {
+                return false;
+            }
+
+            g_frameBuffers.emplace_back(frameBuffer);
+        }
+
+        return true;
+    }
+
+    void ClearFrameBuffers() {
+        for(auto* frameBuffer : g_frameBuffers) {
+            vkDestroyFramebuffer(g_device.device, frameBuffer, Allocator::CPU());
+        }
+        g_frameBuffers.clear();
     }
 
     bool Initialize() {
@@ -697,6 +732,10 @@ namespace Renderer {
             return false;
         }
 
+        if(false == CreateFrameBuffers(true)) {
+            return false;
+        }
+
         if(false == CreateVertexBuffer()) {
             return false;
         }
@@ -726,6 +765,7 @@ namespace Renderer {
 
     void Release() {
         DestroyVertexBuffer();
+        ClearFrameBuffers();
         DestroyRenderPass();
         DestroySwapchain();
         DestroyGPUCommandPool();
