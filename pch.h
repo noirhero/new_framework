@@ -25,9 +25,11 @@ using namespace std::string_literals;
 
 #pragma warning(disable : 4100)
 #pragma warning(disable : 4127)
+#pragma warning(disable : 4189)
 #pragma warning(disable : 4324)
 #include <third_party/VulkanMemoryAllocator/vk_mem_alloc.h>
 #pragma warning(default : 4100)
+#pragma warning(default : 4189)
 #pragma warning(default : 4127)
 #pragma warning(default : 4324)
 

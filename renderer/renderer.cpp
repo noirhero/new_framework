@@ -307,6 +307,7 @@ namespace Renderer {
         uint32_t                        width = std::numeric_limits<uint32_t>::max();
         uint32_t                        height = std::numeric_limits<uint32_t>::max();
         VkFormat                        format = VK_FORMAT_UNDEFINED;
+        VkFormat                        depthFormat = VK_FORMAT_UNDEFINED;
         VkPresentModeKHR                presentMode = VK_PRESENT_MODE_FIFO_KHR;
         VkSurfaceTransformFlagBitsKHR   preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 
@@ -459,10 +460,12 @@ namespace Renderer {
         }
 
         // Depth image.
+        g_swapchain.depthFormat = VK_FORMAT_D16_UNORM;
+
         VkImageCreateInfo depthInfo{};
         depthInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         depthInfo.imageType = VK_IMAGE_TYPE_2D;
-        depthInfo.format = VK_FORMAT_D16_UNORM;
+        depthInfo.format = g_swapchain.depthFormat;
         depthInfo.extent = { g_swapchain.width, g_swapchain.height, 1 };
         depthInfo.mipLevels = 1;
         depthInfo.arrayLayers = 1;
@@ -599,6 +602,66 @@ namespace Renderer {
         }
     }
 
+    VkRenderPass g_renderPass = VK_NULL_HANDLE;
+    bool CreateRenderPass(bool isDepthSupport, bool isClear) {
+        const auto setAttachmentFn = [](VkAttachmentDescription& attachment, VkFormat format, bool isClear) {
+            attachment.format = format;
+            attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+            attachment.loadOp = isClear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        };
+
+        VkAttachmentDescription attachments[2]{};
+
+        setAttachmentFn(attachments[0], g_swapchain.format, isClear);
+        attachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        if (isDepthSupport) {
+            setAttachmentFn(attachments[1], g_swapchain.depthFormat, isClear);
+            attachments[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
+
+        VkAttachmentReference colorRef{};
+        colorRef.attachment = 0;
+        colorRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkAttachmentReference depthRef{};
+        depthRef.attachment = 1;
+        depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription subPass{};
+        subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subPass.colorAttachmentCount = 1;
+        subPass.pColorAttachments = &colorRef;
+        subPass.pDepthStencilAttachment = isDepthSupport ? &depthRef : nullptr;
+
+        VkRenderPassCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        info.attachmentCount = isDepthSupport ? 2 : 1;
+        info.pAttachments = attachments;
+        info.subpassCount = 1;
+        info.pSubpasses = &subPass;
+
+        if(VK_SUCCESS != vkCreateRenderPass(g_device.device, &info, Allocator::CPU(), &g_renderPass)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    void DestroyRenderPass() {
+        if(VK_NULL_HANDLE != g_renderPass) {
+            vkDestroyRenderPass(g_device.device, g_renderPass, Allocator::CPU());
+            g_renderPass = VK_NULL_HANDLE;
+        }
+    }
+
     bool Initialize() {
         CollectingLayerProperties();
         if (false == CreateInstance()) {
@@ -630,12 +693,15 @@ namespace Renderer {
             return false;
         }
 
+        if(false == CreateRenderPass(true, true)) {
+            return false;
+        }
+
         if(false == CreateVertexBuffer()) {
             return false;
         }
 
         AllocateGPUCommandBuffer();
-
         { // Command buffer
             VkCommandBufferInheritanceInfo inheritanceInfo{};
             inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -660,6 +726,7 @@ namespace Renderer {
 
     void Release() {
         DestroyVertexBuffer();
+        DestroyRenderPass();
         DestroySwapchain();
         DestroyGPUCommandPool();
         Allocator::DestroyVMA();
