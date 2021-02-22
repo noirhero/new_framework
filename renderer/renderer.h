@@ -5,4 +5,6 @@
 namespace Renderer {
     bool Initialize();
     void Release();
+
+    void Run();
 }

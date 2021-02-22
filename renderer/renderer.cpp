@@ -283,21 +283,6 @@ namespace Renderer {
         }
     }
 
-    VkCommandBuffer g_gpuCmdBuf = VK_NULL_HANDLE;
-
-    bool AllocateGPUCommandBuffer() {
-        VkCommandBufferAllocateInfo info{};
-        info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        info.commandPool = g_gpuCmdPool;
-        info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        info.commandBufferCount = 1;
-        if (VK_SUCCESS != vkAllocateCommandBuffers(g_device.device, &info, &g_gpuCmdBuf)) {
-            return false;
-        }
-
-        return true;
-    }
-
     struct Swapchain {
         std::vector<VkSurfaceFormatKHR> supportFormats;
         VkSurfaceCapabilitiesKHR        capabilities{};
@@ -697,6 +682,61 @@ namespace Renderer {
         g_frameBuffers.clear();
     }
 
+    using VkCommandBuffers = std::vector<VkCommandBuffer>;
+    VkCommandBuffers g_cmdBuffers;
+
+    bool AllocateAndFillCommandBuffers() {
+        for (decltype(g_swapchain.images.size()) i = 0; i < g_swapchain.images.size(); ++i) {
+            // Create.
+            VkCommandBufferAllocateInfo cmdInfo{};
+            cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            cmdInfo.commandPool = g_gpuCmdPool;
+            cmdInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            cmdInfo.commandBufferCount = 1;
+
+            VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
+            if(VK_SUCCESS != vkAllocateCommandBuffers(g_device.device, &cmdInfo, &cmdBuffer)) {
+                return false;
+            }
+            g_cmdBuffers.emplace_back(cmdBuffer);
+
+            // Begin.
+            VkCommandBufferInheritanceInfo cmdBufInheritInfo{};
+            cmdBufInheritInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+
+            VkCommandBufferBeginInfo cmdBufInfo{};
+            cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            cmdBufInfo.pInheritanceInfo = &cmdBufInheritInfo;
+
+            if (VK_SUCCESS != vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo)) {
+                return false;
+            }
+
+            // Record.
+            VkClearValue clearValues[2]{};
+            clearValues[0].color = { 0.0f, 0.0f, 1.0f, 0.0f };
+            clearValues[1].depthStencil.depth = 1.0f;
+            clearValues[1].depthStencil.stencil = 0;
+
+            VkRenderPassBeginInfo renderPassBegin{};
+            renderPassBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassBegin.renderPass = g_renderPass;
+            renderPassBegin.framebuffer = g_frameBuffers[i];
+            renderPassBegin.renderArea.extent.width = g_swapchain.width;
+            renderPassBegin.renderArea.extent.height = g_swapchain.height;
+            renderPassBegin.clearValueCount = 2;
+            renderPassBegin.pClearValues = clearValues;
+
+            vkCmdBeginRenderPass(cmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdEndRenderPass(cmdBuffer);
+
+            // End.
+            vkEndCommandBuffer(cmdBuffer);
+        }
+
+        return true;
+    }
+
     bool Initialize() {
         CollectingLayerProperties();
         if (false == CreateInstance()) {
@@ -736,28 +776,12 @@ namespace Renderer {
             return false;
         }
 
-        if (false == CreateVertexBuffer()) {
+        //if (false == CreateVertexBuffer()) {
+        //    return false;
+        //}
+
+        if(false == AllocateAndFillCommandBuffers()) {
             return false;
-        }
-
-        AllocateGPUCommandBuffer();
-        { // Command buffer
-            VkCommandBufferInheritanceInfo inheritanceInfo{};
-            inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-
-            VkCommandBufferBeginInfo beginInfo{};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            beginInfo.pInheritanceInfo = &inheritanceInfo;
-            vkBeginCommandBuffer(g_gpuCmdBuf, &beginInfo);
-            // blah, blah, blah...
-            vkEndCommandBuffer(g_gpuCmdBuf);
-
-            VkSubmitInfo submitInfo{};
-            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &g_gpuCmdBuf;
-            vkQueueSubmit(g_device.gpuQueue, 1, &submitInfo, VK_NULL_HANDLE);
-            vkQueueWaitIdle(g_device.gpuQueue);
         }
 
         return true;
@@ -778,5 +802,40 @@ namespace Renderer {
 #endif
 
         DestroyInstance();
+    }
+
+    uint32_t currentFrameBufferIndex = 0;
+    void Run() {
+        // Acquire image index.
+        VkSemaphoreCreateInfo presentCompleteSemaphoreCreateInfo{};
+        presentCompleteSemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        VkSemaphore presentCompleteSemaphore = VK_NULL_HANDLE;
+        vkCreateSemaphore(g_device.device, &presentCompleteSemaphoreCreateInfo, Allocator::CPU(), &presentCompleteSemaphore);
+
+        if(VK_SUCCESS != vkAcquireNextImageKHR(g_device.device, g_swapchain.handle, UINT64_MAX, presentCompleteSemaphore, VK_NULL_HANDLE, &currentFrameBufferIndex)) {
+            return;
+        }
+
+        // Submit.
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &g_cmdBuffers[currentFrameBufferIndex];
+
+        vkQueueSubmit(g_device.gpuQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(g_device.gpuQueue);
+
+        // Present.
+        VkPresentInfoKHR present{};
+        present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        present.swapchainCount = 1;
+        present.pSwapchains = &g_swapchain.handle;
+        present.pImageIndices = &currentFrameBufferIndex;
+
+        // Queue the image for presentation,
+        vkQueuePresentKHR(g_device.gpuQueue, &present);
+
+        vkDestroySemaphore(g_device.device, presentCompleteSemaphore, Allocator::CPU());
     }
 }

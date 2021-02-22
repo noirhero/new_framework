@@ -19,6 +19,7 @@ namespace Main {
     }
 
     bool Run() {
+        Renderer::Run();
         return true;
     }
 
