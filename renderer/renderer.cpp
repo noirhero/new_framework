@@ -257,9 +257,6 @@ namespace Renderer {
 
         g_device = { device, gpuDevice, gpuQueueIndex, gpuQueue, presentQueue };
 
-        auto* pfn = PFN_vkGetBufferDeviceAddressEXT(vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddress"));
-        pfn = nullptr;
-
         return true;
     }
 

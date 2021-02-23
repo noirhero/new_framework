@@ -121,7 +121,7 @@ namespace Renderer {
         if (VK_AMD_device_coherent_memory_enabled && VK_FALSE == memoryFeatures.deviceCoherentMemory)
             VK_AMD_device_coherent_memory_enabled = false;
 
-        if (VK_KHR_buffer_device_address_enabled || VK_EXT_buffer_device_address_enabled /*|| VK_API_VERSION_1_2 <= GetAPIVersion()*/)
+        if (VK_KHR_buffer_device_address_enabled || VK_EXT_buffer_device_address_enabled || VK_API_VERSION_1_2 <= GetAPIVersion())
             g_BufferDeviceAddressEnabled = VK_FALSE != bufferAddressFeatures.bufferDeviceAddress;
 
         if (VK_EXT_memory_priority_enabled && VK_FALSE == physicalDeviceMemoryPriorityFeatures.memoryPriority)
@@ -202,8 +202,10 @@ namespace Renderer {
 
         if (g_BufferDeviceAddressEnabled) {
             addressFeatures.bufferDeviceAddress = VK_TRUE;
+#if defined(_DEBUG)
             addressFeatures.bufferDeviceAddressCaptureReplay = VK_TRUE;
             addressFeatures.bufferDeviceAddressMultiDevice = VK_TRUE;
+#endif
             ChainNextPointer(&features, &addressFeatures);
         }
 
