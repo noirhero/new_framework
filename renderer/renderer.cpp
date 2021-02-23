@@ -589,27 +589,28 @@ namespace Renderer {
 
     VkRenderPass g_renderPass = VK_NULL_HANDLE;
     bool CreateRenderPass(bool isSupportDepth, bool isClear) {
-        const auto setAttachmentFn = [](VkAttachmentDescription& attachment, VkFormat format, bool isClear) {
-            attachment.format = format;
-            attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-            attachment.loadOp = isClear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-            attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        };
-
         VkAttachmentDescription attachments[2]{};
 
-        setAttachmentFn(attachments[0], g_swapchain.format, isClear);
-        attachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        attachments[0].format = g_swapchain.format;
+        attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+        attachments[0].loadOp = isClear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        attachments[0].flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
 
         if (isSupportDepth) {
-            setAttachmentFn(attachments[1], g_swapchain.depthFormat, isClear);
-            attachments[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            attachments[1].format = g_swapchain.depthFormat;
+            attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+            attachments[1].loadOp = isClear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+            attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            attachments[1].flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
         }
 
         VkAttachmentReference colorRef{};
