@@ -721,7 +721,7 @@ namespace Renderer {
 
             // Record.
             VkClearValue clearValues[2]{};
-            clearValues[0].color = { 0.0f, 0.0f, 1.0f, 0.0f };
+            clearValues[0].color = { 0.27f, 0.39f, 0.49f, 1.0f };
             clearValues[1].depthStencil.depth = 1.0f;
             clearValues[1].depthStencil.stencil = 0;
 
