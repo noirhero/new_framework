@@ -4,19 +4,28 @@
 
 namespace Renderer {
     namespace Util {
-        uint32_t GetAPIVersion();
-        bool     IsAPIVersion1Upper();
+        using ConstCharPtrs = std::vector<const char*>;
 
-        void     CheckToInstanceExtensionProperties(const VkExtensionProperties& properties);
-        void     CheckToPhysicalDeviceExtensionProperties(const VkExtensionProperties& properties);
-        void     CheckToPhysicalDeviceFeatures(VkPhysicalDevice device);
-        bool     CheckToQueueFamilyProperties(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<VkQueueFamilyProperties>& properties);
+        uint32_t      GetAPIVersion();
+        bool          IsAPIVersion1Upper();
 
-        uint32_t GetGPUQueueIndex();
-        uint32_t GetPresentQueueIndex();
+        void          CheckToInstanceExtensionProperties(const VkExtensionProperties& properties);
+        void          CheckToPhysicalDeviceExtensionProperties(const VkExtensionProperties& properties);
+        void          CheckToPhysicalDeviceFeatures(VkPhysicalDevice device);
+        bool          CheckToQueueFamilyProperties(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<VkQueueFamilyProperties>& properties);
 
-        void     DecorateVMAAllocateInformation(VmaAllocatorCreateInfo& info);
+        void          DecorateDeviceFeatures(
+            VkPhysicalDeviceFeatures2& features, 
+            VkPhysicalDeviceCoherentMemoryFeaturesAMD& memoryFeatures,
+            VkPhysicalDeviceBufferDeviceAddressFeaturesEXT& addressFeatures,
+            VkPhysicalDeviceMemoryPriorityFeaturesEXT& memPriorityFeatures);
+        ConstCharPtrs GetEnableDeviceExtensionNames();
 
-        bool     MemoryTypeFromProperties(uint32_t& findIndex, const VkPhysicalDeviceMemoryProperties& memoryProperties, uint32_t typeBits, VkFlags requirementsMask);
+        uint32_t      GetGPUQueueIndex();
+        uint32_t      GetPresentQueueIndex();
+
+        void          DecorateVMAAllocateInformation(VmaAllocatorCreateInfo& info);
+
+        bool          MemoryTypeFromProperties(uint32_t& findIndex, const VkPhysicalDeviceMemoryProperties& memoryProperties, uint32_t typeBits, VkFlags requirementsMask);
     }
 }

@@ -4,13 +4,21 @@
 #include "renderer_util.h"
 
 namespace Renderer {
-    constexpr auto VulkanAPIVersion = VK_API_VERSION_1_2;
     uint32_t Util::GetAPIVersion() {
-        return VulkanAPIVersion;
+#if VMA_VULKAN_VERSION == 1002000
+        return VK_API_VERSION_1_2;
+#elif VMA_VULKAN_VERSION == 1001000
+        return VK_API_VERSION_1_1;
+#elif VMA_VULKAN_VERSION == 1000000
+        return VK_API_VERSION_1_0;
+#else
+#error Invalid VMA_VULKAN_VERSION.
+        return UINT32_MAX;
+#endif
     }
 
     bool Util::IsAPIVersion1Upper() {
-        const auto majorVersion = VK_VERSION_MAJOR(VulkanAPIVersion);
+        const auto majorVersion = VK_VERSION_MAJOR(GetAPIVersion());
         return 1 < majorVersion;
     }
 
@@ -41,21 +49,22 @@ namespace Renderer {
     bool VK_AMD_device_coherent_memory_enabled = false;
     bool VK_KHR_buffer_device_address_enabled = false;
     bool VK_EXT_buffer_device_address_enabled = false;
+    bool VK_EXT_memory_priority_enabled = false;
     void Util::CheckToPhysicalDeviceExtensionProperties(const VkExtensionProperties& properties) {
         const auto* name = properties.extensionName;
 
         if (0 == strcmp(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, name)) {
-            if (IsAPIVersion1Upper()) {
+            if (VK_API_VERSION_1_0 == GetAPIVersion()) {
                 VK_KHR_get_memory_requirements2_enabled = true;
             }
         }
         else if (0 == strcmp(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME, name)) {
-            if (IsAPIVersion1Upper()) {
+            if (VK_API_VERSION_1_0 == GetAPIVersion()) {
                 VK_KHR_dedicated_allocation_enabled = true;
             }
         }
         else if (0 == strcmp(VK_KHR_BIND_MEMORY_2_EXTENSION_NAME, name)) {
-            if (IsAPIVersion1Upper()) {
+            if (VK_API_VERSION_1_0 == GetAPIVersion()) {
                 VK_KHR_bind_memory2_enabled = true;
             }
         }
@@ -64,14 +73,17 @@ namespace Renderer {
         else if (0 == strcmp(VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME, name))
             VK_AMD_device_coherent_memory_enabled = true;
         else if (0 == strcmp(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, name)) {
-            if (IsAPIVersion1Upper()) {
+            if (VK_API_VERSION_1_2 > GetAPIVersion()) {
                 VK_KHR_buffer_device_address_enabled = true;
             }
         }
         else if (0 == strcmp(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, name)) {
-            if (IsAPIVersion1Upper()) {
+            if (VK_API_VERSION_1_2 > GetAPIVersion()) {
                 VK_EXT_buffer_device_address_enabled = true;
             }
+        }
+        else if(0 == strcmp(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME, name)) {
+            VK_EXT_memory_priority_enabled = true;
         }
 
         if (VK_EXT_buffer_device_address_enabled && VK_KHR_buffer_device_address_enabled)
@@ -95,6 +107,12 @@ namespace Renderer {
             features2.pNext = &bufferAddressFeatures;
         }
 
+        VkPhysicalDeviceMemoryPriorityFeaturesEXT physicalDeviceMemoryPriorityFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT };
+        if (VK_EXT_memory_priority_enabled) {
+            physicalDeviceMemoryPriorityFeatures.pNext = features2.pNext;
+            features2.pNext = &physicalDeviceMemoryPriorityFeatures;
+        }
+
         vkGetPhysicalDeviceFeatures2(device, &features2);
 
         g_SparseBindingEnabled = 0 != features2.features.sparseBinding;
@@ -103,8 +121,11 @@ namespace Renderer {
         if (VK_AMD_device_coherent_memory_enabled && VK_FALSE == memoryFeatures.deviceCoherentMemory)
             VK_AMD_device_coherent_memory_enabled = false;
 
-        if (VK_KHR_buffer_device_address_enabled || VK_EXT_buffer_device_address_enabled || VK_API_VERSION_1_2 <= GetAPIVersion())
+        if (VK_KHR_buffer_device_address_enabled || VK_EXT_buffer_device_address_enabled /*|| VK_API_VERSION_1_2 <= GetAPIVersion()*/)
             g_BufferDeviceAddressEnabled = VK_FALSE != bufferAddressFeatures.bufferDeviceAddress;
+
+        if (VK_EXT_memory_priority_enabled && VK_FALSE == physicalDeviceMemoryPriorityFeatures.memoryPriority)
+            VK_EXT_memory_priority_enabled = false;
     }
 
     uint32_t g_GraphicsQueueFamilyIndex = std::numeric_limits<uint32_t>::max();
@@ -150,6 +171,71 @@ namespace Renderer {
         return true;
     }
 
+    template<typename TMain, typename TNew>
+    constexpr void ChainNextPointer(TMain* mainStruct, TNew* newStruct)
+    {
+        struct VkAnyStruct {
+            VkStructureType type;
+            void* next;
+        };
+
+        auto* lastStruct = reinterpret_cast<VkAnyStruct*>(mainStruct);
+        while(nullptr != lastStruct->next) {
+            lastStruct = reinterpret_cast<VkAnyStruct*>(lastStruct->next);
+        }
+
+        lastStruct->next = newStruct;
+    }
+
+    void Util::DecorateDeviceFeatures(
+        VkPhysicalDeviceFeatures2& features,
+        VkPhysicalDeviceCoherentMemoryFeaturesAMD& memoryFeatures,
+        VkPhysicalDeviceBufferDeviceAddressFeaturesEXT& addressFeatures,
+        VkPhysicalDeviceMemoryPriorityFeaturesEXT& memPriorityFeatures) {
+        features.features.samplerAnisotropy = VK_TRUE;
+        features.features.sparseBinding = g_SparseBindingEnabled ? VK_TRUE : VK_FALSE;
+
+        if (VK_AMD_device_coherent_memory_enabled) {
+            memoryFeatures.deviceCoherentMemory = VK_TRUE;
+            features.pNext = &memoryFeatures;
+        }
+
+        if (g_BufferDeviceAddressEnabled) {
+            addressFeatures.bufferDeviceAddress = VK_TRUE;
+            addressFeatures.bufferDeviceAddressCaptureReplay = VK_TRUE;
+            addressFeatures.bufferDeviceAddressMultiDevice = VK_TRUE;
+            ChainNextPointer(&features, &addressFeatures);
+        }
+
+        if (VK_EXT_memory_priority_enabled) {
+            ChainNextPointer(&features, &memPriorityFeatures);
+        }
+    }
+
+    Util::ConstCharPtrs Util::GetEnableDeviceExtensionNames() {
+        ConstCharPtrs names;
+        names.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+        if (VK_KHR_get_memory_requirements2_enabled)
+            names.emplace_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+        if (VK_KHR_dedicated_allocation_enabled)
+            names.emplace_back(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
+        if (VK_KHR_bind_memory2_enabled)
+            names.emplace_back(VK_KHR_BIND_MEMORY_2_EXTENSION_NAME);
+        if (VK_EXT_memory_budget_enabled)
+            names.emplace_back(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+        if (VK_AMD_device_coherent_memory_enabled)
+            names.emplace_back(VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME);
+        if (VK_KHR_buffer_device_address_enabled)
+            names.emplace_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        if (VK_EXT_buffer_device_address_enabled)
+            names.emplace_back(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        if (VK_EXT_memory_priority_enabled)
+            names.emplace_back(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME);
+
+        return names;
+    }
+
     uint32_t Util::GetGPUQueueIndex() {
         return g_GraphicsQueueFamilyIndex;
     }
@@ -177,6 +263,11 @@ namespace Renderer {
         if (g_BufferDeviceAddressEnabled) {
             info.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
         }
+#if !defined(VMA_MEMORY_PRIORITY) || VMA_MEMORY_PRIORITY == 1
+        if (VK_EXT_memory_priority_enabled) {
+            info.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_PRIORITY_BIT;
+        }
+#endif
 
         // Uncomment to enable recording to CSV file.
         /*

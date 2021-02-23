@@ -219,6 +219,12 @@ namespace Renderer {
     }
 
     bool CreateDevice() {
+        VkPhysicalDeviceFeatures2 deviceFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+        VkPhysicalDeviceCoherentMemoryFeaturesAMD physicalDeviceCoherentMemoryFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD };
+        VkPhysicalDeviceBufferDeviceAddressFeaturesEXT physicalDeviceBufferDeviceAddressFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT };
+        VkPhysicalDeviceMemoryPriorityFeaturesEXT physicalDeviceMemoryPriorityFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT };
+        Util::DecorateDeviceFeatures(deviceFeatures, physicalDeviceCoherentMemoryFeatures, physicalDeviceBufferDeviceAddressFeatures, physicalDeviceMemoryPriorityFeatures);
+
         auto [gpuDevice, gpuQueueIndex] = FindGraphicsDeviceAndQueueIndex();
 
         constexpr float queuePriority[] = { 0.0f };
@@ -230,14 +236,13 @@ namespace Renderer {
 
         VkDeviceCreateInfo deviceInfo{};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        deviceInfo.pNext = &deviceFeatures;
         deviceInfo.queueCreateInfoCount = 1;
         deviceInfo.pQueueCreateInfos = &queueInfo;
 
-        constexpr char const* extensionNames[] = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        };
-        deviceInfo.enabledExtensionCount = ARRAYSIZE(extensionNames);
-        deviceInfo.ppEnabledExtensionNames = extensionNames;
+        auto extensionNames = Util::GetEnableDeviceExtensionNames();
+        deviceInfo.enabledExtensionCount = static_cast<decltype(deviceInfo.enabledExtensionCount)>(extensionNames.size());
+        deviceInfo.ppEnabledExtensionNames = extensionNames.data();
 
         VkDevice device = VK_NULL_HANDLE;
         if (VK_SUCCESS != vkCreateDevice(gpuDevice, &deviceInfo, Allocator::CPU(), &device)) {
@@ -251,6 +256,10 @@ namespace Renderer {
         vkGetDeviceQueue(device, Util::GetPresentQueueIndex(), 0, &presentQueue);
 
         g_device = { device, gpuDevice, gpuQueueIndex, gpuQueue, presentQueue };
+
+        auto* pfn = PFN_vkGetBufferDeviceAddressEXT(vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddress"));
+        pfn = nullptr;
+
         return true;
     }
 
@@ -553,7 +562,7 @@ namespace Renderer {
 
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         bufferInfo.size = vertexSize;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -777,9 +786,9 @@ namespace Renderer {
             return false;
         }
 
-        //if (false == CreateVertexBuffer()) {
-        //    return false;
-        //}
+        if (false == CreateVertexBuffer()) {
+            return false;
+        }
 
         if(false == AllocateAndFillCommandBuffers()) {
             return false;

@@ -21,6 +21,7 @@ using namespace std::string_literals;
 #include <third_party/fmt/format.h>
 
 #define VK_USE_PLATFORM_WIN32_KHR
+#pragma comment(lib, "vulkan-1.lib")
 #include <vulkan/vulkan.h>
 
 #pragma warning(disable : 4100)
