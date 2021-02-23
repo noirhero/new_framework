@@ -14,12 +14,12 @@ namespace Renderer {
         void          CheckToPhysicalDeviceFeatures(VkPhysicalDevice device);
         bool          CheckToQueueFamilyProperties(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<VkQueueFamilyProperties>& properties);
 
+        ConstCharPtrs GetEnableDeviceExtensionNames();
         void          DecorateDeviceFeatures(
             VkPhysicalDeviceFeatures2& features, 
             VkPhysicalDeviceCoherentMemoryFeaturesAMD& memoryFeatures,
             VkPhysicalDeviceBufferDeviceAddressFeaturesEXT& addressFeatures,
             VkPhysicalDeviceMemoryPriorityFeaturesEXT& memPriorityFeatures);
-        ConstCharPtrs GetEnableDeviceExtensionNames();
 
         uint32_t      GetGPUQueueIndex();
         uint32_t      GetPresentQueueIndex();

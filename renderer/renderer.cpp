@@ -22,6 +22,7 @@ namespace Renderer {
         VkExtensionPropArray extensions;
     };
     using InstanceLayers = std::vector<InstanceLayer>;
+
     InstanceLayers g_instanceLayers;
 
     bool CollectingLayerProperties() {
@@ -137,7 +138,6 @@ namespace Renderer {
         VkPhysicalDeviceProperties       property{};
         VkPhysicalDeviceMemoryProperties memoryProperty{};
         VkQueueFamilyPropArray           queueFamilyProperties;
-        InstanceLayers                   layers;
     };
     using PhysicalDevices = std::vector<PhysicalDevice>;
     PhysicalDevices g_physicalDevices;
@@ -160,6 +160,19 @@ namespace Renderer {
         vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
 
         for (auto* device : devices) {
+            uint32_t extensionCount = 0;
+            vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+            if (0 == extensionCount) {
+                continue;
+            }
+
+            VkExtensionPropArray extensions(extensionCount);
+            vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions.data());
+
+            for (const auto& extensionProperties : extensions) {
+                Util::CheckToPhysicalDeviceExtensionProperties(extensionProperties);
+            }
+
             g_physicalDevices.emplace_back(device);
             auto& physicalDevice = g_physicalDevices.back();
 
@@ -176,23 +189,6 @@ namespace Renderer {
             }
 
             Util::CheckToQueueFamilyProperties(device, g_surface, physicalDevice.queueFamilyProperties);
-
-            for (const auto& layer : layers) {
-                uint32_t extensionCount = 0;
-                vkEnumerateDeviceExtensionProperties(device, layer.layerName, &extensionCount, nullptr);
-                if (0 == extensionCount) {
-                    continue;
-                }
-
-                VkExtensionPropArray extensions(extensionCount);
-                vkEnumerateDeviceExtensionProperties(device, layer.layerName, &extensionCount, extensions.data());
-
-                for (const auto& extensionProperties : extensions) {
-                    Util::CheckToPhysicalDeviceExtensionProperties(extensionProperties);
-                }
-
-                physicalDevice.layers.emplace_back(layer, extensions);
-            }
         }
     }
 
@@ -219,13 +215,10 @@ namespace Renderer {
     }
 
     bool CreateDevice() {
-        VkPhysicalDeviceFeatures2 deviceFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
-        VkPhysicalDeviceCoherentMemoryFeaturesAMD physicalDeviceCoherentMemoryFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD };
-        VkPhysicalDeviceBufferDeviceAddressFeaturesEXT physicalDeviceBufferDeviceAddressFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT };
-        VkPhysicalDeviceMemoryPriorityFeaturesEXT physicalDeviceMemoryPriorityFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT };
-        Util::DecorateDeviceFeatures(deviceFeatures, physicalDeviceCoherentMemoryFeatures, physicalDeviceBufferDeviceAddressFeatures, physicalDeviceMemoryPriorityFeatures);
-
         auto [gpuDevice, gpuQueueIndex] = FindGraphicsDeviceAndQueueIndex();
+
+        VkDeviceCreateInfo deviceInfo{};
+        deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
         constexpr float queuePriority[] = { 0.0f };
         VkDeviceQueueCreateInfo queueInfo{};
@@ -234,11 +227,15 @@ namespace Renderer {
         queueInfo.queueFamilyIndex = gpuQueueIndex;
         queueInfo.pQueuePriorities = queuePriority;
 
-        VkDeviceCreateInfo deviceInfo{};
-        deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        deviceInfo.pNext = &deviceFeatures;
         deviceInfo.queueCreateInfoCount = 1;
         deviceInfo.pQueueCreateInfos = &queueInfo;
+
+        VkPhysicalDeviceFeatures2 deviceFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+        VkPhysicalDeviceCoherentMemoryFeaturesAMD coherentMemoryFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD };
+        VkPhysicalDeviceBufferDeviceAddressFeaturesEXT addressFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT };
+        VkPhysicalDeviceMemoryPriorityFeaturesEXT memoryPriorityFeatures = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT };
+        Util::DecorateDeviceFeatures(deviceFeatures, coherentMemoryFeatures, addressFeatures, memoryPriorityFeatures);
+        deviceInfo.pNext = &deviceFeatures;
 
         auto extensionNames = Util::GetEnableDeviceExtensionNames();
         deviceInfo.enabledExtensionCount = static_cast<decltype(deviceInfo.enabledExtensionCount)>(extensionNames.size());
@@ -814,13 +811,13 @@ namespace Renderer {
     uint32_t currentFrameBufferIndex = 0;
     void Run() {
         // Acquire image index.
-        VkSemaphoreCreateInfo presentCompleteSemaphoreCreateInfo{};
-        presentCompleteSemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        VkSemaphoreCreateInfo presentSemaphoreInfo{};
+        presentSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-        VkSemaphore presentCompleteSemaphore = VK_NULL_HANDLE;
-        vkCreateSemaphore(g_device.device, &presentCompleteSemaphoreCreateInfo, Allocator::CPU(), &presentCompleteSemaphore);
+        VkSemaphore presentSemaphore = VK_NULL_HANDLE;
+        vkCreateSemaphore(g_device.device, &presentSemaphoreInfo, Allocator::CPU(), &presentSemaphore);
 
-        if(VK_SUCCESS != vkAcquireNextImageKHR(g_device.device, g_swapchain.handle, UINT64_MAX, presentCompleteSemaphore, VK_NULL_HANDLE, &currentFrameBufferIndex)) {
+        if(VK_SUCCESS != vkAcquireNextImageKHR(g_device.device, g_swapchain.handle, UINT64_MAX, presentSemaphore, VK_NULL_HANDLE, &currentFrameBufferIndex)) {
             return;
         }
 
@@ -840,9 +837,9 @@ namespace Renderer {
         present.pSwapchains = &g_swapchain.handle;
         present.pImageIndices = &currentFrameBufferIndex;
 
-        // Queue the image for presentation,
+        // Queue the image for presentation.
         vkQueuePresentKHR(g_device.gpuQueue, &present);
 
-        vkDestroySemaphore(g_device.device, presentCompleteSemaphore, Allocator::CPU());
+        vkDestroySemaphore(g_device.device, presentSemaphore, Allocator::CPU());
     }
 }

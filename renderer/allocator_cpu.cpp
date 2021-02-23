@@ -7,7 +7,7 @@
 
 namespace Renderer {
     void* const CALLBACK_USER_DATA = reinterpret_cast<void*>(static_cast<intptr_t>(43564544));
-    std::atomic_uint32_t g_allocCount;
+    std::atomic_uint32_t g_allocCount = 0;
 
     void* CustomCpuAllocation(void* userData, size_t size, size_t alignment, VkSystemAllocationScope /*scope*/) {
         assert(CALLBACK_USER_DATA == userData);

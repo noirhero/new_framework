@@ -3,6 +3,8 @@
 #include "../pch.h"
 #include "renderer_util.h"
 
+#include "allocator_cpu.h"
+
 namespace Renderer {
     uint32_t Util::GetAPIVersion() {
 #if VMA_VULKAN_VERSION == 1002000
@@ -17,18 +19,13 @@ namespace Renderer {
 #endif
     }
 
-    bool Util::IsAPIVersion1Upper() {
-        const auto majorVersion = VK_VERSION_MAJOR(GetAPIVersion());
-        return 1 < majorVersion;
-    }
-
     bool VK_KHR_get_physical_device_properties2_enabled = false;
     bool VK_EXT_debug_utils_enabled = false;
     void Util::CheckToInstanceExtensionProperties(const VkExtensionProperties& properties) {
         const auto* name = properties.extensionName;
 
         if (0 == strcmp(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, name)) {
-            if (IsAPIVersion1Upper()) {
+            if (VK_API_VERSION_1_0 == GetAPIVersion()) {
                 VK_KHR_get_physical_device_properties2_enabled = true;
             }
         }
@@ -172,7 +169,7 @@ namespace Renderer {
     }
 
     template<typename TMain, typename TNew>
-    constexpr void ChainNextPointer(TMain* mainStruct, TNew* newStruct)
+    void ChainNextPointer(TMain* mainStruct, TNew* newStruct)
     {
         struct VkAnyStruct {
             VkStructureType type;
@@ -197,15 +194,11 @@ namespace Renderer {
 
         if (VK_AMD_device_coherent_memory_enabled) {
             memoryFeatures.deviceCoherentMemory = VK_TRUE;
-            features.pNext = &memoryFeatures;
+            ChainNextPointer(&features, &memoryFeatures);
         }
 
         if (g_BufferDeviceAddressEnabled) {
             addressFeatures.bufferDeviceAddress = VK_TRUE;
-#if defined(_DEBUG)
-            addressFeatures.bufferDeviceAddressCaptureReplay = VK_TRUE;
-            addressFeatures.bufferDeviceAddressMultiDevice = VK_TRUE;
-#endif
             ChainNextPointer(&features, &addressFeatures);
         }
 
@@ -271,27 +264,14 @@ namespace Renderer {
         }
 #endif
 
-        // Uncomment to enable recording to CSV file.
-        /*
-        static VmaRecordSettings recordSettings = {};
-        recordSettings.pFilePath = "VulkanSample.csv";
-        outInfo.pRecordSettings = &recordSettings;
-        */
-
-        // Uncomment to enable HeapSizeLimit.
-        /*
-        static std::array<VkDeviceSize, VK_MAX_MEMORY_HEAPS> heapSizeLimit;
-        std::fill(heapSizeLimit.begin(), heapSizeLimit.end(), VK_WHOLE_SIZE);
-        heapSizeLimit[0] = 512ull * 1024 * 1024;
-        outInfo.pHeapSizeLimit = heapSizeLimit.data();
-        */
+#if defined(_DEBUG)
+        info.pAllocationCallbacks = Allocator::CPU();
+#endif
     }
 
     bool Util::MemoryTypeFromProperties(uint32_t& findIndex, const VkPhysicalDeviceMemoryProperties& memoryProperties, uint32_t typeBits, VkFlags requirementsMask) {
-        // Search memory types to find first index with those properties
         for (uint32_t i = 0; i < 32; ++i) {
             if (1 == (typeBits & 1)) {
-                // Type is available, does it match user properties?
                 if ((memoryProperties.memoryTypes[i].propertyFlags & requirementsMask) == requirementsMask) {
                     findIndex = i;
                     return true;
@@ -299,7 +279,7 @@ namespace Renderer {
             }
             typeBits >>= 1;
         }
-        // No memory types matched, return failure
+
         return false;
     }
 }
