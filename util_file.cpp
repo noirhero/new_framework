@@ -5,8 +5,8 @@
 
 namespace File {
     template<typename T>
-    std::vector<char> TRead(const T& path) {
-        std::ifstream stream(path);
+    std::vector<char> TRead(const T& path, std::ios::openmode mode) {
+        std::ifstream stream(path, mode);
         if (false == stream.is_open())
             return {};
 
@@ -24,11 +24,11 @@ namespace File {
         return result;
     }
 
-    std::vector<char> Read(std::string&& path) {
-        return TRead(path);
+    std::vector<char> Read(std::string&& path, std::ios::openmode mode) {
+        return TRead(path, mode);
     }
 
-    std::vector<char> Read(std::wstring&& path) {
-        return TRead(path);
+    std::vector<char> Read(std::wstring&& path, std::ios::openmode mode) {
+        return TRead(path, mode);
     }
 }

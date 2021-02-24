@@ -741,6 +741,54 @@ namespace Renderer {
         return true;
     }
 
+    VkShaderModule g_vsModule = VK_NULL_HANDLE;
+    VkShaderModule g_fsModule = VK_NULL_HANDLE;
+
+    VkShaderModule CreateShaderModule(std::string&& path) {
+        const auto readFile = File::Read(std::move(path), std::ios::binary);
+        if(readFile.empty()) {
+            return VK_NULL_HANDLE;
+        }
+
+        VkShaderModuleCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        info.codeSize = static_cast<decltype(info.codeSize)>(readFile.size());
+        info.pCode = reinterpret_cast<decltype(info.pCode)>(readFile.data());
+
+        VkShaderModule module = VK_NULL_HANDLE;
+        if(VK_SUCCESS != vkCreateShaderModule(g_device.device, &info, Allocator::CPU(), &module)) {
+            return VK_NULL_HANDLE;
+        }
+
+        return module;
+    }
+
+    bool CreateShaders() {
+        g_vsModule = CreateShaderModule(Path::GetResourcePathAnsi() + "/shaders/draw_vert.spv"s);
+        if(VK_NULL_HANDLE == g_vsModule) {
+            return false;
+        }
+
+        g_fsModule = CreateShaderModule(Path::GetResourcePathAnsi() + "/shaders/draw_frag.spv"s);
+        if(VK_NULL_HANDLE == g_fsModule) {
+            return false;
+        }
+
+        return true;
+    }
+
+    void DestroyShaderModules() {
+        const auto destroyFn = [](VkShaderModule& module) {
+            if (VK_NULL_HANDLE != module) {
+                vkDestroyShaderModule(g_device.device, module, Allocator::CPU());
+                module = VK_NULL_HANDLE;
+            }
+        };
+
+        destroyFn(g_fsModule);
+        destroyFn(g_vsModule);
+    }
+
     bool Initialize() {
         CollectingLayerProperties();
         if (false == CreateInstance()) {
@@ -780,11 +828,15 @@ namespace Renderer {
             return false;
         }
 
+        if(false == AllocateAndFillCommandBuffers()) {
+            return false;
+        }
+
         if (false == CreateVertexBuffer()) {
             return false;
         }
 
-        if(false == AllocateAndFillCommandBuffers()) {
+        if(false == CreateShaders()) {
             return false;
         }
 
@@ -792,6 +844,7 @@ namespace Renderer {
     }
 
     void Release() {
+        DestroyShaderModules();
         DestroyVertexBuffer();
         ClearFrameBuffers();
         DestroyRenderPass();
