@@ -118,10 +118,24 @@
     <Filter Include="third_party\fmt">
       <UniqueIdentifier>{0d648875-05d6-4b63-955b-8166cc7fac5b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="renderer\shaders">
+      <UniqueIdentifier>{be964414-f051-4c21-9693-c52a18a18279}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Framework.rc">
       <Filter>win32</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\shaders\draw.vert">
+      <Filter>renderer\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\draw.frag">
+      <Filter>renderer\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\compile_glsl.bat">
+      <Filter>renderer\shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

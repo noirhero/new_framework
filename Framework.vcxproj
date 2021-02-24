@@ -136,6 +136,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>$(SolutionDir)resources\shaders\compile_glsl.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -157,6 +160,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>$(SolutionDir)resources\shaders\compile_glsl.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="main.h" />
@@ -205,6 +211,11 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Framework.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\shaders\compile_glsl.bat" />
+    <None Include="resources\shaders\draw.frag" />
+    <None Include="resources\shaders\draw.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
