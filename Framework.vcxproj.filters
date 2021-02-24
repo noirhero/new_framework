@@ -74,6 +74,7 @@
     </ClInclude>
     <ClInclude Include="util_output.h" />
     <ClInclude Include="util_path.h" />
+    <ClInclude Include="util_file.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win_main.cpp">
@@ -101,6 +102,7 @@
     </ClCompile>
     <ClCompile Include="util_output.cpp" />
     <ClCompile Include="util_path.cpp" />
+    <ClCompile Include="util_file.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win32">

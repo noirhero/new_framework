@@ -10,6 +10,7 @@
 #include <cassert>
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <functional>
 #include <string>
@@ -37,3 +38,4 @@ using namespace std::string_literals;
 
 #include "util_output.h"
 #include "util_path.h"
+#include "util_file.h"

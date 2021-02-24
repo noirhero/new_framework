@@ -189,6 +189,7 @@
     <ClInclude Include="third_party\fmt\printf.h" />
     <ClInclude Include="third_party\fmt\ranges.h" />
     <ClInclude Include="third_party\VulkanMemoryAllocator\vk_mem_alloc.h" />
+    <ClInclude Include="util_file.h" />
     <ClInclude Include="util_output.h" />
     <ClInclude Include="util_path.h" />
     <ClInclude Include="win_handle.h" />
@@ -200,6 +201,7 @@
     <ClCompile Include="renderer\debugger.cpp" />
     <ClCompile Include="Renderer\renderer.cpp" />
     <ClCompile Include="renderer\renderer_util.cpp" />
+    <ClCompile Include="util_file.cpp" />
     <ClCompile Include="util_output.cpp" />
     <ClCompile Include="util_path.cpp" />
     <ClCompile Include="win_handle.cpp" />
