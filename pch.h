@@ -13,6 +13,7 @@
 #include <vector>
 #include <functional>
 #include <string>
+#include <filesystem>
 using namespace std::string_literals;
 
 #include "Resource.h"
@@ -35,3 +36,4 @@ using namespace std::string_literals;
 #pragma warning(default : 4324)
 
 #include "util_output.h"
+#include "util_path.h"

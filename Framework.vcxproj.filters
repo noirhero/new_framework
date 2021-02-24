@@ -73,6 +73,7 @@
       <Filter>renderer</Filter>
     </ClInclude>
     <ClInclude Include="util_output.h" />
+    <ClInclude Include="util_path.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win_main.cpp">
@@ -99,6 +100,7 @@
       <Filter>renderer</Filter>
     </ClCompile>
     <ClCompile Include="util_output.cpp" />
+    <ClCompile Include="util_path.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win32">

@@ -44,6 +44,8 @@ int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR 
     UpdateWindow(winHandle);
     Win::Initialize(winInstance, winHandle);
 
+    Path::Initialize();
+
     if (false == Main::Initialize()) {
         Main::Finalize();
         return 0;
