@@ -616,13 +616,8 @@ namespace Renderer {
             attachments[1].flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
         }
 
-        VkAttachmentReference colorRef{};
-        colorRef.attachment = 0;
-        colorRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        VkAttachmentReference depthRef{};
-        depthRef.attachment = 1;
-        depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        const VkAttachmentReference colorRef{ 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+        const VkAttachmentReference depthRef{ 1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
         VkSubpassDescription subPass{};
         subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -699,7 +694,7 @@ namespace Renderer {
             cmdInfo.commandBufferCount = 1;
 
             VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
-            if(VK_SUCCESS != vkAllocateCommandBuffers(g_device.device, &cmdInfo, &cmdBuffer)) {
+            if (VK_SUCCESS != vkAllocateCommandBuffers(g_device.device, &cmdInfo, &cmdBuffer)) {
                 return false;
             }
             g_cmdBuffers.emplace_back(cmdBuffer);
@@ -746,7 +741,7 @@ namespace Renderer {
 
     VkShaderModule CreateShaderModule(std::string&& path) {
         const auto readFile = File::Read(std::move(path), std::ios::binary);
-        if(readFile.empty()) {
+        if (readFile.empty()) {
             return VK_NULL_HANDLE;
         }
 
@@ -755,22 +750,22 @@ namespace Renderer {
         info.codeSize = static_cast<decltype(info.codeSize)>(readFile.size());
         info.pCode = reinterpret_cast<decltype(info.pCode)>(readFile.data());
 
-        VkShaderModule module = VK_NULL_HANDLE;
-        if(VK_SUCCESS != vkCreateShaderModule(g_device.device, &info, Allocator::CPU(), &module)) {
+        VkShaderModule shaderModule = VK_NULL_HANDLE;
+        if (VK_SUCCESS != vkCreateShaderModule(g_device.device, &info, Allocator::CPU(), &shaderModule)) {
             return VK_NULL_HANDLE;
         }
 
-        return module;
+        return shaderModule;
     }
 
     bool CreateShaders() {
         g_vsModule = CreateShaderModule(Path::GetResourcePathAnsi() + "/shaders/draw_vert.spv"s);
-        if(VK_NULL_HANDLE == g_vsModule) {
+        if (VK_NULL_HANDLE == g_vsModule) {
             return false;
         }
 
         g_fsModule = CreateShaderModule(Path::GetResourcePathAnsi() + "/shaders/draw_frag.spv"s);
-        if(VK_NULL_HANDLE == g_fsModule) {
+        if (VK_NULL_HANDLE == g_fsModule) {
             return false;
         }
 
@@ -778,10 +773,10 @@ namespace Renderer {
     }
 
     void DestroyShaderModules() {
-        const auto destroyFn = [](VkShaderModule& module) {
-            if (VK_NULL_HANDLE != module) {
-                vkDestroyShaderModule(g_device.device, module, Allocator::CPU());
-                module = VK_NULL_HANDLE;
+        const auto destroyFn = [](VkShaderModule& shaderModule) {
+            if (VK_NULL_HANDLE != shaderModule) {
+                vkDestroyShaderModule(g_device.device, shaderModule, Allocator::CPU());
+                shaderModule = VK_NULL_HANDLE;
             }
         };
 
@@ -828,7 +823,7 @@ namespace Renderer {
             return false;
         }
 
-        if(false == AllocateAndFillCommandBuffers()) {
+        if (false == AllocateAndFillCommandBuffers()) {
             return false;
         }
 
@@ -836,7 +831,7 @@ namespace Renderer {
             return false;
         }
 
-        if(false == CreateShaders()) {
+        if (false == CreateShaders()) {
             return false;
         }
 
@@ -870,7 +865,7 @@ namespace Renderer {
         VkSemaphore presentSemaphore = VK_NULL_HANDLE;
         vkCreateSemaphore(g_device.device, &presentSemaphoreInfo, Allocator::CPU(), &presentSemaphore);
 
-        if(VK_SUCCESS != vkAcquireNextImageKHR(g_device.device, g_swapchain.handle, UINT64_MAX, presentSemaphore, VK_NULL_HANDLE, &currentFrameBufferIndex)) {
+        if (VK_SUCCESS != vkAcquireNextImageKHR(g_device.device, g_swapchain.handle, UINT64_MAX, presentSemaphore, VK_NULL_HANDLE, &currentFrameBufferIndex)) {
             return;
         }
 

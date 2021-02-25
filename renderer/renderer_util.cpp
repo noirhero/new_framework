@@ -79,7 +79,7 @@ namespace Renderer {
                 VK_EXT_buffer_device_address_enabled = true;
             }
         }
-        else if(0 == strcmp(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME, name)) {
+        else if (0 == strcmp(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME, name)) {
             VK_EXT_memory_priority_enabled = true;
         }
 
@@ -144,7 +144,7 @@ namespace Renderer {
                 g_GraphicsQueueFamilyIndex = index;
             }
 
-            if(0 != g_PresentQueueFamilyIndex) {
+            if (0 != g_PresentQueueFamilyIndex) {
                 VkBool32 isSurfaceSupported = VK_FALSE;
                 const auto result = vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &isSurfaceSupported);
                 if (0 <= result && VK_TRUE == isSurfaceSupported) {
@@ -169,15 +169,14 @@ namespace Renderer {
     }
 
     template<typename TMain, typename TNew>
-    void ChainNextPointer(TMain* mainStruct, TNew* newStruct)
-    {
+    void ChainNextPointer(TMain* mainStruct, TNew* newStruct) {
         struct VkAnyStruct {
             VkStructureType type;
             void* next;
         };
 
         auto* lastStruct = reinterpret_cast<VkAnyStruct*>(mainStruct);
-        while(nullptr != lastStruct->next) {
+        while (nullptr != lastStruct->next) {
             lastStruct = reinterpret_cast<VkAnyStruct*>(lastStruct->next);
         }
 
@@ -248,7 +247,7 @@ namespace Renderer {
         }
 #if !defined(VMA_MEMORY_BUDGET) || VMA_MEMORY_BUDGET == 1
         if (VK_EXT_memory_budget_enabled && (
-            VK_API_VERSION_1_1 <= GetAPIVersion()|| VK_KHR_get_physical_device_properties2_enabled)) {
+            VK_API_VERSION_1_1 <= GetAPIVersion() || VK_KHR_get_physical_device_properties2_enabled)) {
             info.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
         }
 #endif

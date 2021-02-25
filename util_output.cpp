@@ -5,8 +5,8 @@
 
 namespace Output {
     void Print(std::string&& msg) {
-        #if defined(WIN32)
-            OutputDebugStringA(msg.c_str());
-        #endif
+#if defined(WIN32)
+        OutputDebugStringA(msg.c_str());
+#endif
     }
 }

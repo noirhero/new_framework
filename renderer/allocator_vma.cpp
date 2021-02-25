@@ -24,7 +24,7 @@ namespace Renderer {
 
         info.pAllocationCallbacks = CPU();
 
-        if(VK_SUCCESS != vmaCreateAllocator(&info, &g_vmaAllocator)) {
+        if (VK_SUCCESS != vmaCreateAllocator(&info, &g_vmaAllocator)) {
             return false;
         }
 

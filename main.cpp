@@ -11,7 +11,7 @@ namespace Main {
     }
 
     bool Initialize() {
-        if(false == Renderer::Initialize()) {
+        if (false == Renderer::Initialize()) {
             return false;
         }
 

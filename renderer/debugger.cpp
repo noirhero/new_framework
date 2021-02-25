@@ -11,19 +11,19 @@ namespace Renderer {
     VkBool32 VKAPI_PTR Report(
         VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT /*objectType*/, uint64_t /*object*/, size_t /*location*/, int32_t /*messageCode*/,
         const char* layerPrefix, const char* message, void* /*userData*/) {
-        if(VK_DEBUG_REPORT_ERROR_BIT_EXT & flags) {
+        if (VK_DEBUG_REPORT_ERROR_BIT_EXT & flags) {
             Output::Print(fmt::format("[Vulkan] ERROR [{}] : {}\n", layerPrefix, message));
         }
-        else if(VK_DEBUG_REPORT_WARNING_BIT_EXT & flags) {
+        else if (VK_DEBUG_REPORT_WARNING_BIT_EXT & flags) {
             Output::Print(fmt::format("[Vulkan] WARNING [{}] : {}\n", layerPrefix, message));
         }
-        else if(VK_DEBUG_REPORT_INFORMATION_BIT_EXT & flags) {
+        else if (VK_DEBUG_REPORT_INFORMATION_BIT_EXT & flags) {
             Output::Print(fmt::format("[Vulkan] INFORMATION [{}] : {}\n", layerPrefix, message));
         }
-        else if(VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT & flags) {
+        else if (VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT & flags) {
             Output::Print(fmt::format("[Vulkan] PERFORMANCE [{}] : {}\n", layerPrefix, message));
         }
-        else if(VK_DEBUG_REPORT_DEBUG_BIT_EXT & flags) {
+        else if (VK_DEBUG_REPORT_DEBUG_BIT_EXT & flags) {
             Output::Print(fmt::format("[Vulkan] DEBUG [{}] : {}\n", layerPrefix, message));
         }
         else {
@@ -35,7 +35,7 @@ namespace Renderer {
 
     bool Debugger::Initialize(VkInstance instance) {
         auto* createFn = PFN_vkCreateDebugReportCallbackEXT(vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT"));
-        if(nullptr == createFn) {
+        if (nullptr == createFn) {
             return false;
         }
 
@@ -44,7 +44,7 @@ namespace Renderer {
         createInfo.pfnCallback = Report;
         createInfo.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT;
 
-        if(VK_SUCCESS != createFn(instance, &createInfo, Allocator::CPU(), &g_debugHandle)) {
+        if (VK_SUCCESS != createFn(instance, &createInfo, Allocator::CPU(), &g_debugHandle)) {
             return false;
         }
 
@@ -52,7 +52,7 @@ namespace Renderer {
     }
 
     void Debugger::Destroy(VkInstance instance) {
-        if(VK_NULL_HANDLE == g_debugHandle) {
+        if (VK_NULL_HANDLE == g_debugHandle) {
             return;
         }
 
