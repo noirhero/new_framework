@@ -19,8 +19,10 @@ using namespace std::string_literals;
 
 #include "Resource.h"
 
+#pragma warning(disable : 4819)
 #define FMT_HEADER_ONLY
 #include <third_party/fmt/format.h>
+#pragma warning(default : 4819)
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #pragma comment(lib, "vulkan-1.lib")

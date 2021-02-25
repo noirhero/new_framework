@@ -166,11 +166,8 @@ inline void fwrite_fully(const void* ptr, size_t size, size_t count,
   size_t written = std::fwrite(ptr, size, count, stream);
   if (written < count) FMT_THROW(system_error(errno, "cannot write to file"));
 }
-}  // namespace detail
 
-#if !defined(FMT_STATIC_THOUSANDS_SEPARATOR)
-namespace detail {
-
+#ifndef FMT_STATIC_THOUSANDS_SEPARATOR
 template <typename Locale>
 locale_ref::locale_ref(const Locale& loc) : locale_(&loc) {
   static_assert(std::is_same<Locale, std::locale>::value, "");
@@ -192,19 +189,18 @@ template <typename Char> FMT_FUNC Char decimal_point_impl(locale_ref loc) {
   return std::use_facet<std::numpunct<Char>>(loc.get<std::locale>())
       .decimal_point();
 }
-}  // namespace detail
 #else
-template <typename Char>
-FMT_FUNC std::string detail::grouping_impl(locale_ref) {
+template <typename Char> FMT_FUNC std::string grouping_impl(locale_ref) {
   return "\03";
 }
-template <typename Char> FMT_FUNC Char detail::thousands_sep_impl(locale_ref) {
+template <typename Char> FMT_FUNC Char thousands_sep_impl(locale_ref) {
   return FMT_STATIC_THOUSANDS_SEPARATOR;
 }
-template <typename Char> FMT_FUNC Char detail::decimal_point_impl(locale_ref) {
+template <typename Char> FMT_FUNC Char decimal_point_impl(locale_ref) {
   return '.';
 }
 #endif
+}  // namespace detail
 
 FMT_API FMT_FUNC format_error::~format_error() FMT_NOEXCEPT = default;
 FMT_API FMT_FUNC system_error::~system_error() FMT_NOEXCEPT = default;
@@ -248,11 +244,6 @@ const typename basic_data<T>::digit_pair basic_data<T>::digits[] = {
     {'9', '0'}, {'9', '1'}, {'9', '2'}, {'9', '3'}, {'9', '4'}, {'9', '5'},
     {'9', '6'}, {'9', '7'}, {'9', '8'}, {'9', '9'}};
 
-#define FMT_POWERS_OF_10(factor)                                             \
-  factor * 10, (factor)*100, (factor)*1000, (factor)*10000, (factor)*100000, \
-      (factor)*1000000, (factor)*10000000, (factor)*100000000,               \
-      (factor)*1000000000
-
 template <typename T>
 const uint64_t basic_data<T>::powers_of_10_64[] = {
     1, FMT_POWERS_OF_10(1), FMT_POWERS_OF_10(1000000000ULL),
@@ -267,8 +258,7 @@ const uint64_t basic_data<T>::zero_or_powers_of_10_64[] = {
     10000000000000000000ULL};
 
 template <typename T>
-const uint32_t basic_data<T>::zero_or_powers_of_10_32_new[] = {
-    0, 0, FMT_POWERS_OF_10(1)};
+constexpr uint32_t basic_data<T>::zero_or_powers_of_10_32_new[];
 
 template <typename T>
 const uint64_t basic_data<T>::zero_or_powers_of_10_64_new[] = {
@@ -2589,54 +2579,6 @@ int snprintf_float(T value, int precision, float_specs specs,
   }
 }
 
-// A public domain branchless UTF-8 decoder by Christopher Wellons:
-// https://github.com/skeeto/branchless-utf8
-/* Decode the next character, c, from buf, reporting errors in e.
- *
- * Since this is a branchless decoder, four bytes will be read from the
- * buffer regardless of the actual length of the next character. This
- * means the buffer _must_ have at least three bytes of zero padding
- * following the end of the data stream.
- *
- * Errors are reported in e, which will be non-zero if the parsed
- * character was somehow invalid: invalid byte sequence, non-canonical
- * encoding, or a surrogate half.
- *
- * The function returns a pointer to the next character. When an error
- * occurs, this pointer will be a guess that depends on the particular
- * error, but it will always advance at least one byte.
- */
-inline const char* utf8_decode(const char* buf, uint32_t* c, int* e) {
-  static const int masks[] = {0x00, 0x7f, 0x1f, 0x0f, 0x07};
-  static const uint32_t mins[] = {4194304, 0, 128, 2048, 65536};
-  static const int shiftc[] = {0, 18, 12, 6, 0};
-  static const int shifte[] = {0, 6, 4, 2, 0};
-
-  int len = code_point_length(buf);
-  const char* next = buf + len;
-
-  // Assume a four-byte character and load four bytes. Unused bits are
-  // shifted out.
-  auto s = reinterpret_cast<const unsigned char*>(buf);
-  *c = uint32_t(s[0] & masks[len]) << 18;
-  *c |= uint32_t(s[1] & 0x3f) << 12;
-  *c |= uint32_t(s[2] & 0x3f) << 6;
-  *c |= uint32_t(s[3] & 0x3f) << 0;
-  *c >>= shiftc[len];
-
-  // Accumulate the various error conditions.
-  *e = (*c < mins[len]) << 6;       // non-canonical encoding
-  *e |= ((*c >> 11) == 0x1b) << 7;  // surrogate half?
-  *e |= (*c > 0x10FFFF) << 8;       // out of range?
-  *e |= (s[1] & 0xc0) >> 2;
-  *e |= (s[2] & 0xc0) >> 4;
-  *e |= (s[3]) >> 6;
-  *e ^= 0x2a;  // top two bits of each tail byte correct?
-  *e >>= shifte[len];
-
-  return next;
-}
-
 struct stringifier {
   template <typename T> FMT_INLINE std::string operator()(T value) const {
     return to_string(value);
@@ -2678,10 +2620,7 @@ template <> struct formatter<detail::bigint> {
 };
 
 FMT_FUNC detail::utf8_to_utf16::utf8_to_utf16(string_view s) {
-  auto transcode = [this](const char* p) {
-    auto cp = uint32_t();
-    auto error = 0;
-    p = utf8_decode(p, &cp, &error);
+  for_each_codepoint(s, [this](uint32_t cp, int error) {
     if (error != 0) FMT_THROW(std::runtime_error("invalid utf8"));
     if (cp <= 0xFFFF) {
       buffer_.push_back(static_cast<wchar_t>(cp));
@@ -2690,21 +2629,7 @@ FMT_FUNC detail::utf8_to_utf16::utf8_to_utf16(string_view s) {
       buffer_.push_back(static_cast<wchar_t>(0xD800 + (cp >> 10)));
       buffer_.push_back(static_cast<wchar_t>(0xDC00 + (cp & 0x3FF)));
     }
-    return p;
-  };
-  auto p = s.data();
-  const size_t block_size = 4;  // utf8_decode always reads blocks of 4 chars.
-  if (s.size() >= block_size) {
-    for (auto end = p + s.size() - block_size + 1; p < end;) p = transcode(p);
-  }
-  if (auto num_chars_left = s.data() + s.size() - p) {
-    char buf[2 * block_size - 1] = {};
-    memcpy(buf, p, to_unsigned(num_chars_left));
-    p = buf;
-    do {
-      p = transcode(p);
-    } while (p - buf < num_chars_left);
-  }
+  });
   buffer_.push_back(0);
 }
 
@@ -2768,12 +2693,13 @@ FMT_FUNC void vprint(std::FILE* f, string_view format_str, format_args args) {
   if (_isatty(fd)) {
     detail::utf8_to_utf16 u16(string_view(buffer.data(), buffer.size()));
     auto written = detail::dword();
-    if (!detail::WriteConsoleW(reinterpret_cast<void*>(_get_osfhandle(fd)),
-                               u16.c_str(), static_cast<uint32_t>(u16.size()),
-                               &written, nullptr)) {
-      FMT_THROW(format_error("failed to write to console"));
+    if (detail::WriteConsoleW(reinterpret_cast<void*>(_get_osfhandle(fd)),
+                              u16.c_str(), static_cast<uint32_t>(u16.size()),
+                              &written, nullptr)) {
+      return;
     }
-    return;
+    // Fallback to fwrite on failure. It can happen if the output has been
+    // redirected to NUL.
   }
 #endif
   detail::fwrite_fully(buffer.data(), 1, buffer.size(), f);

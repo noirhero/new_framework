@@ -413,7 +413,8 @@ struct formatter<std::chrono::time_point<std::chrono::system_clock>, Char>
 };
 
 template <typename Char> struct formatter<std::tm, Char> {
-  FMT_CONSTEXPR auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+  template <typename ParseContext>
+  FMT_CONSTEXPR auto parse(ParseContext& ctx) -> decltype(ctx.begin()) {
     auto it = ctx.begin();
     if (it != ctx.end() && *it == ':') ++it;
     auto end = it;
@@ -423,7 +424,8 @@ template <typename Char> struct formatter<std::tm, Char> {
   }
 
   template <typename FormatContext>
-  auto format(const std::tm& tm, FormatContext& ctx) -> decltype(ctx.out()) {
+  auto format(const std::tm& tm, FormatContext& ctx) const
+      -> decltype(ctx.out()) {
     basic_memory_buffer<Char> tm_format;
     tm_format.append(specs.begin(), specs.end());
     tm_format.push_back('\0');
@@ -456,27 +458,61 @@ namespace detail {
 template <typename Period> FMT_CONSTEXPR const char* get_units() {
   return nullptr;
 }
-template <> FMT_CONSTEXPR const char* get_units<std::atto>() { return "as"; }
-template <> FMT_CONSTEXPR const char* get_units<std::femto>() { return "fs"; }
-template <> FMT_CONSTEXPR const char* get_units<std::pico>() { return "ps"; }
-template <> FMT_CONSTEXPR const char* get_units<std::nano>() { return "ns"; }
-template <> FMT_CONSTEXPR const char* get_units<std::micro>() { return "µs"; }
-template <> FMT_CONSTEXPR const char* get_units<std::milli>() { return "ms"; }
-template <> FMT_CONSTEXPR const char* get_units<std::centi>() { return "cs"; }
-template <> FMT_CONSTEXPR const char* get_units<std::deci>() { return "ds"; }
-template <> FMT_CONSTEXPR const char* get_units<std::ratio<1>>() { return "s"; }
-template <> FMT_CONSTEXPR const char* get_units<std::deca>() { return "das"; }
-template <> FMT_CONSTEXPR const char* get_units<std::hecto>() { return "hs"; }
-template <> FMT_CONSTEXPR const char* get_units<std::kilo>() { return "ks"; }
-template <> FMT_CONSTEXPR const char* get_units<std::mega>() { return "Ms"; }
-template <> FMT_CONSTEXPR const char* get_units<std::giga>() { return "Gs"; }
-template <> FMT_CONSTEXPR const char* get_units<std::tera>() { return "Ts"; }
-template <> FMT_CONSTEXPR const char* get_units<std::peta>() { return "Ps"; }
-template <> FMT_CONSTEXPR const char* get_units<std::exa>() { return "Es"; }
-template <> FMT_CONSTEXPR const char* get_units<std::ratio<60>>() {
+template <> FMT_CONSTEXPR inline const char* get_units<std::atto>() {
+  return "as";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::femto>() {
+  return "fs";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::pico>() {
+  return "ps";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::nano>() {
+  return "ns";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::micro>() {
+  return "µs";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::milli>() {
+  return "ms";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::centi>() {
+  return "cs";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::deci>() {
+  return "ds";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::ratio<1>>() {
+  return "s";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::deca>() {
+  return "das";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::hecto>() {
+  return "hs";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::kilo>() {
+  return "ks";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::mega>() {
+  return "Ms";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::giga>() {
+  return "Gs";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::tera>() {
+  return "Ts";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::peta>() {
+  return "Ps";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::exa>() {
+  return "Es";
+}
+template <> FMT_CONSTEXPR inline const char* get_units<std::ratio<60>>() {
   return "m";
 }
-template <> FMT_CONSTEXPR const char* get_units<std::ratio<3600>>() {
+template <> FMT_CONSTEXPR inline const char* get_units<std::ratio<3600>>() {
   return "h";
 }
 
@@ -1122,27 +1158,30 @@ struct formatter<std::chrono::duration<Rep, Period>, Char> {
   }
 
   template <typename FormatContext>
-  auto format(const duration& d, FormatContext& ctx) -> decltype(ctx.out()) {
+  auto format(const duration& d, FormatContext& ctx) const
+      -> decltype(ctx.out()) {
+    auto specs_copy = specs;
+    auto precision_copy = precision;
     auto begin = format_str.begin(), end = format_str.end();
     // As a possible future optimization, we could avoid extra copying if width
     // is not specified.
     basic_memory_buffer<Char> buf;
     auto out = std::back_inserter(buf);
-    detail::handle_dynamic_spec<detail::width_checker>(specs.width, width_ref,
-                                                       ctx);
-    detail::handle_dynamic_spec<detail::precision_checker>(precision,
+    detail::handle_dynamic_spec<detail::width_checker>(specs_copy.width,
+                                                       width_ref, ctx);
+    detail::handle_dynamic_spec<detail::precision_checker>(precision_copy,
                                                            precision_ref, ctx);
     if (begin == end || *begin == '}') {
-      out = detail::format_duration_value<Char>(out, d.count(), precision);
+      out = detail::format_duration_value<Char>(out, d.count(), precision_copy);
       detail::format_duration_unit<Char, Period>(out);
     } else {
       detail::chrono_formatter<FormatContext, decltype(out), Rep, Period> f(
           ctx, out, d);
-      f.precision = precision;
+      f.precision = precision_copy;
       parse_chrono_format(begin, end, f);
     }
     return detail::write(
-        ctx.out(), basic_string_view<Char>(buf.data(), buf.size()), specs);
+        ctx.out(), basic_string_view<Char>(buf.data(), buf.size()), specs_copy);
   }
 };
 

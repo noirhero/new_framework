@@ -26,6 +26,16 @@
     <ClInclude Include="renderer\debugger.h">
       <Filter>renderer</Filter>
     </ClInclude>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="renderer\renderer_util.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\allocator_vma.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="util_output.h" />
+    <ClInclude Include="util_path.h" />
+    <ClInclude Include="util_file.h" />
     <ClInclude Include="third_party\fmt\args.h">
       <Filter>third_party\fmt</Filter>
     </ClInclude>
@@ -65,16 +75,6 @@
     <ClInclude Include="third_party\fmt\ranges.h">
       <Filter>third_party\fmt</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="renderer\renderer_util.h">
-      <Filter>renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\allocator_vma.h">
-      <Filter>renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="util_output.h" />
-    <ClInclude Include="util_path.h" />
-    <ClInclude Include="util_file.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win_main.cpp">

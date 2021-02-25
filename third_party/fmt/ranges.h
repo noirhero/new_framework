@@ -287,7 +287,7 @@ struct formatter<TupleT, Char, enable_if_t<fmt::is_tuple_like<TupleT>::value>> {
   // C++11 generic lambda for format()
   template <typename FormatContext> struct format_each {
     template <typename T> void operator()(const T& v) {
-      if (i > 0) out = write_delimiter(out);
+      if (i > 0) out = detail::write_delimiter(out);
       out = detail::write_range_entry<Char>(out, v);
       ++i;
     }
@@ -368,7 +368,7 @@ template <typename Char, typename... T> struct tuple_arg_join : detail::view {
   basic_string_view<Char> sep;
 
   tuple_arg_join(const std::tuple<T...>& t, basic_string_view<Char> s)
-      : tuple{t}, sep{s} {}
+      : tuple(t), sep{s} {}
 };
 
 template <typename Char, typename... T>
