@@ -39,6 +39,12 @@ using namespace std::string_literals;
 #pragma warning(default : 4127)
 #pragma warning(default : 4324)
 
+#pragma warning(disable : 4201)
+#define GLM_FORCE_RADIANS
+#include <third_party/glm/glm.hpp>
+#include <third_party/glm/ext.hpp>
+#pragma warning(default : 4201)
+
 #include "util_output.h"
 #include "util_path.h"
 #include "util_file.h"

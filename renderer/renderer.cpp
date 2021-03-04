@@ -830,6 +830,129 @@ namespace Renderer {
         destroyFn(g_vsModule);
     }
 
+    using VkDescriptorSetLayouts = std::vector<VkDescriptorSetLayout>;
+    VkDescriptorSetLayouts g_descriptorSetLayouts;
+    bool CreateDescriptorSetLayouts() {
+        VkDescriptorSetLayoutBinding binding{};
+        binding.binding = 0;
+        binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        binding.descriptorCount = 1;
+        binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+        VkDescriptorSetLayoutCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        info.bindingCount = 1;
+        info.pBindings = &binding;
+
+        g_descriptorSetLayouts.resize(1);
+        if(VK_SUCCESS != vkCreateDescriptorSetLayout(g_device.device, &info, Allocator::CPU(), g_descriptorSetLayouts.data())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    void DestroyDescriptorSetLayouts() {
+        for (auto* descLayout : g_descriptorSetLayouts) {
+            vkDestroyDescriptorSetLayout(g_device.device, descLayout, Allocator::CPU());
+        }
+        g_descriptorSetLayouts.clear();
+    }
+
+    struct UniformBuffer {
+        VkBuffer          buffer = VK_NULL_HANDLE;
+        VmaAllocation     allocation = VK_NULL_HANDLE;
+        VmaAllocationInfo allocInfo{};
+        glm::mat4         mvp;
+    };
+    UniformBuffer g_ub;
+    bool CreateUniformBuffer() {
+        VkBufferCreateInfo bufferInfo{};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+        bufferInfo.size = sizeof(glm::mat4);
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VmaAllocationCreateInfo allocInfo{};
+        allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+        allocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+        if (VK_SUCCESS != vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &g_ub.buffer, &g_ub.allocation, &g_ub.allocInfo)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    void DestroyUniformBuffer() {
+        if(VK_NULL_HANDLE != g_ub.buffer) {
+            vmaDestroyBuffer(Allocator::VMA(), g_ub.buffer, g_ub.allocation);
+            g_ub.buffer = VK_NULL_HANDLE;
+            g_ub.allocation = VK_NULL_HANDLE;
+        }
+    }
+
+    VkDescriptorPool g_descriptorPool = VK_NULL_HANDLE;
+    bool CreateDescriptorPool() {
+        std::vector<VkDescriptorPoolSize> descriptorSizeInfos;
+        descriptorSizeInfos.emplace_back(VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 });
+
+        VkDescriptorPoolCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        info.maxSets = 1;
+        info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        info.poolSizeCount = static_cast<decltype(info.poolSizeCount)>(descriptorSizeInfos.size());
+        info.pPoolSizes = descriptorSizeInfos.data();
+
+        if(VK_SUCCESS != vkCreateDescriptorPool(g_device.device, &info, Allocator::CPU(), &g_descriptorPool)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    void DestroyDescriptorPool() {
+        if(VK_NULL_HANDLE != g_descriptorPool) {
+            vkDestroyDescriptorPool(g_device.device, g_descriptorPool, Allocator::CPU());
+            g_descriptorPool = VK_NULL_HANDLE;
+        }
+    }
+
+    VkDescriptorSet g_descriptorSet = VK_NULL_HANDLE;
+    bool AllocateAndUpdateDescriptorSets() {
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = g_descriptorPool;
+        allocInfo.descriptorSetCount = 1;
+        allocInfo.pSetLayouts = g_descriptorSetLayouts.data();
+
+        if(VK_SUCCESS != vkAllocateDescriptorSets(g_device.device, &allocInfo, &g_descriptorSet)) {
+            return false;
+        }
+
+        const VkDescriptorBufferInfo ubInfo{ g_ub.buffer, 0, sizeof(glm::mat4) };
+
+        VkWriteDescriptorSet write{};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = g_descriptorSet;
+        write.descriptorCount = 1;
+        write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        write.pBufferInfo = &ubInfo;
+        write.dstArrayElement = 0;
+        write.dstBinding = 0;
+
+        vkUpdateDescriptorSets(g_device.device, 1, &write, 0, nullptr);
+
+        return true;
+    }
+
+    void FreeDescriptorSets() {
+        if(VK_NULL_HANDLE != g_descriptorSet) {
+            vkFreeDescriptorSets(g_device.device, g_descriptorPool, 1, &g_descriptorSet);
+            g_descriptorSet = VK_NULL_HANDLE;
+        }
+    }
+
     VkPipelineCache g_pipelineCache = VK_NULL_HANDLE;
     bool CreatePipelineCache() {
         VkPipelineCacheCreateInfo info{};
@@ -853,6 +976,8 @@ namespace Renderer {
     bool CreatePipeline(bool isIncludeDepth) {
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutCreateInfo.setLayoutCount = static_cast<decltype(pipelineLayoutCreateInfo.setLayoutCount)>(g_descriptorSetLayouts.size());
+        pipelineLayoutCreateInfo.pSetLayouts = g_descriptorSetLayouts.data();
 
         if (VK_SUCCESS != vkCreatePipelineLayout(g_device.device, &pipelineLayoutCreateInfo, Allocator::CPU(), &g_pipelineLayout)) {
             return false;
@@ -1080,6 +1205,7 @@ namespace Renderer {
             vkCmdBeginRenderPass(cmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
 
             vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_pipeline);
+            vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_pipelineLayout, 0, 1, &g_descriptorSet, 0, nullptr);
             const VkDeviceSize offsets[1]{};
             vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &g_vb.buffer, offsets);
             vkCmdBindIndexBuffer(cmdBuffer, g_ib.buffer, 0, VK_INDEX_TYPE_UINT16);
@@ -1096,6 +1222,15 @@ namespace Renderer {
         }
 
         return true;
+    }
+
+    void FreeCommandBuffers() {
+        if (g_cmdBuffers.empty()) {
+            return;
+        }
+
+        vkFreeCommandBuffers(g_device.device, g_gpuCmdPool, static_cast<uint32_t>(g_cmdBuffers.size()), g_cmdBuffers.data());
+        g_cmdBuffers.clear();
     }
 
     bool Initialize() {
@@ -1145,6 +1280,22 @@ namespace Renderer {
             return false;
         }
 
+        if(false == CreateDescriptorSetLayouts()) {
+            return false;
+        }
+
+        if(false == CreateUniformBuffer()) {
+            return false;
+        }
+
+        if(false == CreateDescriptorPool()) {
+            return false;
+        }
+
+        if(false == AllocateAndUpdateDescriptorSets()) {
+            return false;
+        }
+
         if (false == CreatePipelineCache()) {
             return false;
         }
@@ -1160,19 +1311,14 @@ namespace Renderer {
         return true;
     }
 
-    void FreeCommandBuffers() {
-        if(g_cmdBuffers.empty()) {
-            return;
-        }
-
-        vkFreeCommandBuffers(g_device.device, g_gpuCmdPool, static_cast<uint32_t>(g_cmdBuffers.size()), g_cmdBuffers.data());
-        g_cmdBuffers.clear();
-    }
-
     void Release() {
         FreeCommandBuffers();
         DestroyPipeline();
         DestroyPipelineCache();
+        FreeDescriptorSets();
+        DestroyDescriptorPool();
+        DestroyUniformBuffer();
+        DestroyDescriptorSetLayouts();
         DestroyShaderModules();
         DestroyIndexBuffer();
         DestroyVertexBuffer();
@@ -1193,6 +1339,18 @@ namespace Renderer {
 
     uint32_t currentFrameBufferIndex = 0;
     void Run() {
+        // Update uniform buffer.
+        const auto projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f);
+        const auto view = glm::lookAt(
+            glm::vec3(0, 0, 5), // Camera is in World Space
+            glm::vec3(0, 0, 0), // and looks at the origin
+            glm::vec3(0, 1, 0)  // Head is up
+        );
+        const auto model = glm::mat4(1.0f);
+        const auto mvp = projection * view * model;
+
+        memcpy_s(g_ub.allocInfo.pMappedData, sizeof(glm::mat4), &mvp, sizeof(glm::mat4));
+
         // Acquire image index.
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
