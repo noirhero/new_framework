@@ -584,10 +584,52 @@ namespace Renderer {
             float r, g, b, a;
         };
         constexpr VertexWithColor vertices[] = {
-            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0 },
-            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0 },
-            {  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0 },
-            { -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0 },
+            //{ -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0 },
+            //{  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0 },
+            //{  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0 },
+            //{ -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0 },
+
+            {  1.0f, -1.0f, -1.0f, 1.0f, 0.f, 0.f, 0.f, 1.0f },
+            { -1.0f, -1.0f, -1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
+            {  1.0f,  1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
+            {  1.0f,  1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
+            { -1.0f, -1.0f, -1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
+            { -1.0f,  1.0f, -1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
+
+            {  1.0f, -1.0f, 1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
+            {  1.0f,  1.0f, 1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
+            { -1.0f, -1.0f, 1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
+            { -1.0f, -1.0f, 1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
+            {  1.0f,  1.0f, 1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
+            { -1.0f,  1.0f, 1.0f, 1.0f, 1.f, 1.f, 1.f, 1.0f },
+
+            { 1.0f, -1.0f,  1.0f, 1.0f, 1.f, 1.f, 1.f, 1.0f },
+            { 1.0f, -1.0f, -1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
+            { 1.0f,  1.0f,  1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
+            { 1.0f,  1.0f,  1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
+            { 1.0f, -1.0f, -1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
+            { 1.0f,  1.0f, -1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
+
+            { -1.0f, -1.0f,  1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
+            { -1.0f,  1.0f,  1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
+            { -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
+            { -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
+            { -1.0f,  1.0f,  1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
+            { -1.0f,  1.0f, -1.0f, 1.0f, 0.f, 0.f, 0.f, 1.0f },
+
+            {  1.0f, 1.0f, -1.0f, 1.0f, 1.f, 1.f, 1.f, 1.0f },
+            { -1.0f, 1.0f, -1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
+            {  1.0f, 1.0f,  1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
+            {  1.0f, 1.0f,  1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
+            { -1.0f, 1.0f, -1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
+            { -1.0f, 1.0f,  1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
+
+            {  1.0f, -1.0f, -1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
+            {  1.0f, -1.0f,  1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
+            { -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
+            { -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
+            {  1.0f, -1.0f,  1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
+            { -1.0f, -1.0f,  1.0f, 1.0f, 0.f, 0.f, 0.f, 1.0f },
         };
         constexpr auto vertexCount = _countof(vertices);
         constexpr auto vertexStride = sizeof(VertexWithColor);
@@ -1213,7 +1255,8 @@ namespace Renderer {
             vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
             const VkRect2D scissor{ {0, 0}, {g_swapchain.width, g_swapchain.height} };
             vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
-            vkCmdDrawIndexed(cmdBuffer, 6, 1, 0, 0, 0);
+            //vkCmdDrawIndexed(cmdBuffer, 6, 1, 0, 0, 0);
+            vkCmdDraw(cmdBuffer, 3 * 2 * 6, 1, 0, 0);
 
             vkCmdEndRenderPass(cmdBuffer);
 
@@ -1349,7 +1392,14 @@ namespace Renderer {
         const auto model = glm::mat4(1.0f);
         const auto mvp = projection * view * model;
 
+        VkMappedMemoryRange memRange{};
+        memRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        memRange.memory = g_ub.allocInfo.deviceMemory;
+        memRange.size = sizeof(glm::mat4);
+
+        VK_CHECK(vmaInvalidateAllocation(Allocator::VMA(), g_ub.allocation, 0, sizeof(glm::mat4)));
         memcpy_s(g_ub.allocInfo.pMappedData, sizeof(glm::mat4), &mvp, sizeof(glm::mat4));
+        VK_CHECK(vmaFlushAllocation(Allocator::VMA(), g_ub.allocation, 0, sizeof(glm::mat4)));
 
         // Acquire image index.
         VkSemaphoreCreateInfo semaphoreInfo{};
