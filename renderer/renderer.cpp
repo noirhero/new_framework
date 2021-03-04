@@ -534,6 +534,41 @@ namespace Renderer {
         }
     }
 
+    bool ImmediateBufferCopy(VkBuffer dest, const VkBuffer src, VkBufferCopy&& copyRegion) {
+        VkCommandBufferAllocateInfo cmdBufInfo{};
+        cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        cmdBufInfo.commandPool = g_gpuCmdPool;
+        cmdBufInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        cmdBufInfo.commandBufferCount = 1;
+
+        VkCommandBuffer immediatelyCmdBuf = VK_NULL_HANDLE;
+        if (VK_SUCCESS != vkAllocateCommandBuffers(g_device.device, &cmdBufInfo, &immediatelyCmdBuf)) {
+            return false;
+        }
+
+        VkCommandBufferBeginInfo cmdBufBeginInfo{};
+        cmdBufBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        cmdBufBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        if (VK_SUCCESS != vkBeginCommandBuffer(immediatelyCmdBuf, &cmdBufBeginInfo)) {
+            return false;
+        }
+
+        vkCmdCopyBuffer(immediatelyCmdBuf, src, dest, 1, &copyRegion);
+
+        vkEndCommandBuffer(immediatelyCmdBuf);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &immediatelyCmdBuf;
+        vkQueueSubmit(g_device.gpuQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(g_device.gpuQueue);
+
+        vkFreeCommandBuffers(g_device.device, g_gpuCmdPool, 1, &immediatelyCmdBuf);
+
+        return true;
+    }
+
     struct VertexBuffer {
         VkBuffer      buffer = VK_NULL_HANDLE;
         VmaAllocation allocation = VK_NULL_HANDLE;
@@ -546,9 +581,10 @@ namespace Renderer {
             float r, g, b, a;
         };
         constexpr VertexWithColor vertices[] = {
-            { 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f },
-            { 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f },
-            { -1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f },
+            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0 },
+            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0 },
+            {  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0 },
+            { -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0 },
         };
         constexpr auto vertexCount = ARRAYSIZE(vertices);
         constexpr auto vertexStride = sizeof(VertexWithColor);
@@ -580,39 +616,8 @@ namespace Renderer {
             return false;
         }
 
-        {
-            VkCommandBufferAllocateInfo cmdBufInfo{};
-            cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            cmdBufInfo.commandPool = g_gpuCmdPool;
-            cmdBufInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            cmdBufInfo.commandBufferCount = 1;
-
-            VkCommandBuffer immediatelyCmdBuf = VK_NULL_HANDLE;
-            if (VK_SUCCESS != vkAllocateCommandBuffers(g_device.device, &cmdBufInfo, &immediatelyCmdBuf)) {
-                return false;
-            }
-
-            VkCommandBufferBeginInfo cmdBufBeginInfo{};
-            cmdBufBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            cmdBufBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            if (VK_SUCCESS != vkBeginCommandBuffer(immediatelyCmdBuf, &cmdBufBeginInfo)) {
-                return false;
-            }
-
-            VkBufferCopy vbCopyRegion{};
-            vbCopyRegion.size = vertexSize;
-            vkCmdCopyBuffer(immediatelyCmdBuf, stagingVertexBuffer, g_vb.buffer, 1, &vbCopyRegion);
-
-            vkEndCommandBuffer(immediatelyCmdBuf);
-
-            VkSubmitInfo submitInfo{};
-            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &immediatelyCmdBuf;
-            vkQueueSubmit(g_device.gpuQueue, 1, &submitInfo, VK_NULL_HANDLE);
-            vkQueueWaitIdle(g_device.gpuQueue);
-
-            vkFreeCommandBuffers(g_device.device, g_gpuCmdPool, 1, &immediatelyCmdBuf);
+        if(false == ImmediateBufferCopy(g_vb.buffer, stagingVertexBuffer, {0, 0, vertexSize})) {
+            return false;
         }
 
         vmaDestroyBuffer(Allocator::VMA(), stagingVertexBuffer, stagingVertexBufferAlloc);
@@ -626,6 +631,61 @@ namespace Renderer {
             g_vb.buffer = VK_NULL_HANDLE;
             g_vb.allocation = VK_NULL_HANDLE;
         }
+    }
+
+    struct VkIndexBuffer {
+        VkBuffer      buffer = VK_NULL_HANDLE;
+        VmaAllocation allocation = VK_NULL_HANDLE;
+    };
+    VkIndexBuffer g_ib;
+
+    bool CreateIndexBuffer() {
+        constexpr uint16_t indices[] = { 0, 3, 1, 3, 2, 1 };
+        constexpr auto indexCount = ARRAYSIZE(indices);
+        constexpr auto indexStride = sizeof(uint16_t);
+        constexpr auto indexSize = indexCount * indexStride;
+
+        VkBufferCreateInfo bufferInfo{};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        bufferInfo.size = indexSize;
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VmaAllocationCreateInfo allocInfo{};
+        allocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+        allocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+        VkBuffer stagingIndexBuffer = VK_NULL_HANDLE;
+        VmaAllocation stagingVertexBufferAlloc = VK_NULL_HANDLE;
+        VmaAllocationInfo stagingIndexBufferAllocInfo{};
+        if (VK_SUCCESS != vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &stagingIndexBuffer, &stagingVertexBufferAlloc, &stagingIndexBufferAllocInfo)) {
+            return false;
+        }
+        memcpy_s(stagingIndexBufferAllocInfo.pMappedData, indexSize, indices, indexSize);
+
+        // No need to flush stagingVertexBuffer memory because CPU_ONLY memory is always HOST_COHERENT.
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        allocInfo.flags = 0;
+        if (VK_SUCCESS != vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &g_ib.buffer, &g_ib.allocation, nullptr)) {
+            return false;
+        }
+
+        if (false == ImmediateBufferCopy(g_ib.buffer, stagingIndexBuffer, { 0, 0, indexSize })) {
+            return false;
+        }
+
+        vmaDestroyBuffer(Allocator::VMA(), stagingIndexBuffer, stagingVertexBufferAlloc);
+
+        return true;
+    }
+
+    void DestroyIndexBuffer() {
+        if(VK_NULL_HANDLE != g_ib.buffer) {
+            vmaDestroyBuffer(Allocator::VMA(), g_ib.buffer, g_ib.allocation);
+            g_ib.buffer = VK_NULL_HANDLE;
+            g_ib.allocation = VK_NULL_HANDLE;
+	    }
     }
 
     VkRenderPass g_renderPass = VK_NULL_HANDLE;
@@ -1019,11 +1079,12 @@ namespace Renderer {
             vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_pipeline);
             const VkDeviceSize offsets[1]{};
             vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &g_vb.buffer, offsets);
+            vkCmdBindIndexBuffer(cmdBuffer, g_ib.buffer, 0, VK_INDEX_TYPE_UINT16);
             const VkViewport viewport{ 0.0f, 0.0f, static_cast<float>(g_swapchain.width), static_cast<float>(g_swapchain.height), 0.0f, 1.0f };
             vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
             const VkRect2D scissor{ {0, 0}, {g_swapchain.width, g_swapchain.height} };
             vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
-            vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+            vkCmdDrawIndexed(cmdBuffer, 6, 1, 0, 0, 0);
 
             vkCmdEndRenderPass(cmdBuffer);
 
@@ -1073,7 +1134,7 @@ namespace Renderer {
             return false;
         }
 
-        if (false == CreateVertexBuffer()) {
+        if (false == CreateVertexBuffer() || false == CreateIndexBuffer()) {
             return false;
         }
 
@@ -1109,6 +1170,7 @@ namespace Renderer {
         DestroyPipeline();
         DestroyPipelineCache();
         DestroyShaderModules();
+        DestroyIndexBuffer();
         DestroyVertexBuffer();
         ClearFrameBuffers();
         DestroyRenderPass();
