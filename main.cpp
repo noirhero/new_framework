@@ -6,8 +6,8 @@
 #include "Renderer/renderer.h"
 
 namespace Main {
-    void Resize(uint32_t /*width*/, uint32_t /*height*/) {
-        // Todo : Implement.
+    void Resize(uint32_t width, uint32_t height) {
+        Renderer::Resize(width, height);
     }
 
     bool Initialize() {

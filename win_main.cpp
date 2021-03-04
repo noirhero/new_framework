@@ -35,7 +35,7 @@ int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR 
 
     constexpr auto width = 640;
     constexpr auto height = 480;
-    HWND winHandle = CreateWindowW(className, className, WS_OVERLAPPED | WS_SYSMENU, 100, 100, width, height, nullptr, nullptr, winInstance, nullptr);
+    HWND winHandle = CreateWindowW(className, className, WS_OVERLAPPED | WS_SYSMENU | WS_THICKFRAME, 100, 100, width, height, nullptr, nullptr, winInstance, nullptr);
     if (nullptr == winHandle) {
         return 0;
     }

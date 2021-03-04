@@ -4,6 +4,7 @@
 #include "renderer.h"
 
 #include "../win_handle.h"
+#include "renderer_common.h"
 #include "renderer_util.h"
 #include "allocator_cpu.h"
 #include "allocator_vma.h"
@@ -35,7 +36,7 @@ namespace Renderer {
         VkLayerPropArray layers(layerCount);
         vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
 
-        if (layers.end() == std::ranges::find_if(layers, [](const VkLayerProperties& layerProperty)->bool {
+        if (layers.end() == std::find_if(layers.begin(), layers.end(), [](const VkLayerProperties& layerProperty)->bool {
             return "VK_LAYER_KHRONOS_validation"s == layerProperty.layerName;
             })) {
             Output::Print("This hardware not support VULKAN.\n"s);
@@ -46,7 +47,7 @@ namespace Renderer {
             uint32_t extensionCount = 0;
             vkEnumerateInstanceExtensionProperties(layer.layerName, &extensionCount, nullptr);
             if (0 == extensionCount) {
-                g_instanceLayers.emplace_back(layer);
+                g_instanceLayers.emplace_back(InstanceLayer{ layer });
                 continue;
             }
 
@@ -57,7 +58,7 @@ namespace Renderer {
                 Util::CheckToInstanceExtensionProperties(extensionProperties);
             }
 
-            g_instanceLayers.emplace_back(layer, extensions);
+            g_instanceLayers.emplace_back(InstanceLayer{ layer, extensions });
         }
 
         return true;
@@ -173,7 +174,7 @@ namespace Renderer {
                 Util::CheckToPhysicalDeviceExtensionProperties(extensionProperties);
             }
 
-            g_physicalDevices.emplace_back(device);
+            g_physicalDevices.emplace_back(PhysicalDevice{ device });
             auto& physicalDevice = g_physicalDevices.back();
 
             Util::CheckToPhysicalDeviceFeatures(device);
@@ -532,6 +533,8 @@ namespace Renderer {
             destroySwapchainFn(g_device.device, g_swapchain.handle, Allocator::CPU());
             g_swapchain.handle = VK_NULL_HANDLE;
         }
+
+        g_swapchain = {};
     }
 
     bool ImmediateBufferCopy(VkBuffer dest, const VkBuffer src, VkBufferCopy&& copyRegion) {
@@ -586,7 +589,7 @@ namespace Renderer {
             {  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0 },
             { -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0 },
         };
-        constexpr auto vertexCount = ARRAYSIZE(vertices);
+        constexpr auto vertexCount = _countof(vertices);
         constexpr auto vertexStride = sizeof(VertexWithColor);
         constexpr auto vertexSize = vertexCount * vertexStride;
 
@@ -640,8 +643,8 @@ namespace Renderer {
     VkIndexBuffer g_ib;
 
     bool CreateIndexBuffer() {
-        constexpr uint16_t indices[] = { 0, 3, 1, 3, 2, 1 };
-        constexpr auto indexCount = ARRAYSIZE(indices);
+        constexpr uint16_t indices[] = { 0, 1, 3, 3, 1, 2 };
+        constexpr auto indexCount = _countof(indices);
         constexpr auto indexStride = sizeof(uint16_t);
         constexpr auto indexSize = indexCount * indexStride;
 
@@ -656,15 +659,15 @@ namespace Renderer {
         allocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
         VkBuffer stagingIndexBuffer = VK_NULL_HANDLE;
-        VmaAllocation stagingVertexBufferAlloc = VK_NULL_HANDLE;
+        VmaAllocation stagingIndexBufferAlloc = VK_NULL_HANDLE;
         VmaAllocationInfo stagingIndexBufferAllocInfo{};
-        if (VK_SUCCESS != vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &stagingIndexBuffer, &stagingVertexBufferAlloc, &stagingIndexBufferAllocInfo)) {
+        if (VK_SUCCESS != vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &stagingIndexBuffer, &stagingIndexBufferAlloc, &stagingIndexBufferAllocInfo)) {
             return false;
         }
         memcpy_s(stagingIndexBufferAllocInfo.pMappedData, indexSize, indices, indexSize);
 
         // No need to flush stagingVertexBuffer memory because CPU_ONLY memory is always HOST_COHERENT.
-        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
         allocInfo.flags = 0;
         if (VK_SUCCESS != vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &g_ib.buffer, &g_ib.allocation, nullptr)) {
@@ -675,7 +678,7 @@ namespace Renderer {
             return false;
         }
 
-        vmaDestroyBuffer(Allocator::VMA(), stagingIndexBuffer, stagingVertexBufferAlloc);
+        vmaDestroyBuffer(Allocator::VMA(), stagingIndexBuffer, stagingIndexBufferAlloc);
 
         return true;
     }
@@ -685,7 +688,7 @@ namespace Renderer {
             vmaDestroyBuffer(Allocator::VMA(), g_ib.buffer, g_ib.allocation);
             g_ib.buffer = VK_NULL_HANDLE;
             g_ib.allocation = VK_NULL_HANDLE;
-	    }
+        }
     }
 
     VkRenderPass g_renderPass = VK_NULL_HANDLE;
@@ -896,7 +899,7 @@ namespace Renderer {
         vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInputStateInfo.vertexBindingDescriptionCount = 1;
         vertexInputStateInfo.pVertexBindingDescriptions = &bindingDescription;
-        vertexInputStateInfo.vertexAttributeDescriptionCount = ARRAYSIZE(attributeDescriptions);
+        vertexInputStateInfo.vertexAttributeDescriptionCount = _countof(attributeDescriptions);
         vertexInputStateInfo.pVertexAttributeDescriptions = attributeDescriptions;
 
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo{};
@@ -942,7 +945,7 @@ namespace Renderer {
         VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
         dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
         dynamicStateInfo.pDynamicStates = dynamicState;
-        dynamicStateInfo.dynamicStateCount = ARRAYSIZE(dynamicState);
+        dynamicStateInfo.dynamicStateCount = _countof(dynamicState);
 
         VkViewport viewport{};
         viewport.x = 0.f;
@@ -1007,7 +1010,7 @@ namespace Renderer {
         pipelineInfo.pViewportState = &viewportStateInfo;
         pipelineInfo.pDepthStencilState = &depthStencilStateInfo;
         pipelineInfo.pStages = shaderStageInfos;
-        pipelineInfo.stageCount = ARRAYSIZE(shaderStageInfos);
+        pipelineInfo.stageCount = _countof(shaderStageInfos);
         pipelineInfo.renderPass = g_renderPass;
         pipelineInfo.subpass = 0;
 
@@ -1061,7 +1064,7 @@ namespace Renderer {
 
             // Record.
             VkClearValue clearValues[2]{};
-            //clearValues[0].color = { 0.27f, 0.39f, 0.49f, 1.0f };
+            clearValues[0].color = { 0.27f, 0.39f, 0.49f, 1.0f };
             clearValues[1].depthStencil.depth = 1.0f;
             clearValues[1].depthStencil.stencil = 0;
 
@@ -1163,6 +1166,7 @@ namespace Renderer {
         }
 
         vkFreeCommandBuffers(g_device.device, g_gpuCmdPool, static_cast<uint32_t>(g_cmdBuffers.size()), g_cmdBuffers.data());
+        g_cmdBuffers.clear();
     }
 
     void Release() {
@@ -1232,5 +1236,29 @@ namespace Renderer {
 
         vkDestroySemaphore(g_device.device, drawingSemaphore, Allocator::CPU());
         vkDestroySemaphore(g_device.device, presentSemaphore, Allocator::CPU());
+    }
+
+    void Resize(uint32_t /*width*/, uint32_t /*height*/) {
+        if(VK_NULL_HANDLE == g_instance) {
+            return;
+        }
+
+        vkDeviceWaitIdle(g_device.device);
+
+        FreeCommandBuffers();
+        DestroyPipeline();
+        DestroyPipelineCache();
+        ClearFrameBuffers();
+        DestroyRenderPass();
+        DestroySwapchain();
+        DestroyGPUCommandPool();
+
+        VK_CHECK(CreateGPUCommandPool());
+        VK_CHECK(CreateSwapchain());
+        VK_CHECK(CreateRenderPass(true, true));
+        VK_CHECK(CreateFrameBuffers(true));
+        VK_CHECK(CreatePipelineCache());
+        VK_CHECK(CreatePipeline(true));
+        VK_CHECK(AllocateAndFillCommandBuffers());
     }
 }

@@ -15,6 +15,7 @@
 #include <functional>
 #include <string>
 #include <filesystem>
+#include <atomic>
 using namespace std::string_literals;
 
 #include "Resource.h"
