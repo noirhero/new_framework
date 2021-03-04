@@ -576,10 +576,48 @@ namespace Renderer {
         bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
         allocInfo.flags = 0;
-        const auto result = vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &g_vb.buffer, &g_vb.allocation, nullptr);
+        if(VK_SUCCESS != vmaCreateBuffer(Allocator::VMA(), &bufferInfo, &allocInfo, &g_vb.buffer, &g_vb.allocation, nullptr)) {
+            return false;
+        }
+
+        {
+            VkCommandBufferAllocateInfo cmdBufInfo{};
+            cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            cmdBufInfo.commandPool = g_gpuCmdPool;
+            cmdBufInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            cmdBufInfo.commandBufferCount = 1;
+
+            VkCommandBuffer immediatelyCmdBuf = VK_NULL_HANDLE;
+            if (VK_SUCCESS != vkAllocateCommandBuffers(g_device.device, &cmdBufInfo, &immediatelyCmdBuf)) {
+                return false;
+            }
+
+            VkCommandBufferBeginInfo cmdBufBeginInfo{};
+            cmdBufBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            cmdBufBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            if (VK_SUCCESS != vkBeginCommandBuffer(immediatelyCmdBuf, &cmdBufBeginInfo)) {
+                return false;
+            }
+
+            VkBufferCopy vbCopyRegion{};
+            vbCopyRegion.size = vertexSize;
+            vkCmdCopyBuffer(immediatelyCmdBuf, stagingVertexBuffer, g_vb.buffer, 1, &vbCopyRegion);
+
+            vkEndCommandBuffer(immediatelyCmdBuf);
+
+            VkSubmitInfo submitInfo{};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.commandBufferCount = 1;
+            submitInfo.pCommandBuffers = &immediatelyCmdBuf;
+            vkQueueSubmit(g_device.gpuQueue, 1, &submitInfo, VK_NULL_HANDLE);
+            vkQueueWaitIdle(g_device.gpuQueue);
+
+            vkFreeCommandBuffers(g_device.device, g_gpuCmdPool, 1, &immediatelyCmdBuf);
+        }
+
         vmaDestroyBuffer(Allocator::VMA(), stagingVertexBuffer, stagingVertexBufferAlloc);
 
-        return VK_SUCCESS != result ? false : true;
+        return true;
     }
 
     void DestroyVertexBuffer() {
@@ -679,61 +717,6 @@ namespace Renderer {
             vkDestroyFramebuffer(g_device.device, frameBuffer, Allocator::CPU());
         }
         g_frameBuffers.clear();
-    }
-
-    using VkCommandBuffers = std::vector<VkCommandBuffer>;
-    VkCommandBuffers g_cmdBuffers;
-
-    bool AllocateAndFillCommandBuffers() {
-        for (decltype(g_swapchain.images.size()) i = 0; i < g_swapchain.images.size(); ++i) {
-            // Create.
-            VkCommandBufferAllocateInfo cmdInfo{};
-            cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            cmdInfo.commandPool = g_gpuCmdPool;
-            cmdInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            cmdInfo.commandBufferCount = 1;
-
-            VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
-            if (VK_SUCCESS != vkAllocateCommandBuffers(g_device.device, &cmdInfo, &cmdBuffer)) {
-                return false;
-            }
-            g_cmdBuffers.emplace_back(cmdBuffer);
-
-            // Begin.
-            VkCommandBufferInheritanceInfo cmdBufInheritInfo{};
-            cmdBufInheritInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-
-            VkCommandBufferBeginInfo cmdBufInfo{};
-            cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            cmdBufInfo.pInheritanceInfo = &cmdBufInheritInfo;
-
-            if (VK_SUCCESS != vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo)) {
-                return false;
-            }
-
-            // Record.
-            VkClearValue clearValues[2]{};
-            clearValues[0].color = { 0.27f, 0.39f, 0.49f, 1.0f };
-            clearValues[1].depthStencil.depth = 1.0f;
-            clearValues[1].depthStencil.stencil = 0;
-
-            VkRenderPassBeginInfo renderPassBegin{};
-            renderPassBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassBegin.renderPass = g_renderPass;
-            renderPassBegin.framebuffer = g_frameBuffers[i];
-            renderPassBegin.renderArea.extent.width = g_swapchain.width;
-            renderPassBegin.renderArea.extent.height = g_swapchain.height;
-            renderPassBegin.clearValueCount = 2;
-            renderPassBegin.pClearValues = clearValues;
-
-            vkCmdBeginRenderPass(cmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdEndRenderPass(cmdBuffer);
-
-            // End.
-            vkEndCommandBuffer(cmdBuffer);
-        }
-
-        return true;
     }
 
     VkShaderModule g_vsModule = VK_NULL_HANDLE;
@@ -895,6 +878,12 @@ namespace Renderer {
         colorBlendStateInfo.blendConstants[2] = 1.0f;
         colorBlendStateInfo.blendConstants[3] = 1.0f;
 
+        const VkDynamicState dynamicState[]{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+        VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
+        dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamicStateInfo.pDynamicStates = dynamicState;
+        dynamicStateInfo.dynamicStateCount = ARRAYSIZE(dynamicState);
+
         VkViewport viewport{};
         viewport.x = 0.f;
         viewport.y = 0.f;
@@ -954,7 +943,7 @@ namespace Renderer {
         pipelineInfo.pColorBlendState = &colorBlendStateInfo;
         pipelineInfo.pTessellationState = nullptr;
         pipelineInfo.pMultisampleState = &multiSampleStateInfo;
-        pipelineInfo.pDynamicState = nullptr;
+        pipelineInfo.pDynamicState = &dynamicStateInfo;
         pipelineInfo.pViewportState = &viewportStateInfo;
         pipelineInfo.pDepthStencilState = &depthStencilStateInfo;
         pipelineInfo.pStages = shaderStageInfos;
@@ -978,6 +967,71 @@ namespace Renderer {
             vkDestroyPipelineLayout(g_device.device, g_pipelineLayout, Allocator::CPU());
             g_pipelineLayout = VK_NULL_HANDLE;
         }
+    }
+
+    using VkCommandBuffers = std::vector<VkCommandBuffer>;
+    VkCommandBuffers g_cmdBuffers;
+
+    bool AllocateAndFillCommandBuffers() {
+        for (decltype(g_swapchain.images.size()) i = 0; i < g_swapchain.images.size(); ++i) {
+            // Create.
+            VkCommandBufferAllocateInfo cmdInfo{};
+            cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            cmdInfo.commandPool = g_gpuCmdPool;
+            cmdInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            cmdInfo.commandBufferCount = 1;
+
+            VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
+            if (VK_SUCCESS != vkAllocateCommandBuffers(g_device.device, &cmdInfo, &cmdBuffer)) {
+                return false;
+            }
+            g_cmdBuffers.emplace_back(cmdBuffer);
+
+            // Begin.
+            VkCommandBufferInheritanceInfo cmdBufInheritInfo{};
+            cmdBufInheritInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+
+            VkCommandBufferBeginInfo cmdBufInfo{};
+            cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            cmdBufInfo.pInheritanceInfo = &cmdBufInheritInfo;
+
+            if (VK_SUCCESS != vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo)) {
+                return false;
+            }
+
+            // Record.
+            VkClearValue clearValues[2]{};
+            //clearValues[0].color = { 0.27f, 0.39f, 0.49f, 1.0f };
+            clearValues[1].depthStencil.depth = 1.0f;
+            clearValues[1].depthStencil.stencil = 0;
+
+            VkRenderPassBeginInfo renderPassBegin{};
+            renderPassBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassBegin.renderPass = g_renderPass;
+            renderPassBegin.framebuffer = g_frameBuffers[i];
+            renderPassBegin.renderArea.extent.width = g_swapchain.width;
+            renderPassBegin.renderArea.extent.height = g_swapchain.height;
+            renderPassBegin.clearValueCount = 2;
+            renderPassBegin.pClearValues = clearValues;
+
+            vkCmdBeginRenderPass(cmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+
+            vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_pipeline);
+            const VkDeviceSize offsets[1]{};
+            vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &g_vb.buffer, offsets);
+            const VkViewport viewport{ 0.0f, 0.0f, static_cast<float>(g_swapchain.width), static_cast<float>(g_swapchain.height), 0.0f, 1.0f };
+            vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+            const VkRect2D scissor{ {0, 0}, {g_swapchain.width, g_swapchain.height} };
+            vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+            vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+
+            vkCmdEndRenderPass(cmdBuffer);
+
+            // End.
+            vkEndCommandBuffer(cmdBuffer);
+        }
+
+        return true;
     }
 
     bool Initialize() {
@@ -1019,10 +1073,6 @@ namespace Renderer {
             return false;
         }
 
-        if (false == AllocateAndFillCommandBuffers()) {
-            return false;
-        }
-
         if (false == CreateVertexBuffer()) {
             return false;
         }
@@ -1039,10 +1089,23 @@ namespace Renderer {
             return false;
         }
 
+        if (false == AllocateAndFillCommandBuffers()) {
+            return false;
+        }
+
         return true;
     }
 
+    void FreeCommandBuffers() {
+        if(g_cmdBuffers.empty()) {
+            return;
+        }
+
+        vkFreeCommandBuffers(g_device.device, g_gpuCmdPool, static_cast<uint32_t>(g_cmdBuffers.size()), g_cmdBuffers.data());
+    }
+
     void Release() {
+        FreeCommandBuffers();
         DestroyPipeline();
         DestroyPipelineCache();
         DestroyShaderModules();
@@ -1065,21 +1128,30 @@ namespace Renderer {
     uint32_t currentFrameBufferIndex = 0;
     void Run() {
         // Acquire image index.
-        VkSemaphoreCreateInfo presentSemaphoreInfo{};
-        presentSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        VkSemaphoreCreateInfo semaphoreInfo{};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
         VkSemaphore presentSemaphore = VK_NULL_HANDLE;
-        vkCreateSemaphore(g_device.device, &presentSemaphoreInfo, Allocator::CPU(), &presentSemaphore);
+        vkCreateSemaphore(g_device.device, &semaphoreInfo, Allocator::CPU(), &presentSemaphore);
+
+        VkSemaphore drawingSemaphore = VK_NULL_HANDLE;
+        vkCreateSemaphore(g_device.device, &semaphoreInfo, Allocator::CPU(), &drawingSemaphore);
 
         if (VK_SUCCESS != vkAcquireNextImageKHR(g_device.device, g_swapchain.handle, UINT64_MAX, presentSemaphore, VK_NULL_HANDLE, &currentFrameBufferIndex)) {
             return;
         }
 
         // Submit.
+        const VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &g_cmdBuffers[currentFrameBufferIndex];
+        submitInfo.pWaitSemaphores = &presentSemaphore;
+        submitInfo.pWaitDstStageMask = &submitPipelineStages;
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = &drawingSemaphore;
 
         vkQueueSubmit(g_device.gpuQueue, 1, &submitInfo, VK_NULL_HANDLE);
         vkQueueWaitIdle(g_device.gpuQueue);
@@ -1090,10 +1162,13 @@ namespace Renderer {
         present.swapchainCount = 1;
         present.pSwapchains = &g_swapchain.handle;
         present.pImageIndices = &currentFrameBufferIndex;
+        present.waitSemaphoreCount = 1;
+        present.pWaitSemaphores = &drawingSemaphore;
 
         // Queue the image for presentation.
         vkQueuePresentKHR(g_device.gpuQueue, &present);
 
+        vkDestroySemaphore(g_device.device, drawingSemaphore, Allocator::CPU());
         vkDestroySemaphore(g_device.device, presentSemaphore, Allocator::CPU());
     }
 }
