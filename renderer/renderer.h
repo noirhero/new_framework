@@ -6,6 +6,6 @@ namespace Renderer {
     bool Initialize();
     void Release();
 
-    void Run();
+    void Run(float delta);
     void Resize(uint32_t width, uint32_t height);
 }

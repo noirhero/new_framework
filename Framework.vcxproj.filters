@@ -75,6 +75,7 @@
     <ClInclude Include="third_party\fmt\ranges.h">
       <Filter>third_party\fmt</Filter>
     </ClInclude>
+    <ClInclude Include="util_timer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win_main.cpp">
@@ -103,6 +104,7 @@
     <ClCompile Include="util_output.cpp" />
     <ClCompile Include="util_path.cpp" />
     <ClCompile Include="util_file.cpp" />
+    <ClCompile Include="util_timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win32">

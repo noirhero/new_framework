@@ -6,6 +6,6 @@ namespace Main {
     void Resize(uint32_t width, uint32_t height);
 
     bool Initialize();
-    bool Run();
+    bool Run(float delta);
     void Finalize();
 }

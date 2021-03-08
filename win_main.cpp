@@ -58,7 +58,7 @@ int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR 
             DispatchMessage(&msg);
         }
         else {
-            if (false == Main::Run()) {
+            if (false == Main::Run(Timer::Update())) {
                 msg.message = WM_QUIT;
             }
         }

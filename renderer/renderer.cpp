@@ -1016,10 +1016,17 @@ namespace Renderer {
     VkPipelineLayout g_pipelineLayout = VK_NULL_HANDLE;
     VkPipeline g_pipeline = VK_NULL_HANDLE;
     bool CreatePipeline(bool isIncludeDepth) {
+        VkPushConstantRange pushConstantRanges[1]{};
+        pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        pushConstantRanges[0].offset = 0;
+        pushConstantRanges[0].size = 8/*colorFlag + mixerValue*/;
+
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutCreateInfo.setLayoutCount = static_cast<decltype(pipelineLayoutCreateInfo.setLayoutCount)>(g_descriptorSetLayouts.size());
         pipelineLayoutCreateInfo.pSetLayouts = g_descriptorSetLayouts.data();
+        pipelineLayoutCreateInfo.pushConstantRangeCount = _countof(pushConstantRanges);
+        pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges;
 
         if (VK_SUCCESS != vkCreatePipelineLayout(g_device.device, &pipelineLayoutCreateInfo, Allocator::CPU(), &g_pipelineLayout)) {
             return false;
@@ -1199,6 +1206,44 @@ namespace Renderer {
         }
     }
 
+    bool SettingPushConstants() {
+        VkCommandBufferAllocateInfo cmdBufInfo{};
+        cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        cmdBufInfo.commandPool = g_gpuCmdPool;
+        cmdBufInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        cmdBufInfo.commandBufferCount = 1;
+
+        VkCommandBuffer immediatelyCmdBuf = VK_NULL_HANDLE;
+        if (VK_SUCCESS != vkAllocateCommandBuffers(g_device.device, &cmdBufInfo, &immediatelyCmdBuf)) {
+            return false;
+        }
+
+        VkCommandBufferBeginInfo cmdBufBeginInfo{};
+        cmdBufBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        cmdBufBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        if (VK_SUCCESS != vkBeginCommandBuffer(immediatelyCmdBuf, &cmdBufBeginInfo)) {
+            return false;
+        }
+
+        const auto mixerValue = 0.3f;
+        uint32_t constants[2] = { 2, 0 };
+        memcpy_s(&constants[1], sizeof(float), &mixerValue, sizeof(float));
+        vkCmdPushConstants(immediatelyCmdBuf, g_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(constants), constants);
+
+        vkEndCommandBuffer(immediatelyCmdBuf);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &immediatelyCmdBuf;
+        vkQueueSubmit(g_device.gpuQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(g_device.gpuQueue);
+
+        vkFreeCommandBuffers(g_device.device, g_gpuCmdPool, 1, &immediatelyCmdBuf);
+
+        return true;
+    }
+
     using VkCommandBuffers = std::vector<VkCommandBuffer>;
     VkCommandBuffers g_cmdBuffers;
 
@@ -1347,6 +1392,10 @@ namespace Renderer {
             return false;
         }
 
+        if(false == SettingPushConstants()) {
+            return false;
+        }
+
         if (false == AllocateAndFillCommandBuffers()) {
             return false;
         }
@@ -1381,15 +1430,18 @@ namespace Renderer {
     }
 
     uint32_t currentFrameBufferIndex = 0;
-    void Run() {
+    void Run(float delta) {
         // Update uniform buffer.
         const auto projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f);
         const auto view = glm::lookAt(
-            glm::vec3(0, 0, 5), // Camera is in World Space
+            glm::vec3(0, 5, 5), // Camera is in World Space
             glm::vec3(0, 0, 0), // and looks at the origin
             glm::vec3(0, 1, 0)  // Head is up
         );
-        const auto model = glm::mat4(1.0f);
+        static auto rotate = 0.0f;
+        rotate += delta;
+
+        const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
         const auto mvp = projection * view * model;
 
         VkMappedMemoryRange memRange{};
@@ -1467,6 +1519,7 @@ namespace Renderer {
         VK_CHECK(CreateFrameBuffers(true));
         VK_CHECK(CreatePipelineCache());
         VK_CHECK(CreatePipeline(true));
+        VK_CHECK(SettingPushConstants());
         VK_CHECK(AllocateAndFillCommandBuffers());
     }
 }

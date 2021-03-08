@@ -18,8 +18,8 @@ namespace Main {
         return true;
     }
 
-    bool Run() {
-        Renderer::Run();
+    bool Run(float delta) {
+        Renderer::Run(delta);
         return true;
     }
 

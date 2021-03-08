@@ -192,6 +192,7 @@
     <ClInclude Include="util_file.h" />
     <ClInclude Include="util_output.h" />
     <ClInclude Include="util_path.h" />
+    <ClInclude Include="util_timer.h" />
     <ClInclude Include="win_handle.h" />
   </ItemGroup>
   <ItemGroup>
@@ -204,6 +205,7 @@
     <ClCompile Include="util_file.cpp" />
     <ClCompile Include="util_output.cpp" />
     <ClCompile Include="util_path.cpp" />
+    <ClCompile Include="util_timer.cpp" />
     <ClCompile Include="win_handle.cpp" />
     <ClCompile Include="win_main.cpp" />
     <ClCompile Include="pch.cpp">
