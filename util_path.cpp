@@ -23,12 +23,12 @@ namespace Path {
 
     void Initialize() {
         const auto currentPath = std::filesystem::current_path();
-        g_currentPathAnsi = currentPath.generic_string();
-        g_currentPath = currentPath.generic_wstring();
+        g_currentPathAnsi = currentPath.generic_string() + "/";
+        g_currentPath = currentPath.generic_wstring() + L"/";
 
         const auto resourcePath = FindResourcePath(std::filesystem::current_path());
-        g_resourcePathAnsi = resourcePath.generic_string();
-        g_resourcePath = resourcePath.generic_wstring();
+        g_resourcePathAnsi = resourcePath.generic_string() + "/";
+        g_resourcePath = resourcePath.generic_wstring() + L"/";
     }
 
     const char* GetCurrentPathAnsi() {

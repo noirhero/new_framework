@@ -872,6 +872,140 @@ namespace Renderer {
         destroyFn(g_vsModule);
     }
 
+    struct VkTexture {
+        VkImage       image = VK_NULL_HANDLE;
+        VmaAllocation allocation = VK_NULL_HANDLE;
+        VkImageView   view = VK_NULL_HANDLE;
+    };
+    VkTexture g_texture;
+    bool CreateTexture(std::string&& path) {
+        auto image = gli::load(path);
+        if(image.empty()) {
+            return false;
+        }
+
+        VkBufferCreateInfo stagingInfo{};
+        stagingInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        stagingInfo.size = image.size();
+        stagingInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+        VmaAllocationCreateInfo stagingCreateInfo{};
+        stagingCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+        stagingCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+        struct StagingImage {
+            VkBuffer          buffer = VK_NULL_HANDLE;
+            VmaAllocation     alloc = VK_NULL_HANDLE;
+            VmaAllocationInfo info{};
+
+            ~StagingImage() {
+                if(VK_NULL_HANDLE != buffer) {
+                    vmaDestroyBuffer(Allocator::VMA(), buffer, alloc);
+                }
+            }
+        };
+        StagingImage staging;
+        if(VK_SUCCESS != vmaCreateBuffer(Allocator::VMA(), &stagingInfo, &stagingCreateInfo, &staging.buffer, &staging.alloc, &staging.info)) {
+            return false;
+        }
+        memcpy_s(staging.info.pMappedData, image.size(), image.data(), image.size());
+
+        const auto dimension = image.extent();
+
+        VkImageCreateInfo imageInfo{};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.extent.width = dimension.x;
+        imageInfo.extent.height = dimension.y;
+        imageInfo.extent.depth = 1;
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = 1;
+        imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+
+        VmaAllocationCreateInfo imageCreateInfo{};
+        imageCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+        if(VK_SUCCESS != vmaCreateImage(Allocator::VMA(), &imageInfo, &imageCreateInfo, &g_texture.image, &g_texture.allocation, nullptr)) {
+            return false;
+        }
+
+        VkCommandBufferAllocateInfo cmdBufInfo{};
+        cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        cmdBufInfo.commandPool = g_gpuCmdPool;
+        cmdBufInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        cmdBufInfo.commandBufferCount = 1;
+
+        VkCommandBuffer immediatelyCmdBuf = VK_NULL_HANDLE;
+        if (VK_SUCCESS != vkAllocateCommandBuffers(g_device.device, &cmdBufInfo, &immediatelyCmdBuf)) {
+            return false;
+        }
+
+        VkCommandBufferBeginInfo cmdBufBeginInfo{};
+        cmdBufBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        cmdBufBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        if (VK_SUCCESS != vkBeginCommandBuffer(immediatelyCmdBuf, &cmdBufBeginInfo)) {
+            vkFreeCommandBuffers(g_device.device, g_gpuCmdPool, 1, &immediatelyCmdBuf);
+            return false;
+        }
+
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.image = g_texture.image;
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        vkCmdPipelineBarrier(immediatelyCmdBuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+        VkBufferImageCopy region{};
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.layerCount = 1;
+        region.imageExtent.width = dimension.x;
+        region.imageExtent.height = dimension.y;
+        region.imageExtent.depth = 1;
+        vkCmdCopyBufferToImage(immediatelyCmdBuf, staging.buffer, g_texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        barrier.image = g_texture.image;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        vkCmdPipelineBarrier(immediatelyCmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+        vkEndCommandBuffer(immediatelyCmdBuf);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &immediatelyCmdBuf;
+        vkQueueSubmit(g_device.gpuQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(g_device.gpuQueue);
+
+        vkFreeCommandBuffers(g_device.device, g_gpuCmdPool, 1, &immediatelyCmdBuf);
+
+        return true;
+    }
+
+    void DestroyTexture() {
+        if(VK_NULL_HANDLE != g_texture.image) {
+            vmaDestroyImage(Allocator::VMA(), g_texture.image, g_texture.allocation);
+            g_texture.image = VK_NULL_HANDLE;
+            g_texture.allocation = VK_NULL_HANDLE;
+        }
+    }
+
     using VkDescriptorSetLayouts = std::vector<VkDescriptorSetLayout>;
     VkDescriptorSetLayouts g_descriptorSetLayouts;
     bool CreateDescriptorSetLayouts() {
@@ -1368,6 +1502,10 @@ namespace Renderer {
             return false;
         }
 
+        //if(false == CreateTexture(Path::GetResourcePathAnsi() + "images/learning_vulkan.ktx"s)) {
+        //    return false;
+        //}
+
         if(false == CreateDescriptorSetLayouts()) {
             return false;
         }
@@ -1411,6 +1549,7 @@ namespace Renderer {
         DestroyDescriptorPool();
         DestroyUniformBuffer();
         DestroyDescriptorSetLayouts();
+        DestroyTexture();
         DestroyShaderModules();
         DestroyIndexBuffer();
         DestroyVertexBuffer();
@@ -1443,11 +1582,6 @@ namespace Renderer {
 
         const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
         const auto mvp = projection * view * model;
-
-        VkMappedMemoryRange memRange{};
-        memRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-        memRange.memory = g_ub.allocInfo.deviceMemory;
-        memRange.size = sizeof(glm::mat4);
 
         VK_CHECK(vmaInvalidateAllocation(Allocator::VMA(), g_ub.allocation, 0, sizeof(glm::mat4)));
         memcpy_s(g_ub.allocInfo.pMappedData, sizeof(glm::mat4), &mvp, sizeof(glm::mat4));

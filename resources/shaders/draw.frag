@@ -23,4 +23,6 @@ void main() {
        outColor = blue;
     else
        outColor = colorBlock.mixerValue * color;
+
+    outColor = color;
 }
