@@ -584,52 +584,52 @@ namespace Renderer {
             float r, g, b, a;
         };
         constexpr VertexWithColor vertices[] = {
-            //{ -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0 },
-            //{  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0 },
-            //{  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0 },
-            //{ -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0 },
+            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0 },
+            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0 },
+            {  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0 },
+            { -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0 },
 
-            {  1.0f, -1.0f, -1.0f, 1.0f, 0.f, 0.f, 0.f, 1.0f },
-            { -1.0f, -1.0f, -1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
-            {  1.0f,  1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
-            {  1.0f,  1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
-            { -1.0f, -1.0f, -1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
-            { -1.0f,  1.0f, -1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
+            //{  1.0f, -1.0f, -1.0f, 1.0f, 0.f, 0.f, 0.f, 1.0f },
+            //{ -1.0f, -1.0f, -1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
+            //{  1.0f,  1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
+            //{  1.0f,  1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
+            //{ -1.0f, -1.0f, -1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
+            //{ -1.0f,  1.0f, -1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
 
-            {  1.0f, -1.0f, 1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
-            {  1.0f,  1.0f, 1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
-            { -1.0f, -1.0f, 1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
-            { -1.0f, -1.0f, 1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
-            {  1.0f,  1.0f, 1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
-            { -1.0f,  1.0f, 1.0f, 1.0f, 1.f, 1.f, 1.f, 1.0f },
+            //{  1.0f, -1.0f, 1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
+            //{  1.0f,  1.0f, 1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
+            //{ -1.0f, -1.0f, 1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
+            //{ -1.0f, -1.0f, 1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
+            //{  1.0f,  1.0f, 1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
+            //{ -1.0f,  1.0f, 1.0f, 1.0f, 1.f, 1.f, 1.f, 1.0f },
 
-            { 1.0f, -1.0f,  1.0f, 1.0f, 1.f, 1.f, 1.f, 1.0f },
-            { 1.0f, -1.0f, -1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
-            { 1.0f,  1.0f,  1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
-            { 1.0f,  1.0f,  1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
-            { 1.0f, -1.0f, -1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
-            { 1.0f,  1.0f, -1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
+            //{ 1.0f, -1.0f,  1.0f, 1.0f, 1.f, 1.f, 1.f, 1.0f },
+            //{ 1.0f, -1.0f, -1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
+            //{ 1.0f,  1.0f,  1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
+            //{ 1.0f,  1.0f,  1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
+            //{ 1.0f, -1.0f, -1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
+            //{ 1.0f,  1.0f, -1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
 
-            { -1.0f, -1.0f,  1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
-            { -1.0f,  1.0f,  1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
-            { -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
-            { -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
-            { -1.0f,  1.0f,  1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
-            { -1.0f,  1.0f, -1.0f, 1.0f, 0.f, 0.f, 0.f, 1.0f },
+            //{ -1.0f, -1.0f,  1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
+            //{ -1.0f,  1.0f,  1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
+            //{ -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
+            //{ -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
+            //{ -1.0f,  1.0f,  1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
+            //{ -1.0f,  1.0f, -1.0f, 1.0f, 0.f, 0.f, 0.f, 1.0f },
 
-            {  1.0f, 1.0f, -1.0f, 1.0f, 1.f, 1.f, 1.f, 1.0f },
-            { -1.0f, 1.0f, -1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
-            {  1.0f, 1.0f,  1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
-            {  1.0f, 1.0f,  1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
-            { -1.0f, 1.0f, -1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
-            { -1.0f, 1.0f,  1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
+            //{  1.0f, 1.0f, -1.0f, 1.0f, 1.f, 1.f, 1.f, 1.0f },
+            //{ -1.0f, 1.0f, -1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
+            //{  1.0f, 1.0f,  1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
+            //{  1.0f, 1.0f,  1.0f, 1.0f, 1.f, 1.f, 0.f, 1.0f },
+            //{ -1.0f, 1.0f, -1.0f, 1.0f, 0.f, 1.f, 1.f, 1.0f },
+            //{ -1.0f, 1.0f,  1.0f, 1.0f, 0.f, 1.f, 0.f, 1.0f },
 
-            {  1.0f, -1.0f, -1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
-            {  1.0f, -1.0f,  1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
-            { -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
-            { -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
-            {  1.0f, -1.0f,  1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
-            { -1.0f, -1.0f,  1.0f, 1.0f, 0.f, 0.f, 0.f, 1.0f },
+            //{  1.0f, -1.0f, -1.0f, 1.0f, 1.f, 0.f, 1.f, 1.0f },
+            //{  1.0f, -1.0f,  1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
+            //{ -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
+            //{ -1.0f, -1.0f, -1.0f, 1.0f, 0.f, 0.f, 1.f, 1.0f },
+            //{  1.0f, -1.0f,  1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
+            //{ -1.0f, -1.0f,  1.0f, 1.0f, 0.f, 0.f, 0.f, 1.0f },
         };
         constexpr auto vertexCount = _countof(vertices);
         constexpr auto vertexStride = sizeof(VertexWithColor);
@@ -1427,6 +1427,12 @@ namespace Renderer {
 
             vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_pipeline);
             vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_pipelineLayout, 0, 1, &g_descriptorSet, 0, nullptr);
+
+            const auto mixerValue = 0.3f;
+            uint32_t constants[2] = { 0, 0 };
+            memcpy_s(&constants[1], sizeof(float), &mixerValue, sizeof(float));
+            vkCmdPushConstants(cmdBuffer, g_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(constants), constants);
+
             const VkDeviceSize offsets[1]{};
             vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &g_vb.buffer, offsets);
             vkCmdBindIndexBuffer(cmdBuffer, g_ib.buffer, 0, VK_INDEX_TYPE_UINT16);
@@ -1434,8 +1440,8 @@ namespace Renderer {
             vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
             const VkRect2D scissor{ {0, 0}, {g_swapchain.width, g_swapchain.height} };
             vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
-            //vkCmdDrawIndexed(cmdBuffer, 6, 1, 0, 0, 0);
-            vkCmdDraw(cmdBuffer, 3 * 2 * 6, 1, 0, 0);
+            vkCmdDrawIndexed(cmdBuffer, 6, 1, 0, 0, 0);
+            //vkCmdDraw(cmdBuffer, 3 * 2 * 6, 1, 0, 0);
 
             vkCmdEndRenderPass(cmdBuffer);
 
@@ -1530,9 +1536,9 @@ namespace Renderer {
             return false;
         }
 
-        if(false == SettingPushConstants()) {
-            return false;
-        }
+        //if (false == SettingPushConstants()) {
+        //    return false;
+        //}
 
         if (false == AllocateAndFillCommandBuffers()) {
             return false;
@@ -1571,14 +1577,18 @@ namespace Renderer {
     uint32_t currentFrameBufferIndex = 0;
     void Run(float delta) {
         // Update uniform buffer.
-        const auto projection = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f);
+        const auto aspect = g_swapchain.width / static_cast<float>(g_swapchain.height);
+        const auto projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
         const auto view = glm::lookAt(
             glm::vec3(0, 5, 5), // Camera is in World Space
             glm::vec3(0, 0, 0), // and looks at the origin
             glm::vec3(0, 1, 0)  // Head is up
         );
         static auto rotate = 0.0f;
-        rotate += delta;
+        static auto seconds = 0.0f;
+        seconds += delta;
+        if (3.0f <= seconds)
+            rotate += delta;
 
         const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
         const auto mvp = projection * view * model;

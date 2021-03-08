@@ -15,5 +15,6 @@ void main() {
     outColor = inColor;
 
     gl_Position = transform.mvp * inPos;
+    gl_Position.y = -gl_Position.y;
     gl_Position.z = (gl_Position.z + gl_Position.w) * 0.5;
 }
