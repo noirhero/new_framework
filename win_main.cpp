@@ -5,16 +5,16 @@
 
 #include "win_handle.h"
 
-LRESULT CALLBACK WndProc(HWND winHandle, UINT message, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK WndProc(HWND winHandle, UINT message, WPARAM paramW, LPARAM paramL) {
     switch (message) {
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
     case WM_SIZE:
-        Main::Resize(LOWORD(lParam), HIWORD(lParam));
+        Main::Resize(LOWORD(paramL), HIWORD(paramL));
         break;
     default:
-        return DefWindowProc(winHandle, message, wParam, lParam);
+        return DefWindowProc(winHandle, message, paramW, paramL);
     }
     return 0;
 }
@@ -35,7 +35,19 @@ int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR 
 
     constexpr auto width = 640;
     constexpr auto height = 480;
-    HWND winHandle = CreateWindowW(className, className, WS_OVERLAPPED | WS_SYSMENU | WS_THICKFRAME, 100, 100, width, height, nullptr, nullptr, winInstance, nullptr);
+    constexpr auto winStyle = WS_OVERLAPPED | WS_SYSMENU | WS_THICKFRAME;
+
+    RECT winRect = { 0, 0, width, height };
+    AdjustWindowRect(&winRect, winStyle, FALSE);
+    const auto w = winRect.right - winRect.left;
+    const auto h = winRect.bottom - winRect.top;
+
+    const auto screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    const auto screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    const auto x = screenWidth / 2 - w / 2;
+    const auto y = screenHeight / 2 - h / 2;
+
+    HWND winHandle = CreateWindowW(className, className, winStyle, x, y, w, h, nullptr, nullptr, winInstance, nullptr);
     if (nullptr == winHandle) {
         return 0;
     }
