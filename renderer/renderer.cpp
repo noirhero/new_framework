@@ -1651,6 +1651,11 @@ namespace Renderer {
     uint32_t currentFrameBufferIndex = 0;
     void Run(float delta) {
         // Update uniform buffer.
+        constexpr glm::mat4 clip(
+            1.0f, 0.0f,  0.0f, 0.0f,
+            0.0f, -1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f,  0.5f, 0.0f,
+            0.0f, 0.0f,  0.5f, 1.0f);
         const auto aspect = g_swapchain.width / static_cast<float>(g_swapchain.height);
         const auto projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
         const auto view = glm::lookAt(
@@ -1665,7 +1670,7 @@ namespace Renderer {
             rotate += delta;
 
         const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
-        const auto mvp = projection * view * model;
+        const auto mvp = clip * projection * view * model;
 
         VK_CHECK(vmaInvalidateAllocation(Allocator::VMA(), g_ub.allocation, 0, sizeof(glm::mat4)));
         memcpy_s(g_ub.allocInfo.pMappedData, sizeof(glm::mat4), &mvp, sizeof(glm::mat4));
