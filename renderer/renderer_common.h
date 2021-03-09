@@ -21,5 +21,5 @@
 #ifdef _DEBUG
 #define VK_CHECK(result) assert(VK_SUCCESS == (result))
 #else
-#deinfe VK_CHECK(result) result;
+#define VK_CHECK(result) result;
 #endif
