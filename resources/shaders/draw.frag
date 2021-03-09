@@ -2,13 +2,16 @@
 
 #version 450
 
-layout (location = 0) in vec4 color;
-layout (location = 0) out vec4 outColor;
+layout(location = 0) in vec4 color;
+layout(location = 1) in vec2 outUV;
+layout(location = 0) out vec4 outColor;
 
 layout(push_constant) uniform pushConstantBlock {
     int constColor;
     float mixerValue;
 } colorBlock;
+
+layout(binding = 1) uniform sampler2D tex;
 
 vec4 red = vec4(1.0, 0.0, 0.0, 1.0);
 vec4 green = vec4(0.0, 1.0, 0.0, 1.0);
@@ -23,4 +26,6 @@ void main() {
        outColor = blue;
     else
        outColor = colorBlock.mixerValue * color;
+
+    outColor = texture(tex, outUV);
 }

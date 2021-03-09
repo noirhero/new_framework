@@ -582,12 +582,13 @@ namespace Renderer {
         struct VertexWithColor {
             float x, y, z, w;
             float r, g, b, a;
+            float u, v;
         };
         constexpr VertexWithColor vertices[] = {
-            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0 },
-            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0 },
-            {  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0 },
-            { -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0 },
+            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0, 0.0, 1.0 },
+            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0, 1.0, 1.0 },
+            {  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0, 1.0, 0.0 },
+            { -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0, 0.0, 0.0 },
 
             //{  1.0f, -1.0f, -1.0f, 1.0f, 0.f, 0.f, 0.f, 1.0f },
             //{ -1.0f, -1.0f, -1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
@@ -872,6 +873,39 @@ namespace Renderer {
         destroyFn(g_vsModule);
     }
 
+    VkSampler g_sampler = VK_NULL_HANDLE;
+    bool CreateSampler() {
+        VkSamplerCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        info.magFilter = VK_FILTER_LINEAR;
+        info.minFilter = VK_FILTER_LINEAR;
+        info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        info.anisotropyEnable = VK_TRUE;
+        info.maxAnisotropy = 16;
+        info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        info.unnormalizedCoordinates = VK_FALSE;
+        info.compareEnable = VK_FALSE;
+        info.compareOp = VK_COMPARE_OP_ALWAYS;
+        info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        info.mipLodBias = 0.0f;
+        info.minLod = 0.0f;
+        info.maxLod = std::numeric_limits<float>::max();
+
+        if(VK_SUCCESS != vkCreateSampler(g_device.device, &info, Allocator::CPU(), &g_sampler)) {
+            return false;
+        }
+        return true;
+    }
+
+    void DestroySampler() {
+        if(VK_NULL_HANDLE != g_sampler) {
+            vkDestroySampler(g_device.device, g_sampler, Allocator::CPU());
+            g_sampler = VK_NULL_HANDLE;
+	    }
+    }
+
     struct VkTexture {
         VkImage       image = VK_NULL_HANDLE;
         VmaAllocation allocation = VK_NULL_HANDLE;
@@ -995,6 +1029,20 @@ namespace Renderer {
 
         vkFreeCommandBuffers(g_device.device, g_gpuCmdPool, 1, &immediatelyCmdBuf);
 
+        VkImageViewCreateInfo imageViewInfo{};
+        imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageViewInfo.subresourceRange.baseMipLevel = 0;
+        imageViewInfo.subresourceRange.levelCount = 1;
+        imageViewInfo.subresourceRange.baseArrayLayer = 0;
+        imageViewInfo.subresourceRange.layerCount = 1;
+        imageViewInfo.image = g_texture.image;
+        if(VK_SUCCESS != vkCreateImageView(g_device.device, &imageViewInfo, Allocator::CPU(), &g_texture.view)) {
+            return false;
+        }
+
         return true;
     }
 
@@ -1009,16 +1057,21 @@ namespace Renderer {
     using VkDescriptorSetLayouts = std::vector<VkDescriptorSetLayout>;
     VkDescriptorSetLayouts g_descriptorSetLayouts;
     bool CreateDescriptorSetLayouts() {
-        VkDescriptorSetLayoutBinding binding{};
-        binding.binding = 0;
-        binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        binding.descriptorCount = 1;
-        binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        VkDescriptorSetLayoutBinding bindings[2]{};
+        bindings[0].binding = 0;
+        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        bindings[0].descriptorCount = 1;
+        bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+        bindings[1].binding = 1;
+        bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings[1].descriptorCount = 1;
+        bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         VkDescriptorSetLayoutCreateInfo info{};
         info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        info.bindingCount = 1;
-        info.pBindings = &binding;
+        info.bindingCount = _countof(bindings);
+        info.pBindings = bindings;
 
         g_descriptorSetLayouts.resize(1);
         if(VK_SUCCESS != vkCreateDescriptorSetLayout(g_device.device, &info, Allocator::CPU(), g_descriptorSetLayouts.data())) {
@@ -1072,6 +1125,7 @@ namespace Renderer {
     bool CreateDescriptorPool() {
         std::vector<VkDescriptorPoolSize> descriptorSizeInfos;
         descriptorSizeInfos.emplace_back(VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 });
+        descriptorSizeInfos.emplace_back(VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 });
 
         VkDescriptorPoolCreateInfo info{};
         info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1107,17 +1161,26 @@ namespace Renderer {
         }
 
         const VkDescriptorBufferInfo ubInfo{ g_ub.buffer, 0, sizeof(glm::mat4) };
+        const VkDescriptorImageInfo imageInfo{ g_sampler, g_texture.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 
-        VkWriteDescriptorSet write{};
-        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write.dstSet = g_descriptorSet;
-        write.descriptorCount = 1;
-        write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        write.pBufferInfo = &ubInfo;
-        write.dstArrayElement = 0;
-        write.dstBinding = 0;
+        VkWriteDescriptorSet writes[2]{};
+        writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writes[0].dstSet = g_descriptorSet;
+        writes[0].descriptorCount = 1;
+        writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        writes[0].pBufferInfo = &ubInfo;
+        writes[0].dstArrayElement = 0;
+        writes[0].dstBinding = 0;
 
-        vkUpdateDescriptorSets(g_device.device, 1, &write, 0, nullptr);
+        writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writes[1].dstSet = g_descriptorSet;
+        writes[1].dstBinding = 1;
+        writes[1].descriptorCount = 1;
+        writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        writes[1].pImageInfo = &imageInfo;
+        writes[1].dstArrayElement = 0;
+
+        vkUpdateDescriptorSets(g_device.device, _countof(writes), writes, 0, nullptr);
 
         return true;
     }
@@ -1184,6 +1247,7 @@ namespace Renderer {
         struct VertexWithColor {
             float x, y, z, w;
             float r, g, b, a;
+            float u, v;
         };
         constexpr auto vertexStride = sizeof(VertexWithColor);
 
@@ -1192,7 +1256,7 @@ namespace Renderer {
         bindingDescription.stride = vertexStride;
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-        VkVertexInputAttributeDescription attributeDescriptions[2]{};
+        VkVertexInputAttributeDescription attributeDescriptions[3]{};
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -1202,6 +1266,11 @@ namespace Renderer {
         attributeDescriptions[1].location = 1;
         attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attributeDescriptions[1].offset = sizeof(float) * 4;
+
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        attributeDescriptions[2].offset = sizeof(float) * 8;
 
         VkPipelineVertexInputStateCreateInfo vertexInputStateInfo{};
         vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -1508,9 +1577,13 @@ namespace Renderer {
             return false;
         }
 
-        //if(false == CreateTexture(Path::GetResourcePathAnsi() + "images/learning_vulkan.ktx"s)) {
-        //    return false;
-        //}
+        if(false == CreateSampler()) {
+            return false;
+        }
+
+        if(false == CreateTexture(Path::GetResourcePathAnsi() + "images/learning_vulkan.ktx"s)) {
+            return false;
+        }
 
         if(false == CreateDescriptorSetLayouts()) {
             return false;
@@ -1556,6 +1629,7 @@ namespace Renderer {
         DestroyUniformBuffer();
         DestroyDescriptorSetLayouts();
         DestroyTexture();
+        DestroySampler();
         DestroyShaderModules();
         DestroyIndexBuffer();
         DestroyVertexBuffer();
