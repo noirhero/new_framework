@@ -11,9 +11,10 @@ namespace Path {
     std::wstring g_resourcePath;
 
     std::filesystem::path FindResourcePath(std::filesystem::path&& inPath) {
-        inPath += "\\resources";
-        if (std::filesystem::exists(inPath))
-            return inPath;
+        auto checkPath = inPath;
+        checkPath += "\\resources"s;
+        if (std::filesystem::exists(checkPath))
+            return checkPath;
 
         if (false == inPath.has_parent_path())
             return {};
