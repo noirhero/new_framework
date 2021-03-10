@@ -30,16 +30,23 @@
     <ClInclude Include="renderer\allocator_vma.h">
       <Filter>renderer</Filter>
     </ClInclude>
-    <ClInclude Include="util_file.h">
+    <ClInclude Include="renderer\physical.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\surface.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\logical.h" />
+    <ClInclude Include="util\util_file.h">
       <Filter>util</Filter>
     </ClInclude>
-    <ClInclude Include="util_output.h">
+    <ClInclude Include="util\util_output.h">
       <Filter>util</Filter>
     </ClInclude>
-    <ClInclude Include="util_path.h">
+    <ClInclude Include="util\util_path.h">
       <Filter>util</Filter>
     </ClInclude>
-    <ClInclude Include="util_timer.h">
+    <ClInclude Include="util\util_timer.h">
       <Filter>util</Filter>
     </ClInclude>
   </ItemGroup>
@@ -67,16 +74,25 @@
     <ClCompile Include="renderer\allocator_vma.cpp">
       <Filter>renderer</Filter>
     </ClCompile>
-    <ClCompile Include="util_file.cpp">
+    <ClCompile Include="renderer\physical.cpp">
+      <Filter>renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\surface.cpp">
+      <Filter>renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\logical.cpp">
+      <Filter>renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="util\util_file.cpp">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="util_output.cpp">
+    <ClCompile Include="util\util_output.cpp">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="util_path.cpp">
+    <ClCompile Include="util\util_path.cpp">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="util_timer.cpp">
+    <ClCompile Include="util\util_timer.cpp">
       <Filter>util</Filter>
     </ClCompile>
   </ItemGroup>
