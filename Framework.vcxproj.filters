@@ -30,10 +30,18 @@
     <ClInclude Include="renderer\allocator_vma.h">
       <Filter>renderer</Filter>
     </ClInclude>
-    <ClInclude Include="util_output.h" />
-    <ClInclude Include="util_path.h" />
-    <ClInclude Include="util_file.h" />
-    <ClInclude Include="util_timer.h" />
+    <ClInclude Include="util_file.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="util_output.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="util_path.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="util_timer.h">
+      <Filter>util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win_main.cpp">
@@ -59,10 +67,18 @@
     <ClCompile Include="renderer\allocator_vma.cpp">
       <Filter>renderer</Filter>
     </ClCompile>
-    <ClCompile Include="util_output.cpp" />
-    <ClCompile Include="util_path.cpp" />
-    <ClCompile Include="util_file.cpp" />
-    <ClCompile Include="util_timer.cpp" />
+    <ClCompile Include="util_file.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="util_output.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="util_path.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="util_timer.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win32">
@@ -73,6 +89,9 @@
     </Filter>
     <Filter Include="renderer\shaders">
       <UniqueIdentifier>{be964414-f051-4c21-9693-c52a18a18279}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="util">
+      <UniqueIdentifier>{bdef184c-720a-4241-ba28-1c280d518858}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -28,4 +28,5 @@ void main() {
        outColor = colorBlock.mixerValue * color;
 
     outColor = texture(tex, outUV);
+    //outColor = color;
 }

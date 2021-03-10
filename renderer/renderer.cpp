@@ -585,10 +585,10 @@ namespace Renderer {
             float u, v;
         };
         constexpr VertexWithColor vertices[] = {
-            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0, 0.0, 1.0 },
-            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0, 1.0, 1.0 },
-            {  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0, 1.0, 0.0 },
-            { -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0, 0.0, 0.0 },
+            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f },
+            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f },
+            {  0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f },
+            { -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f },
 
             //{  1.0f, -1.0f, -1.0f, 1.0f, 0.f, 0.f, 0.f, 1.0f },
             //{ -1.0f, -1.0f, -1.0f, 1.0f, 1.f, 0.f, 0.f, 1.0f },
@@ -1269,7 +1269,7 @@ namespace Renderer {
 
         attributeDescriptions[2].binding = 0;
         attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
         attributeDescriptions[2].offset = sizeof(float) * 8;
 
         VkPipelineVertexInputStateCreateInfo vertexInputStateInfo{};
@@ -1666,7 +1666,7 @@ namespace Renderer {
         static auto rotate = 0.0f;
         static auto seconds = 0.0f;
         seconds += delta;
-        if (3.0f <= seconds)
+        if (10.0f <= seconds)
             rotate += delta;
 
         const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
