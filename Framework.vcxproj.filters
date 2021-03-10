@@ -36,7 +36,6 @@
     <ClInclude Include="renderer\surface.h">
       <Filter>renderer</Filter>
     </ClInclude>
-    <ClInclude Include="renderer\logical.h" />
     <ClInclude Include="util\util_file.h">
       <Filter>util</Filter>
     </ClInclude>
@@ -48,6 +47,12 @@
     </ClInclude>
     <ClInclude Include="util\util_timer.h">
       <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\logical.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\renderer_pch.h">
+      <Filter>renderer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

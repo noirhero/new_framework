@@ -8,3 +8,17 @@ namespace Logical::Device {
     bool     Create();
     void     Destroy();
 }
+
+namespace Logical {
+    class CommandPool {
+    public:
+        CommandPool(VkCommandPool cmdPool) : _handle(cmdPool) {}
+        ~CommandPool();
+
+    private:
+        VkCommandPool _handle = VK_NULL_HANDLE;
+    };
+    using CommandPoolUPtr = std::unique_ptr<CommandPool>;
+
+    CommandPoolUPtr AllocateGPUCommandPool();
+}

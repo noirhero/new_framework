@@ -79,20 +79,10 @@ namespace Physical {
             return false;
         }
 
-        VkApplicationInfo appInfo{};
-        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.apiVersion = Util::GetAPIVersion();
-
-        VkInstanceCreateInfo instInfo{};
-        instInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        instInfo.pApplicationInfo = &appInfo;
-
         std::vector<const char*> enableLayerNames = {
             "VK_LAYER_LUNARG_api_dump",
             "VK_LAYER_KHRONOS_validation"
         };
-        instInfo.enabledLayerCount = static_cast<uint32_t>(enableLayerNames.size());
-        instInfo.ppEnabledLayerNames = enableLayerNames.data();
 
         std::vector<const char*> enableExtensionNames = {
             VK_KHR_SURFACE_EXTENSION_NAME,
@@ -107,6 +97,16 @@ namespace Physical {
             }
         }
 #endif
+
+        VkApplicationInfo appInfo{};
+        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+        appInfo.apiVersion = Util::GetAPIVersion();
+
+        VkInstanceCreateInfo instInfo{};
+        instInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        instInfo.pApplicationInfo = &appInfo;
+        instInfo.enabledLayerCount = static_cast<uint32_t>(enableLayerNames.size());
+        instInfo.ppEnabledLayerNames = enableLayerNames.data();
         instInfo.enabledExtensionCount = static_cast<uint32_t>(enableExtensionNames.size());
         instInfo.ppEnabledExtensionNames = enableExtensionNames.data();
 

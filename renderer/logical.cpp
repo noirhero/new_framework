@@ -68,4 +68,38 @@ namespace Logical {
 
         g_gpuInfo = {};
     }
+
+    // Command pool
+    CommandPool::~CommandPool() {
+        if(VK_NULL_HANDLE != _handle) {
+            vkDestroyCommandPool(g_device, _handle, Allocator::CPU());
+    	}
+    }
+
+    CommandPoolUPtr AllocateGPUCommandPool() {
+        VkCommandPoolCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        info.queueFamilyIndex = g_gpuInfo.gpuQueueIndex;
+        info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+        VkCommandPool handle = VK_NULL_HANDLE;
+        if (VK_SUCCESS != vkCreateCommandPool(g_device, &info, Allocator::CPU(), &handle)) {
+            return nullptr;
+        }
+
+        return std::make_unique<CommandPool>(handle);
+    }
+
+    //std::unique_ptr<CommandPool> AllocateGPU() {
+    //    VkCommandPoolCreateInfo info{};
+    //    info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    //    info.queueFamilyIndex = g_gpuInfo.gpuQueueIndex;
+    //    info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+    //    if (VK_SUCCESS != vkCreateCommandPool(g_device.device, &info, Allocator::CPU(), &g_gpuCmdPool)) {
+    //        return false;
+    //    }
+
+    //    return true;
+    //}
 }

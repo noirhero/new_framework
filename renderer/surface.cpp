@@ -3,9 +3,12 @@
 #include "../pch.h"
 #include "surface.h"
 
-#include "../win_handle.h"
 #include "allocator_cpu.h"
 #include "physical.h"
+
+#if defined(_WINDOWS)
+#include "../win_handle.h"
+#endif
 
 namespace Surface {
     using namespace Renderer;
