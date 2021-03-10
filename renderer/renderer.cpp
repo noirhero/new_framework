@@ -1052,6 +1052,11 @@ namespace Renderer {
             g_texture.image = VK_NULL_HANDLE;
             g_texture.allocation = VK_NULL_HANDLE;
         }
+
+        if(VK_NULL_HANDLE != g_texture.view) {
+            vkDestroyImageView(g_device.device, g_texture.view, Allocator::CPU());
+            g_texture.view = VK_NULL_HANDLE;
+        }
     }
 
     using VkDescriptorSetLayouts = std::vector<VkDescriptorSetLayout>;
