@@ -33,8 +33,8 @@ int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR 
         return 0;
     }
 
-    constexpr auto width = 640;
-    constexpr auto height = 480;
+    constexpr auto width = 100;
+    constexpr auto height = 100;
     constexpr auto winStyle = WS_OVERLAPPED | WS_SYSMENU | WS_THICKFRAME;
 
     RECT winRect = { 0, 0, width, height };

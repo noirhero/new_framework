@@ -125,11 +125,16 @@ namespace Renderer {
             VK_EXT_memory_priority_enabled = false;
     }
 
-    uint32_t g_GraphicsQueueFamilyIndex = std::numeric_limits<uint32_t>::max();
-    uint32_t g_PresentQueueFamilyIndex = std::numeric_limits<uint32_t>::max();
-    uint32_t g_SparseBindingQueueFamilyIndex = std::numeric_limits<uint32_t>::max();
+    constexpr auto g_InvalidQueueIndex = std::numeric_limits<uint32_t>::max();
+    uint32_t g_GraphicsQueueFamilyIndex = g_InvalidQueueIndex;
+    uint32_t g_PresentQueueFamilyIndex = g_InvalidQueueIndex;
+    uint32_t g_SparseBindingQueueFamilyIndex = g_InvalidQueueIndex;
 
     bool Util::CheckToQueueFamilyProperties(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<VkQueueFamilyProperties>& properties) {
+        g_GraphicsQueueFamilyIndex = g_InvalidQueueIndex;
+        g_PresentQueueFamilyIndex = g_InvalidQueueIndex;
+        g_SparseBindingQueueFamilyIndex = g_InvalidQueueIndex;
+
         uint32_t index = 0;
         for (const auto& property : properties) {
             if (0 == property.queueCount) {
@@ -152,18 +157,18 @@ namespace Renderer {
                 }
             }
 
-            if (g_SparseBindingEnabled && std::numeric_limits<uint32_t>::max() != g_SparseBindingQueueFamilyIndex &&
+            if (g_SparseBindingEnabled && g_InvalidQueueIndex != g_SparseBindingQueueFamilyIndex &&
                 0 != (VK_QUEUE_SPARSE_BINDING_BIT & queueFlags)) {
                 g_SparseBindingQueueFamilyIndex = index;
             }
 
             ++index;
         }
-        if (std::numeric_limits<uint32_t>::max() == g_GraphicsQueueFamilyIndex) {
+        if (g_InvalidQueueIndex == g_GraphicsQueueFamilyIndex) {
             return false;
         }
 
-        g_SparseBindingEnabled = g_SparseBindingEnabled && std::numeric_limits<uint32_t>::max() != g_SparseBindingQueueFamilyIndex;
+        g_SparseBindingEnabled = g_SparseBindingEnabled && g_InvalidQueueIndex != g_SparseBindingQueueFamilyIndex;
 
         return true;
     }
@@ -236,6 +241,14 @@ namespace Renderer {
 
     uint32_t Util::GetPresentQueueIndex() {
         return g_PresentQueueFamilyIndex;
+    }
+
+    uint32_t Util::GetSparesQueueIndex() {
+        return g_SparseBindingQueueFamilyIndex;
+    }
+
+    bool Util::IsValidQueue(uint32_t queueIndex) {
+        return g_InvalidQueueIndex != queueIndex;
     }
 
     void Util::DecorateVMAAllocateInformation(VmaAllocatorCreateInfo& info) {

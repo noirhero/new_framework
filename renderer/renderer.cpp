@@ -36,11 +36,24 @@ namespace Renderer {
         VkLayerPropArray layers(layerCount);
         vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
 
-        if (layers.end() == std::find_if(layers.begin(), layers.end(), [](const VkLayerProperties& layerProperty)->bool {
+        const auto findKhronosLayerFn = [](const VkLayerProperties& layerProperty)->bool {
             return "VK_LAYER_KHRONOS_validation"s == layerProperty.layerName;
-            })) {
+        };
+        if (layers.end() == std::find_if(layers.begin(), layers.end(), findKhronosLayerFn)) {
             Output::Print("This hardware not support VULKAN.\n"s);
             return false;
+        }
+
+        { // Check to common extensions
+            uint32_t extensionCount = 0;
+            vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+            
+            VkExtensionPropArray extensions(extensionCount);
+            vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+            for (const auto& extensionProperties : extensions) {
+                Util::CheckToInstanceExtensionProperties(extensionProperties);
+            }
         }
 
         for (const auto& layer : layers) {
@@ -65,7 +78,6 @@ namespace Renderer {
     }
 
     VkInstance g_instance = VK_NULL_HANDLE;
-
     bool CreateInstance() {
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -113,7 +125,6 @@ namespace Renderer {
     }
 
     VkSurfaceKHR g_surface = VK_NULL_HANDLE;
-
     bool CreateSurface() {
         VkWin32SurfaceCreateInfoKHR surfaceInfo{};
         surfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -135,10 +146,13 @@ namespace Renderer {
     }
 
     struct PhysicalDevice {
-        VkPhysicalDevice                 device{ VK_NULL_HANDLE };
+        VkPhysicalDevice                 handle{ VK_NULL_HANDLE };
         VkPhysicalDeviceProperties       property{};
         VkPhysicalDeviceMemoryProperties memoryProperty{};
         VkQueueFamilyPropArray           queueFamilyProperties;
+        uint32_t                         gpuQueueIndex = std::numeric_limits<uint32_t>::max();
+        uint32_t                         presentQueueIndex = std::numeric_limits<uint32_t>::max();
+        uint32_t                         sparesQueueIndex = std::numeric_limits<uint32_t>::max();
     };
     using PhysicalDevices = std::vector<PhysicalDevice>;
     PhysicalDevices g_physicalDevices;
@@ -151,14 +165,6 @@ namespace Renderer {
         }
         VkPhysicalDevices devices(deviceCount);
         vkEnumeratePhysicalDevices(g_instance, &deviceCount, devices.data());
-
-        uint32_t layerCount = 0;
-        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-        if (0 == layerCount) {
-            return;
-        }
-        VkLayerPropArray layers(layerCount);
-        vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
 
         for (auto* device : devices) {
             uint32_t extensionCount = 0;
@@ -189,34 +195,38 @@ namespace Renderer {
                 vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, physicalDevice.queueFamilyProperties.data());
             }
 
-            Util::CheckToQueueFamilyProperties(device, g_surface, physicalDevice.queueFamilyProperties);
+            if(Util::CheckToQueueFamilyProperties(device, g_surface, physicalDevice.queueFamilyProperties)) {
+                physicalDevice.gpuQueueIndex = Util::GetGPUQueueIndex();
+                physicalDevice.presentQueueIndex = Util::GetPresentQueueIndex();
+                physicalDevice.sparesQueueIndex = Util::GetSparesQueueIndex();
+            }
         }
     }
 
     struct Device {
         VkDevice         device{ VK_NULL_HANDLE };
-        VkPhysicalDevice gpuDevice{ VK_NULL_HANDLE };
-        uint32_t         gpuQueueIndex{ 0 };
+        PhysicalDevice   gpuDevice{};
+
         VkQueue          gpuQueue{ VK_NULL_HANDLE };
         VkQueue          presentQueue{ VK_NULL_HANDLE };
     };
     Device g_device;
 
-    std::tuple<VkPhysicalDevice, uint32_t> FindGraphicsDeviceAndQueueIndex() {
+    PhysicalDevice FindGraphicsDevice() {
         for (const auto& physicalDevice : g_physicalDevices) {
-            uint32_t queueIndex = 0;
-            for (const auto& queueProperty : physicalDevice.queueFamilyProperties) {
-                if (VK_QUEUE_GRAPHICS_BIT & queueProperty.queueFlags) {
-                    return { physicalDevice.device, queueIndex };
-                }
-                ++queueIndex;
+            if(0 <= physicalDevice.gpuQueueIndex) {
+                return physicalDevice;
             }
         }
         return {};
     }
 
     bool CreateDevice() {
-        auto [gpuDevice, gpuQueueIndex] = FindGraphicsDeviceAndQueueIndex();
+        auto physicalDevice = FindGraphicsDevice();
+        if(false == Util::IsValidQueue(physicalDevice.gpuQueueIndex) || false == Util::IsValidQueue(physicalDevice.presentQueueIndex)) {
+            // Todo : Spare queue index.
+            return false;
+    	}
 
         VkDeviceCreateInfo deviceInfo{};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -225,7 +235,7 @@ namespace Renderer {
         VkDeviceQueueCreateInfo queueInfo{};
         queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueInfo.queueCount = 1;
-        queueInfo.queueFamilyIndex = gpuQueueIndex;
+        queueInfo.queueFamilyIndex = physicalDevice.gpuQueueIndex;
         queueInfo.pQueuePriorities = queuePriority;
 
         deviceInfo.queueCreateInfoCount = 1;
@@ -243,17 +253,17 @@ namespace Renderer {
         deviceInfo.ppEnabledExtensionNames = extensionNames.data();
 
         VkDevice device = VK_NULL_HANDLE;
-        if (VK_SUCCESS != vkCreateDevice(gpuDevice, &deviceInfo, Allocator::CPU(), &device)) {
+        if (VK_SUCCESS != vkCreateDevice(physicalDevice.handle, &deviceInfo, Allocator::CPU(), &device)) {
             return false;
         }
 
         VkQueue gpuQueue = VK_NULL_HANDLE;
-        vkGetDeviceQueue(device, gpuQueueIndex, 0, &gpuQueue);
+        vkGetDeviceQueue(device, physicalDevice.gpuQueueIndex, 0, &gpuQueue);
 
         VkQueue presentQueue = VK_NULL_HANDLE;
-        vkGetDeviceQueue(device, Util::GetPresentQueueIndex(), 0, &presentQueue);
+        vkGetDeviceQueue(device, physicalDevice.presentQueueIndex, 0, &presentQueue);
 
-        g_device = { device, gpuDevice, gpuQueueIndex, gpuQueue, presentQueue };
+        g_device = { device, physicalDevice, gpuQueue, presentQueue };
 
         return true;
     }
@@ -266,11 +276,10 @@ namespace Renderer {
     }
 
     VkCommandPool g_gpuCmdPool = VK_NULL_HANDLE;
-
     bool CreateGPUCommandPool() {
         VkCommandPoolCreateInfo info{};
         info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        info.queueFamilyIndex = g_device.gpuQueueIndex;
+        info.queueFamilyIndex = g_device.gpuDevice.gpuQueueIndex;
         info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
         if (VK_SUCCESS != vkCreateCommandPool(g_device.device, &info, Allocator::CPU(), &g_gpuCmdPool)) {
@@ -314,14 +323,14 @@ namespace Renderer {
         // Format.
         auto* getSurfaceFormatFn = PFN_vkGetPhysicalDeviceSurfaceFormatsKHR(vkGetInstanceProcAddr(g_instance, "vkGetPhysicalDeviceSurfaceFormatsKHR"));
         uint32_t formatCount = 0;
-        getSurfaceFormatFn(g_device.gpuDevice, g_surface, &formatCount, nullptr);
+        getSurfaceFormatFn(g_device.gpuDevice.handle, g_surface, &formatCount, nullptr);
         if (0 == formatCount) {
             return false;
         }
 
         auto& formats = g_swapchain.supportFormats;
         formats.resize(formatCount);
-        getSurfaceFormatFn(g_device.gpuDevice, g_surface, &formatCount, formats.data());
+        getSurfaceFormatFn(g_device.gpuDevice.handle, g_surface, &formatCount, formats.data());
 
         if (1 == formatCount && VK_FORMAT_UNDEFINED == formats[0].format) {
             g_swapchain.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -332,7 +341,7 @@ namespace Renderer {
 
         // Capabilities.
         auto* getSurfaceCapabilities = PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkGetInstanceProcAddr(g_instance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"));
-        getSurfaceCapabilities(g_device.gpuDevice, g_surface, &g_swapchain.capabilities);
+        getSurfaceCapabilities(g_device.gpuDevice.handle, g_surface, &g_swapchain.capabilities);
 
         if (std::numeric_limits<uint32_t>::max() == g_swapchain.capabilities.currentExtent.width) {
             RECT winRect{};
@@ -361,14 +370,14 @@ namespace Renderer {
         // Preset mode.
         auto* getSurfacePresendModeFn = PFN_vkGetPhysicalDeviceSurfacePresentModesKHR(vkGetInstanceProcAddr(g_instance, "vkGetPhysicalDeviceSurfacePresentModesKHR"));
         uint32_t presentModeCount = 0;
-        getSurfacePresendModeFn(g_device.gpuDevice, g_surface, &presentModeCount, nullptr);
+        getSurfacePresendModeFn(g_device.gpuDevice.handle, g_surface, &presentModeCount, nullptr);
         if (0 == presentModeCount) {
             return false;
         }
 
         auto& presentModes = g_swapchain.presentModes;
         presentModes.resize(presentModeCount);
-        getSurfacePresendModeFn(g_device.gpuDevice, g_surface, &presentModeCount, presentModes.data());
+        getSurfacePresendModeFn(g_device.gpuDevice.handle, g_surface, &presentModeCount, presentModes.data());
 
         for (const auto supportPresentMode : presentModes) {
             if (VK_PRESENT_MODE_FIFO_RELAXED_KHR == supportPresentMode) {
@@ -399,8 +408,8 @@ namespace Renderer {
         swapchainInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
         swapchainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-        const uint32_t queueFamilyIndices[] = { Util::GetGPUQueueIndex(), Util::GetPresentQueueIndex() };
-        if (Util::GetGPUQueueIndex() != Util::GetPresentQueueIndex()) {
+        const uint32_t queueFamilyIndices[] = { g_device.gpuDevice.gpuQueueIndex, g_device.gpuDevice.presentQueueIndex };
+        if (queueFamilyIndices[0] != queueFamilyIndices[1]) {
             swapchainInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             swapchainInfo.queueFamilyIndexCount = 2;
             swapchainInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -463,7 +472,7 @@ namespace Renderer {
         depthInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
         VkFormatProperties depthFormatProperties{};
-        vkGetPhysicalDeviceFormatProperties(g_device.gpuDevice, depthInfo.format, &depthFormatProperties);
+        vkGetPhysicalDeviceFormatProperties(g_device.gpuDevice.handle, depthInfo.format, &depthFormatProperties);
 
         if (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT & depthFormatProperties.optimalTilingFeatures) {
             depthInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -1554,7 +1563,7 @@ namespace Renderer {
             return false;
         }
 
-        if (false == Allocator::CreateVMA(g_instance, g_device.gpuDevice, g_device.device)) {
+        if (false == Allocator::CreateVMA(g_instance, g_device.gpuDevice.handle, g_device.device)) {
             return false;
         }
 

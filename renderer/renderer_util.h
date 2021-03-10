@@ -7,12 +7,16 @@ namespace Renderer {
         using ConstCharPtrs = std::vector<const char*>;
 
         uint32_t      GetAPIVersion();
-        bool          IsAPIVersion1Upper();
 
         void          CheckToInstanceExtensionProperties(const VkExtensionProperties& properties);
         void          CheckToPhysicalDeviceExtensionProperties(const VkExtensionProperties& properties);
         void          CheckToPhysicalDeviceFeatures(VkPhysicalDevice device);
+
         bool          CheckToQueueFamilyProperties(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<VkQueueFamilyProperties>& properties);
+        uint32_t      GetGPUQueueIndex();
+        uint32_t      GetPresentQueueIndex();
+        uint32_t      GetSparesQueueIndex();
+        bool          IsValidQueue(uint32_t queueIndex);
 
         ConstCharPtrs GetEnableDeviceExtensionNames();
         void          DecorateDeviceFeatures(
@@ -20,9 +24,6 @@ namespace Renderer {
             VkPhysicalDeviceCoherentMemoryFeaturesAMD& memoryFeatures,
             VkPhysicalDeviceBufferDeviceAddressFeaturesEXT& addressFeatures,
             VkPhysicalDeviceMemoryPriorityFeaturesEXT& memPriorityFeatures);
-
-        uint32_t      GetGPUQueueIndex();
-        uint32_t      GetPresentQueueIndex();
 
         void          DecorateVMAAllocateInformation(VmaAllocatorCreateInfo& info);
 
