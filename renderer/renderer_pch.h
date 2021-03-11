@@ -6,6 +6,8 @@
 #include "debugger.h"
 #include "surface.h"
 #include "logical.h"
+#include "render.h"
+#include "shader.h"
 
 #include "allocator_cpu.h"
 #include "allocator_vma.h"

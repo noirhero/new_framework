@@ -172,10 +172,12 @@
     <ClInclude Include="renderer\debugger.h" />
     <ClInclude Include="renderer\logical.h" />
     <ClInclude Include="renderer\physical.h" />
+    <ClInclude Include="renderer\render.h" />
     <ClInclude Include="Renderer\renderer.h" />
     <ClInclude Include="Renderer\renderer_common.h" />
     <ClInclude Include="renderer\renderer_pch.h" />
     <ClInclude Include="renderer\renderer_util.h" />
+    <ClInclude Include="renderer\shader.h" />
     <ClInclude Include="renderer\surface.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
@@ -192,8 +194,10 @@
     <ClCompile Include="renderer\debugger.cpp" />
     <ClCompile Include="renderer\logical.cpp" />
     <ClCompile Include="renderer\physical.cpp" />
+    <ClCompile Include="renderer\render.cpp" />
     <ClCompile Include="Renderer\renderer.cpp" />
     <ClCompile Include="renderer\renderer_util.cpp" />
+    <ClCompile Include="renderer\shader.cpp" />
     <ClCompile Include="renderer\surface.cpp" />
     <ClCompile Include="util\util_file.cpp" />
     <ClCompile Include="util\util_output.cpp" />
