@@ -16,6 +16,7 @@
 #include <string>
 #include <filesystem>
 #include <atomic>
+#include <span>
 using namespace std::string_literals;
 
 #include "Resource.h"

@@ -52,6 +52,8 @@ namespace Descriptor {
         Layout(VkDescriptorSetLayout handle, PoolUPtr&& pool) : _handle(handle), _pool(std::move(pool)) {}
         ~Layout();
 
+        VkDescriptorSetLayout Get() const noexcept { return _handle; }
+
         void                  UpdateBegin();
         void                  AddUpdate(const Image::Sampler& sampler, const Image::Dimension2& image);
         void                  AddUpdate(const Buffer::Uniform& uniform);

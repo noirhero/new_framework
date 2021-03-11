@@ -2,8 +2,8 @@
 
 #pragma once
 
-namespace Descriptor {
-    class Layout;
+namespace Logical{
+    class CommandPool;
 }
 
 namespace Buffer {
@@ -23,4 +23,21 @@ namespace Buffer {
     using UniformUPtr = std::unique_ptr<Uniform>;
 
     UniformUPtr CreateSimpleUniformBuffer(VkDeviceSize size);
+}
+
+namespace Buffer {
+    class Object {
+    public:
+        Object(VkBuffer handle, VmaAllocation alloc) : _handle(handle), _alloc(alloc) {}
+        ~Object();
+
+        VkBuffer      Get() const noexcept { return _handle; }
+
+    private:
+        VkBuffer      _handle = VK_NULL_HANDLE;
+        VmaAllocation _alloc = VK_NULL_HANDLE;
+    };
+    using ObjectUPtr = std::unique_ptr<Object>;
+
+    ObjectUPtr CreateObject(std::span<int64_t>&& mappedData, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, Logical::CommandPool& cmdPool);
 }

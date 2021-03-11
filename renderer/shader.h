@@ -8,6 +8,8 @@ namespace Shader {
         Module(VkShaderModule handle) : _handle(handle) {}
         ~Module();
 
+        VkShaderModule Get() const noexcept { return _handle; }
+
     private:
         VkShaderModule _handle = VK_NULL_HANDLE;
     };

@@ -61,12 +61,16 @@ namespace Logical {
         CommandPool(VkCommandPool cmdPool) : _handle(cmdPool) {}
         ~CommandPool();
 
-        VkCommandBuffer   ImmediatelyBegin();
-        void              ImmediatelyEndAndSubmit();
+        VkCommandBuffer              ImmediatelyBegin();
+        void                         ImmediatelyEndAndSubmit();
+
+        std::vector<VkCommandBuffer> GetSwapChainFrameCommandBuffers();
 
     private:
-        VkCommandPool     _handle = VK_NULL_HANDLE;
-        CommandBufferUPtr _immediatelyCmdBuf;
+        VkCommandPool                _handle = VK_NULL_HANDLE;
+
+        CommandBufferUPtr            _immediatelyCmdBuf;
+        std::vector<VkCommandBuffer> _swapChainFrameCmdBuffers;
     };
     using CommandPoolUPtr = std::unique_ptr<CommandPool>;
 

@@ -324,6 +324,10 @@ namespace Logical {
     CommandPool::~CommandPool() {
         _immediatelyCmdBuf.reset();
 
+        for (auto* cmdBuf : _swapChainFrameCmdBuffers) {
+            vkFreeCommandBuffers(g_device, _handle, 1, &cmdBuf);
+        }
+
         if(VK_NULL_HANDLE != _handle) {
             vkDestroyCommandPool(g_device, _handle, Allocator::CPU());
     	}
@@ -366,6 +370,24 @@ namespace Logical {
 
         vkQueueSubmit(g_gpuQueue, 1, &submitInfo, VK_NULL_HANDLE);
         vkQueueWaitIdle(g_gpuQueue);
+    }
+
+    std::vector<VkCommandBuffer> CommandPool::GetSwapChainFrameCommandBuffers() {
+        if (_swapChainFrameCmdBuffers.empty()) {
+            for (decltype(g_swapChain.imageCount) i = 0; i < g_swapChain.imageCount; ++i) {
+                VkCommandBufferAllocateInfo cmdInfo{};
+                cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+                cmdInfo.commandPool = _handle;
+                cmdInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+                cmdInfo.commandBufferCount = 1;
+
+                VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
+                VK_CHECK(vkAllocateCommandBuffers(g_device, &cmdInfo, &cmdBuffer));
+                _swapChainFrameCmdBuffers.emplace_back(cmdBuffer);
+            }
+        }
+
+        return _swapChainFrameCmdBuffers;
     }
 
     CommandPoolUPtr AllocateGPUCommandPool() {

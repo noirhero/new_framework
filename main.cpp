@@ -15,9 +15,13 @@ namespace Main {
 
     Image::SamplerUPtr        g_sampler;
     Image::Dimension2UPtr     g_texture;
-    Buffer::UniformUPtr g_ub;
+    Buffer::UniformUPtr       g_ub;
 
     Descriptor::LayoutUPtr   g_descLayout;
+    Render::PipelineUPtr     g_pipeline;
+
+    Buffer::ObjectUPtr       g_vb;
+    Buffer::ObjectUPtr       g_ib;
 
     void Resize(uint32_t /*width*/, uint32_t /*height*/) {
         //Renderer::Resize(width, height);
@@ -61,6 +65,32 @@ namespace Main {
         g_descLayout->AddUpdate(*g_sampler, *g_texture);
         g_descLayout->UpdateImmediately();
 
+        g_pipeline = Render::CreateSimplePipeline(*g_descLayout, *g_vs, *g_fs, *g_renderPass);
+
+        struct VertexWithColor {
+            float x, y, z, w;
+            float r, g, b, a;
+            float u, v;
+        };
+        constexpr VertexWithColor vertices[] = {
+            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f },
+            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f },
+            {  0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f },
+            { -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f },
+        };
+        g_vb = Buffer::CreateObject(
+            { (int64_t*)vertices, _countof(vertices) * sizeof(VertexWithColor) }, 
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 
+            *g_gpuCmdPool
+        );
+
+        constexpr uint16_t indices[] = { 0, 1, 3, 3, 1, 2 };
+        g_ib = Buffer::CreateObject(
+            { (int64_t*)indices, _countof(indices) * sizeof(uint16_t) },
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
+            *g_gpuCmdPool
+        );
+
         //if (false == Renderer::Initialize()) {
         //    return false;
         //}
@@ -74,6 +104,9 @@ namespace Main {
     }
 
     void Finalize() {
+        g_ib.reset();
+        g_vb.reset();
+        g_pipeline.reset();
         g_descLayout.reset();
         g_ub.reset();
         g_texture.reset();
