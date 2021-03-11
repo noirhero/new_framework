@@ -15,8 +15,6 @@ namespace Renderer {
     using VkExtensionPropArray = std::vector<VkExtensionProperties>;
     using VkPhysicalDevices = std::vector<VkPhysicalDevice>;
     using VkQueueFamilyPropArray = std::vector<VkQueueFamilyProperties>;
-    using VkImages = std::vector<VkImage>;
-    using VkImageViews = std::vector<VkImageView>;
 
     struct InstanceLayer {
         VkLayerProperties    property{};

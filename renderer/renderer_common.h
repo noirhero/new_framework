@@ -23,3 +23,8 @@
 #else
 #define VK_CHECK(result) result;
 #endif
+
+using VkExtensionPropertyArray     = std::vector<VkExtensionProperties>;
+using VkQueueFamilyPropertiesArray = std::vector<VkQueueFamilyProperties>;
+using VkImages                     = std::vector<VkImage>;
+using VkImageViews                 = std::vector<VkImageView>;

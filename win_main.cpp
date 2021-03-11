@@ -33,12 +33,11 @@ int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR 
         return 0;
     }
 
-    constexpr auto width = 100;
-    constexpr auto height = 100;
-    constexpr auto winStyle = WS_OVERLAPPED | WS_SYSMENU | WS_THICKFRAME;
+    constexpr auto width = 150;
+    constexpr auto height = 150;
 
     RECT winRect = { 0, 0, width, height };
-    AdjustWindowRect(&winRect, winStyle, FALSE);
+    AdjustWindowRect(&winRect, WS_OVERLAPPEDWINDOW, FALSE);
     const auto w = winRect.right - winRect.left;
     const auto h = winRect.bottom - winRect.top;
 
@@ -47,17 +46,16 @@ int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR 
     const auto x = screenWidth / 2 - w / 2;
     const auto y = screenHeight / 2 - h / 2;
 
-    HWND winHandle = CreateWindowW(className, className, winStyle, x, y, w, h, nullptr, nullptr, winInstance, nullptr);
+    constexpr auto winStyle = WS_OVERLAPPED | WS_SYSMENU | WS_THICKFRAME;
+    auto* winHandle = CreateWindowW(className, className, winStyle, x, y, w, h, nullptr, nullptr, winInstance, nullptr);
     if (nullptr == winHandle) {
         return 0;
     }
-
     ShowWindow(winHandle, cmdShow);
     UpdateWindow(winHandle);
+
     Win::Initialize(winInstance, winHandle);
-
     Path::Initialize();
-
     if (false == Main::Initialize()) {
         Main::Finalize();
         return 0;

@@ -7,8 +7,10 @@
 #include "renderer/renderer_pch.h"
 
 namespace Main {
-    void Resize(uint32_t width, uint32_t height) {
-        Renderer::Resize(width, height);
+    Logical::CommandPoolUPtr g_gpuCmdPool;
+
+    void Resize(uint32_t /*width*/, uint32_t /*height*/) {
+        //Renderer::Resize(width, height);
     }
 
     bool Initialize() {
@@ -29,27 +31,34 @@ namespace Main {
             return false;
         }
 
-        auto cmdPool = Logical::AllocateGPUCommandPool();
-
-        if (false == Renderer::Initialize()) {
+        if(false == Logical::SwapChain::Create()) {
             return false;
         }
+
+        g_gpuCmdPool = Logical::AllocateGPUCommandPool();
+
+        //if (false == Renderer::Initialize()) {
+        //    return false;
+        //}
 
         return true;
     }
 
-    bool Run(float delta) {
-        Renderer::Run(delta);
+    bool Run(float /*delta*/) {
+        //Renderer::Run(delta);
         return true;
     }
 
     void Finalize() {
+        g_gpuCmdPool.reset();
+        Logical::SwapChain::Destroy();
         Logical::Device::Destroy();
+        Surface::Destroy();
 #if defined(_DEBUG)
         Renderer::Debugger::Destroy(Physical::Instance::Get());
 #endif
         Physical::Instance::Destroy();
 
-        Renderer::Release();
+        //Renderer::Release();
     }
 }

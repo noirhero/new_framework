@@ -3,6 +3,7 @@
 #include "../pch.h"
 #include "physical.h"
 
+#include "renderer_common.h"
 #include "renderer_util.h"
 #include "allocator_cpu.h"
 
@@ -10,7 +11,6 @@ namespace Physical {
     using namespace Renderer;
 
     // Instance
-    using VkExtensionPropertyArray = std::vector<VkExtensionProperties>;
     struct InstanceLayer {
         VkLayerProperties        property{};
         VkExtensionPropertyArray extensions;
@@ -127,8 +127,6 @@ namespace Physical {
     }
 
     // Device
-    using VkQueueFamilyPropertiesArray = std::vector<VkQueueFamilyProperties>;
-
     struct PhysicalDevice {
         VkPhysicalDevice                 handle{ VK_NULL_HANDLE };
 

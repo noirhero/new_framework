@@ -9,6 +9,11 @@ namespace Logical::Device {
     void     Destroy();
 }
 
+namespace Logical::SwapChain {
+    bool     Create();
+    void     Destroy();
+}
+
 namespace Logical {
     class CommandPool {
     public:
