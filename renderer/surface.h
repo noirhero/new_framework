@@ -10,6 +10,6 @@ namespace Surface {
 
 #if defined(_WINDOWS)
 namespace Surface::Windows {
-    bool         Create();
+    bool Create();
 }
 #endif

@@ -23,6 +23,14 @@ namespace Logical {
         return g_device;
     }
 
+    VkQueue Device::GetGPUQueue() {
+        return g_gpuQueue;
+    }
+
+    VkQueue Device::GetPresentQueue() {
+        return g_presentQueue;
+    }
+
     bool Device::Create() {
         g_gpuInfo = Physical::Device::GetGPU();
         if (false == Util::IsValidQueue(g_gpuInfo.gpuQueueIndex) || false == Util::IsValidQueue(g_gpuInfo.presentQueueIndex)) {
@@ -305,11 +313,59 @@ namespace Logical {
         }
     }
 
+    // Command buffer.
+    CommandBuffer::~CommandBuffer() {
+	    if(VK_NULL_HANDLE != _buffer) {
+            vkFreeCommandBuffers(Logical::Device::Get(), _cmdPool, 1, &_buffer);
+	    }
+    }
+
     // Command pool.
     CommandPool::~CommandPool() {
+        _immediatelyCmdBuf.reset();
+
         if(VK_NULL_HANDLE != _handle) {
             vkDestroyCommandPool(g_device, _handle, Allocator::CPU());
     	}
+    }
+
+    VkCommandBuffer CommandPool::ImmediatelyBegin() {
+        if (nullptr == _immediatelyCmdBuf) {
+            VkCommandBufferAllocateInfo cmdBufInfo{};
+            cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            cmdBufInfo.commandPool = _handle;
+            cmdBufInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            cmdBufInfo.commandBufferCount = 1;
+
+            VkCommandBuffer cmdBuf = VK_NULL_HANDLE;
+            VK_CHECK(vkAllocateCommandBuffers(g_device, &cmdBufInfo, &cmdBuf));
+
+            _immediatelyCmdBuf = std::make_unique<CommandBuffer>(_handle, cmdBuf);
+        }
+
+        VkCommandBufferBeginInfo cmdBufBeginInfo{};
+        cmdBufBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        cmdBufBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        VK_CHECK(vkBeginCommandBuffer(_immediatelyCmdBuf->Get(), &cmdBufBeginInfo));
+
+        return _immediatelyCmdBuf->Get();
+    }
+
+    void CommandPool::ImmediatelyEndAndSubmit() {
+        if (nullptr == _immediatelyCmdBuf) {
+            return;
+        }
+
+        vkEndCommandBuffer(_immediatelyCmdBuf->Get());
+
+        const VkCommandBuffer cmdBuffers[1] = { _immediatelyCmdBuf->Get() };
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = cmdBuffers;
+
+        vkQueueSubmit(g_gpuQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(g_gpuQueue);
     }
 
     CommandPoolUPtr AllocateGPUCommandPool() {

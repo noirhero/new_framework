@@ -53,7 +53,7 @@ namespace Render {
     }
 
     // Simple render pass.
-    SimpleRenderPass::~SimpleRenderPass() {
+    RenderPass::~RenderPass() {
         _frameBuffer.reset();
 
         if (VK_NULL_HANDLE != _handle) {
@@ -61,7 +61,7 @@ namespace Render {
         }
     }
 
-    SimpleRenderPassUPtr AllocateSimpleRenderPass() {
+    RenderPassUPtr CreateSimpleRenderPass() {
         auto* device = Logical::Device::Get();
         auto& swapChain = Logical::SwapChain::Get();
 
@@ -115,6 +115,6 @@ namespace Render {
             return nullptr;
         }
 
-        return std::make_unique<SimpleRenderPass>(renderPass, std::move(swapChainFrameBuffer));
+        return std::make_unique<RenderPass>(renderPass, std::move(swapChainFrameBuffer));
     }
 }

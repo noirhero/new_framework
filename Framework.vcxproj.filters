@@ -60,6 +60,15 @@
     <ClInclude Include="renderer\shader.h">
       <Filter>renderer</Filter>
     </ClInclude>
+    <ClInclude Include="renderer\image.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\descriptor.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\buffer.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win_main.cpp">
@@ -110,6 +119,15 @@
       <Filter>renderer</Filter>
     </ClCompile>
     <ClCompile Include="renderer\shader.cpp">
+      <Filter>renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\image.cpp">
+      <Filter>renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\descriptor.cpp">
+      <Filter>renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\buffer.cpp">
       <Filter>renderer</Filter>
     </ClCompile>
   </ItemGroup>

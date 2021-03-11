@@ -26,6 +26,8 @@ struct SwapChainInfo {
 
 namespace Logical::Device {
     VkDevice Get();
+    VkQueue  GetGPUQueue();
+    VkQueue  GetPresentQueue();
 
     bool     Create();
     void     Destroy();
@@ -39,13 +41,32 @@ namespace Logical::SwapChain {
 }
 
 namespace Logical {
+    class CommandBuffer {
+    public:
+        CommandBuffer(VkCommandPool cmdPool, VkCommandBuffer buffer) : _cmdPool(cmdPool), _buffer(buffer) {}
+        ~CommandBuffer();
+
+        constexpr VkCommandBuffer Get() const noexcept { return _buffer; }
+
+    private:
+        VkCommandPool             _cmdPool = VK_NULL_HANDLE;
+        VkCommandBuffer           _buffer = VK_NULL_HANDLE;
+    };
+    using CommandBufferUPtr = std::unique_ptr<CommandBuffer>;
+}
+
+namespace Logical {
     class CommandPool {
     public:
         CommandPool(VkCommandPool cmdPool) : _handle(cmdPool) {}
         ~CommandPool();
 
+        VkCommandBuffer   ImmediatelyBegin();
+        void              ImmediatelyEndAndSubmit();
+
     private:
-        VkCommandPool _handle = VK_NULL_HANDLE;
+        VkCommandPool     _handle = VK_NULL_HANDLE;
+        CommandBufferUPtr _immediatelyCmdBuf;
     };
     using CommandPoolUPtr = std::unique_ptr<CommandPool>;
 

@@ -7,11 +7,17 @@
 #include "renderer/renderer_pch.h"
 
 namespace Main {
-    Render::SimpleRenderPassUPtr g_renderPass;
-    Logical::CommandPoolUPtr     g_gpuCmdPool;
+    Render::RenderPassUPtr    g_renderPass;
+    Logical::CommandPoolUPtr  g_gpuCmdPool;
 
-    Shader::ModuleUPtr           g_vs;
-    Shader::ModuleUPtr           g_fs;
+    Shader::ModuleUPtr        g_vs;
+    Shader::ModuleUPtr        g_fs;
+
+    Image::SamplerUPtr        g_sampler;
+    Image::Dimension2UPtr     g_texture;
+    Buffer::UniformUPtr g_ub;
+
+    Descriptor::LayoutUPtr   g_descLayout;
 
     void Resize(uint32_t /*width*/, uint32_t /*height*/) {
         //Renderer::Resize(width, height);
@@ -39,11 +45,21 @@ namespace Main {
             return false;
         }
 
-        g_renderPass = Render::AllocateSimpleRenderPass();
+        g_renderPass = Render::CreateSimpleRenderPass();
         g_gpuCmdPool = Logical::AllocateGPUCommandPool();
 
         g_vs = Shader::Create(Path::GetResourcePathAnsi() + "shaders/draw_vert.spv"s);
-        g_fs = Shader::Create(Path::GetResourcePathAnsi() + "shaders/draw_frag.spv"s);;
+        g_fs = Shader::Create(Path::GetResourcePathAnsi() + "shaders/draw_frag.spv"s);
+
+        g_sampler = Image::CreateSimpleLinearSampler();
+        g_texture = Image::CreateSimple2D(Path::GetResourcePathAnsi() + "images/learning_vulkan.ktx"s, *g_gpuCmdPool);
+        g_ub = Buffer::CreateSimpleUniformBuffer(sizeof(glm::mat4));
+
+        g_descLayout = Descriptor::CreateSimpleLayout();
+        g_descLayout->UpdateBegin();
+        g_descLayout->AddUpdate(*g_ub);
+        g_descLayout->AddUpdate(*g_sampler, *g_texture);
+        g_descLayout->UpdateImmediately();
 
         //if (false == Renderer::Initialize()) {
         //    return false;
@@ -58,6 +74,10 @@ namespace Main {
     }
 
     void Finalize() {
+        g_descLayout.reset();
+        g_ub.reset();
+        g_texture.reset();
+        g_sampler.reset();
         g_fs.reset();
         g_vs.reset();
         g_gpuCmdPool.reset();

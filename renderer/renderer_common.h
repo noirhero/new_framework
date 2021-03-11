@@ -29,3 +29,4 @@ using VkQueueFamilyPropertiesArray = std::vector<VkQueueFamilyProperties>;
 using VkImages                     = std::vector<VkImage>;
 using VkImageViews                 = std::vector<VkImageView>;
 using VkFrameBuffers               = std::vector<VkFramebuffer>;
+using VkWriteDescriptorSets        = std::vector<VkWriteDescriptorSet>;

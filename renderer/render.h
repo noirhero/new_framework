@@ -17,16 +17,16 @@ namespace Render {
 }
 
 namespace Render {
-    class SimpleRenderPass {
+    class RenderPass {
     public:
-    	SimpleRenderPass(VkRenderPass handle, SwapChainFrameBufferUPtr frameBuffer) : _handle(handle), _frameBuffer(std::move(frameBuffer)) {}
-        ~SimpleRenderPass();
+    	RenderPass(VkRenderPass handle, SwapChainFrameBufferUPtr frameBuffer) : _handle(handle), _frameBuffer(std::move(frameBuffer)) {}
+        ~RenderPass();
 
     private:
         VkRenderPass             _handle = VK_NULL_HANDLE;
         SwapChainFrameBufferUPtr _frameBuffer;
     };
-    using SimpleRenderPassUPtr = std::unique_ptr<SimpleRenderPass>;
+    using RenderPassUPtr = std::unique_ptr<RenderPass>;
 
-    SimpleRenderPassUPtr AllocateSimpleRenderPass();
+    RenderPassUPtr CreateSimpleRenderPass();
 }
