@@ -44,6 +44,13 @@ namespace Descriptor {
         }
     }
 
+    VkDescriptorSet Layout::GetSet() const noexcept {
+        if (nullptr == _pool) {
+            return VK_NULL_HANDLE;
+        }
+        return _pool->GetSet();
+    }
+
     void Layout::UpdateBegin() {
         _updateInfos.clear();
     }

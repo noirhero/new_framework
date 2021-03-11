@@ -2,6 +2,10 @@
 
 #pragma once
 
+namespace Logical {
+    class CommandPool;
+}
+
 namespace Shader {
     class Module;
 }
@@ -10,11 +14,17 @@ namespace Descriptor {
     class Layout;
 }
 
+namespace Buffer {
+    class Object;
+}
+
 namespace Render {
     class SwapChainFrameBuffer {
     public:
     	SwapChainFrameBuffer(std::vector<VkFramebuffer>&& buffers) : _buffers(std::move(buffers)) {}
         ~SwapChainFrameBuffer();
+
+        std::vector<VkFramebuffer> Get() const noexcept { return _buffers; }
 
     private:
         std::vector<VkFramebuffer> _buffers;
@@ -25,20 +35,21 @@ namespace Render {
 }
 
 namespace Render {
-    class RenderPass {
+    class Pass {
     public:
-    	RenderPass(VkRenderPass handle, SwapChainFrameBufferUPtr frameBuffer) : _handle(handle), _frameBuffer(std::move(frameBuffer)) {}
-        ~RenderPass();
+    	Pass(VkRenderPass handle, SwapChainFrameBufferUPtr frameBuffer) : _handle(handle), _frameBuffer(std::move(frameBuffer)) {}
+        ~Pass();
 
-        VkRenderPass             Get() const noexcept { return _handle; }
+        VkRenderPass               Get() const noexcept { return _handle; }
+        std::vector<VkFramebuffer> GetFrameBuffers() const noexcept;
 
     private:
-        VkRenderPass             _handle = VK_NULL_HANDLE;
-        SwapChainFrameBufferUPtr _frameBuffer;
+        VkRenderPass               _handle = VK_NULL_HANDLE;
+        SwapChainFrameBufferUPtr   _frameBuffer;
     };
-    using RenderPassUPtr = std::unique_ptr<RenderPass>;
+    using PassUPtr = std::unique_ptr<Pass>;
 
-    RenderPassUPtr CreateSimpleRenderPass();
+    PassUPtr CreateSimpleRenderPass();
 }
 
 namespace Render {
@@ -59,6 +70,8 @@ namespace Render {
         PipelineLayout(VkPipelineLayout handle) : _handle(handle) {}
         ~PipelineLayout();
 
+        VkPipelineLayout Get() const noexcept { return _handle; }
+
     private:
         VkPipelineLayout _handle = VK_NULL_HANDLE;
     };
@@ -71,6 +84,9 @@ namespace Render {
         Pipeline(VkPipeline handle, PipelineLayoutUPtr layout, PipelineCacheUPtr cache) : _handle(handle), _layout(std::move(layout)), _cache(std::move(cache)) {}
         ~Pipeline();
 
+        VkPipeline         Get() const noexcept { return _handle; }
+        VkPipelineLayout   GetLayout() const noexcept;
+
     private:
         VkPipeline         _handle = VK_NULL_HANDLE;
 
@@ -79,9 +95,10 @@ namespace Render {
     };
     using PipelineUPtr = std::unique_ptr<Pipeline>;
 
-    PipelineUPtr CreateSimplePipeline(const Descriptor::Layout& descLayout, const Shader::Module& vs, const Shader::Module& fs, const RenderPass& renderPass);
+    PipelineUPtr CreateSimplePipeline(const Descriptor::Layout& descLayout, const Shader::Module& vs, const Shader::Module& fs, const Pass& renderPass);
 }
 
 namespace Render {
-    
+    void FillSimpleRenderCommand(Pass& renderPass, Logical::CommandPool& cmdPool, Pipeline& pipeline, Descriptor::Layout& descLayout, Buffer::Object& vb, Buffer::Object& ib);
+    void SimpleRenderPresent(Logical::CommandPool& cmdPool);
 }

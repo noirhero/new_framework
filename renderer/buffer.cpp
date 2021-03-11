@@ -3,6 +3,7 @@
 #include "../pch.h"
 #include "buffer.h"
 
+#include "renderer_common.h"
 #include "allocator_vma.h"
 #include "logical.h"
 
@@ -18,6 +19,14 @@ namespace Buffer {
 
     VkDescriptorBufferInfo Uniform::Information() const noexcept {
         return { _buffer, 0, _size };
+    }
+
+    void Uniform::Flush(std::span<int64_t>&& mappedData) {
+        const auto size = mappedData.size();
+
+        VK_CHECK(vmaInvalidateAllocation(Allocator::VMA(), _alloc, 0, size));
+        memcpy_s(_allocInfo.pMappedData, size, mappedData.data(), size);
+        VK_CHECK(vmaFlushAllocation(Allocator::VMA(), _alloc, 0, size));
     }
 
     UniformUPtr CreateSimpleUniformBuffer(VkDeviceSize size) {

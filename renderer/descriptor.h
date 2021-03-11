@@ -53,6 +53,7 @@ namespace Descriptor {
         ~Layout();
 
         VkDescriptorSetLayout Get() const noexcept { return _handle; }
+        VkDescriptorSet       GetSet() const noexcept;
 
         void                  UpdateBegin();
         void                  AddUpdate(const Image::Sampler& sampler, const Image::Dimension2& image);

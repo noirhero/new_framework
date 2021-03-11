@@ -7,7 +7,7 @@
 #include "renderer/renderer_pch.h"
 
 namespace Main {
-    Render::RenderPassUPtr    g_renderPass;
+    Render::PassUPtr    g_renderPass;
     Logical::CommandPoolUPtr  g_gpuCmdPool;
 
     Shader::ModuleUPtr        g_vs;
@@ -91,6 +91,8 @@ namespace Main {
             *g_gpuCmdPool
         );
 
+        Render::FillSimpleRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, *g_vb, *g_ib);
+
         //if (false == Renderer::Initialize()) {
         //    return false;
         //}
@@ -98,7 +100,31 @@ namespace Main {
         return true;
     }
 
-    bool Run(float /*delta*/) {
+    bool Run(float delta) {
+        auto& swapChain = Logical::SwapChain::Get();
+
+        constexpr glm::mat4 clip(
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, -1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.5f, 0.0f,
+            0.0f, 0.0f, 0.5f, 1.0f);
+        const auto aspect = swapChain.width / static_cast<float>(swapChain.height);
+        const auto projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
+        const auto view = glm::lookAt(
+            glm::vec3(0, 5, 5), // Camera is in World Space
+            glm::vec3(0, 0, 0), // and looks at the origin
+            glm::vec3(0, 1, 0)  // Head is up
+        );
+        static auto rotate = 0.0f;
+        static auto seconds = 0.0f;
+        seconds += delta;
+        if (10.0f <= seconds)
+            rotate += delta;
+
+        const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
+        const auto mvp = clip * projection * view * model;
+        g_ub->Flush({ (int64_t*)&mvp, sizeof(glm::mat4) });
+
         //Renderer::Run(delta);
         return true;
     }
