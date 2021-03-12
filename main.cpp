@@ -3,7 +3,6 @@
 #include "pch.h"
 #include "main.h"
 
-#include "renderer/renderer_common.h"
 #include "renderer/renderer_pch.h"
 
 namespace Main {
