@@ -3,7 +3,6 @@
 #include "../pch.h"
 #include "physical.h"
 
-#include "renderer_common.h"
 #include "renderer_util.h"
 #include "allocator_cpu.h"
 
@@ -30,7 +29,7 @@ namespace Physical {
             return false;
         }
 
-        std::vector<VkLayerProperties> layers(layerCount);
+        VkLayerPropertyArray layers(layerCount);
         vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
 
         const auto findKhronosLayerFn = [](const VkLayerProperties& layerProperty)->bool {
@@ -155,7 +154,7 @@ namespace Physical {
         if (0 == deviceCount) {
             return;
         }
-        std::vector<VkPhysicalDevice> devices(deviceCount);
+        VkPhysicalDevices devices(deviceCount);
         vkEnumeratePhysicalDevices(g_instance, &deviceCount, devices.data());
 
         for (auto* device : devices) {

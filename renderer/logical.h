@@ -3,25 +3,25 @@
 #pragma once
 
 struct SwapChainInfo {
-    std::vector<VkSurfaceFormatKHR> supportFormats;
-    VkSurfaceCapabilitiesKHR        capabilities{};
-    std::vector<VkPresentModeKHR>   presentModes;
-    uint32_t                        presentQueueIndex = 0;
-    uint32_t                        imageCount = 0;
-    uint32_t                        width = std::numeric_limits<uint32_t>::max();
-    uint32_t                        height = std::numeric_limits<uint32_t>::max();
-    VkFormat                        format = VK_FORMAT_UNDEFINED;
-    VkFormat                        depthFormat = VK_FORMAT_UNDEFINED;
-    VkPresentModeKHR                presentMode = VK_PRESENT_MODE_FIFO_KHR;
-    VkSurfaceTransformFlagBitsKHR   preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    VkSurfaceFormats              supportFormats;
+    VkSurfaceCapabilitiesKHR      capabilities{};
+    VkPresentModes                presentModes;
+    uint32_t                      presentQueueIndex = 0;
+    uint32_t                      imageCount = 0;
+    uint32_t                      width = std::numeric_limits<uint32_t>::max();
+    uint32_t                      height = std::numeric_limits<uint32_t>::max();
+    VkFormat                      format = VK_FORMAT_UNDEFINED;
+    VkFormat                      depthFormat = VK_FORMAT_UNDEFINED;
+    VkPresentModeKHR              presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    VkSurfaceTransformFlagBitsKHR preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 
-    VkSwapchainKHR                  handle = VK_NULL_HANDLE;
-    std::vector<VkImage>            images;
-    std::vector<VkImageView>        imageViews;
+    VkSwapchainKHR                handle = VK_NULL_HANDLE;
+    VkImages                      images;
+    VkImageViews                  imageViews;
 
-    VkImage                         depthImage = VK_NULL_HANDLE;
-    VmaAllocation                   depthAlloc = VK_NULL_HANDLE;
-    VkImageView                     depthImageView = VK_NULL_HANDLE;
+    VkImage                       depthImage = VK_NULL_HANDLE;
+    VmaAllocation                 depthAlloc = VK_NULL_HANDLE;
+    VkImageView                   depthImageView = VK_NULL_HANDLE;
 };
 
 namespace Logical::Device {
@@ -61,16 +61,16 @@ namespace Logical {
         CommandPool(VkCommandPool cmdPool) : _handle(cmdPool) {}
         ~CommandPool();
 
-        VkCommandBuffer              ImmediatelyBegin();
-        void                         ImmediatelyEndAndSubmit();
+        VkCommandBuffer  ImmediatelyBegin();
+        void             ImmediatelyEndAndSubmit();
 
-        std::vector<VkCommandBuffer> GetSwapChainFrameCommandBuffers();
+        VkCommandBuffers GetSwapChainFrameCommandBuffers();
 
     private:
-        VkCommandPool                _handle = VK_NULL_HANDLE;
+        VkCommandPool     _handle = VK_NULL_HANDLE;
 
-        CommandBufferUPtr            _immediatelyCmdBuf;
-        std::vector<VkCommandBuffer> _swapChainFrameCmdBuffers;
+        CommandBufferUPtr _immediatelyCmdBuf;
+        VkCommandBuffers  _swapChainFrameCmdBuffers;
     };
     using CommandPoolUPtr = std::unique_ptr<CommandPool>;
 

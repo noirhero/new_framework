@@ -3,8 +3,6 @@
 #include "../pch.h"
 #include "allocator_cpu.h"
 
-#include "renderer_common.h"
-
 namespace Renderer {
     void* const CALLBACK_USER_DATA = reinterpret_cast<void*>(static_cast<intptr_t>(43564544));
     std::atomic_uint32_t g_allocCount = 0;

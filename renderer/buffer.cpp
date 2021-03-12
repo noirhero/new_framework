@@ -3,7 +3,6 @@
 #include "../pch.h"
 #include "buffer.h"
 
-#include "renderer_common.h"
 #include "allocator_vma.h"
 #include "logical.h"
 

@@ -21,13 +21,13 @@ namespace Buffer {
 namespace Render {
     class SwapChainFrameBuffer {
     public:
-    	SwapChainFrameBuffer(std::vector<VkFramebuffer>&& buffers) : _buffers(std::move(buffers)) {}
+    	SwapChainFrameBuffer(VkFrameBuffers&& buffers) : _buffers(std::move(buffers)) {}
         ~SwapChainFrameBuffer();
 
-        std::vector<VkFramebuffer> Get() const noexcept { return _buffers; }
+        VkFrameBuffers Get() const noexcept { return _buffers; }
 
     private:
-        std::vector<VkFramebuffer> _buffers;
+        VkFrameBuffers _buffers;
     };
     using SwapChainFrameBufferUPtr = std::unique_ptr<SwapChainFrameBuffer>;
 
@@ -40,12 +40,12 @@ namespace Render {
     	Pass(VkRenderPass handle, SwapChainFrameBufferUPtr frameBuffer) : _handle(handle), _frameBuffer(std::move(frameBuffer)) {}
         ~Pass();
 
-        VkRenderPass               Get() const noexcept { return _handle; }
-        std::vector<VkFramebuffer> GetFrameBuffers() const noexcept;
+        VkRenderPass             Get() const noexcept { return _handle; }
+        VkFrameBuffers           GetFrameBuffers() const noexcept;
 
     private:
-        VkRenderPass               _handle = VK_NULL_HANDLE;
-        SwapChainFrameBufferUPtr   _frameBuffer;
+        VkRenderPass             _handle = VK_NULL_HANDLE;
+        SwapChainFrameBufferUPtr _frameBuffer;
     };
     using PassUPtr = std::unique_ptr<Pass>;
 

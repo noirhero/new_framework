@@ -21,11 +21,21 @@
 #ifdef _DEBUG
 #define VK_CHECK(result) assert(VK_SUCCESS == (result))
 #else
-#define VK_CHECK(result) result;
+#define VK_CHECK(result) result
 #endif
 
+#ifdef _DEBUG
+#define BOOL_CHECK(result) assert(true == (result))
+#else
+#define BOOL_CHECK(result) result
+#endif
+
+using VkLayerPropertyArray         = std::vector<VkLayerProperties>;
+using VkPhysicalDevices            = std::vector<VkPhysicalDevice>;
 using VkExtensionPropertyArray     = std::vector<VkExtensionProperties>;
 using VkQueueFamilyPropertiesArray = std::vector<VkQueueFamilyProperties>;
+using VkSurfaceFormats             = std::vector<VkSurfaceFormatKHR>;
+using VkPresentModes               = std::vector<VkPresentModeKHR>;
 using VkImages                     = std::vector<VkImage>;
 using VkImageViews                 = std::vector<VkImageView>;
 using VkFrameBuffers               = std::vector<VkFramebuffer>;

@@ -3,19 +3,19 @@
 #include "pch.h"
 #include "main.h"
 
-#include "renderer/renderer.h"
+#include "renderer/renderer_common.h"
 #include "renderer/renderer_pch.h"
 
 namespace Main {
-    Render::PassUPtr    g_renderPass;
-    Logical::CommandPoolUPtr  g_gpuCmdPool;
+    Render::PassUPtr         g_renderPass;
+    Logical::CommandPoolUPtr g_gpuCmdPool;
 
-    Shader::ModuleUPtr        g_vs;
-    Shader::ModuleUPtr        g_fs;
+    Shader::ModuleUPtr       g_vs;
+    Shader::ModuleUPtr       g_fs;
 
-    Image::SamplerUPtr        g_sampler;
-    Image::Dimension2UPtr     g_texture;
-    Buffer::UniformUPtr       g_ub;
+    Image::SamplerUPtr       g_sampler;
+    Image::Dimension2UPtr    g_texture;
+    Buffer::UniformUPtr      g_ub;
 
     Descriptor::LayoutUPtr   g_descLayout;
     Render::PipelineUPtr     g_pipeline;
@@ -24,7 +24,23 @@ namespace Main {
     Buffer::ObjectUPtr       g_ib;
 
     void Resize(uint32_t /*width*/, uint32_t /*height*/) {
-        //Renderer::Resize(width, height);
+        if (VK_NULL_HANDLE == Physical::Instance::Get()) {
+            return;
+        }
+
+        vkDeviceWaitIdle(Logical::Device::Get());
+
+        g_pipeline.reset();
+        g_gpuCmdPool.reset();
+        g_renderPass.reset();
+        Logical::SwapChain::Destroy();
+
+        BOOL_CHECK(Logical::SwapChain::Create());
+        g_renderPass = Render::CreateSimpleRenderPass();
+        g_gpuCmdPool = Logical::AllocateGPUCommandPool();
+        g_pipeline = Render::CreateSimplePipeline(*g_descLayout, *g_vs, *g_fs, *g_renderPass);
+
+        Render::FillSimpleRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, *g_vb, *g_ib);
     }
 
     bool Initialize() {
@@ -67,20 +83,20 @@ namespace Main {
 
         g_pipeline = Render::CreateSimplePipeline(*g_descLayout, *g_vs, *g_fs, *g_renderPass);
 
-        struct VertexWithColor {
+        struct Vertex {
             float x, y, z, w;
             float r, g, b, a;
             float u, v;
         };
-        constexpr VertexWithColor vertices[] = {
+        constexpr Vertex vertices[] = {
             { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f },
             {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f },
             {  0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f },
             { -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f },
         };
         g_vb = Buffer::CreateObject(
-            { (int64_t*)vertices, _countof(vertices) * sizeof(VertexWithColor) }, 
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 
+            { (int64_t*)vertices, _countof(vertices) * sizeof(Vertex) },
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
             *g_gpuCmdPool
         );
 
@@ -92,10 +108,6 @@ namespace Main {
         );
 
         Render::FillSimpleRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, *g_vb, *g_ib);
-
-        //if (false == Renderer::Initialize()) {
-        //    return false;
-        //}
 
         return true;
     }
@@ -118,14 +130,15 @@ namespace Main {
         static auto rotate = 0.0f;
         static auto seconds = 0.0f;
         seconds += delta;
-        if (10.0f <= seconds)
+        if (3.0f <= seconds)
             rotate += delta;
 
         const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
         const auto mvp = clip * projection * view * model;
         g_ub->Flush({ (int64_t*)&mvp, sizeof(glm::mat4) });
 
-        //Renderer::Run(delta);
+        Render::SimpleRenderPresent(*g_gpuCmdPool);
+
         return true;
     }
 
@@ -148,7 +161,5 @@ namespace Main {
         Renderer::Debugger::Destroy(Physical::Instance::Get());
 #endif
         Physical::Instance::Destroy();
-
-        //Renderer::Release();
     }
 }

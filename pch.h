@@ -60,3 +60,5 @@ using namespace std::string_literals;
 #include "util/util_path.h"
 #include "util/util_file.h"
 #include "util/util_timer.h"
+
+#include "renderer/renderer_common.h"

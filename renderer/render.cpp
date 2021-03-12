@@ -3,7 +3,6 @@
 #include "../pch.h"
 #include "render.h"
 
-#include "renderer_common.h"
 #include "allocator_cpu.h"
 #include "logical.h"
 #include "descriptor.h"
@@ -208,7 +207,7 @@ namespace Render {
             fragmentShaderStageInfo
         };
 
-        constexpr auto vertexStride = sizeof(16/*x,y,z,w*/ + 16/*r,g,b,a*/ + 8/*u, v*/);
+        constexpr auto vertexStride = 16/*x,y,z,w*/ + 16/*r,g,b,a*/ + 8/*u, v*/;
 
         VkVertexInputBindingDescription bindingDescription = {};
         bindingDescription.binding = 0;
@@ -432,6 +431,7 @@ namespace Render {
     void SimpleRenderPresent(Logical::CommandPool& cmdPool) {
         auto* device = Logical::Device::Get();
         auto* gpuQueue = Logical::Device::GetGPUQueue();
+        //auto* presentQueue = Logical::Device::GetPresentQueue();
         auto& swapChain = Logical::SwapChain::Get();
 
         // Acquire image index.

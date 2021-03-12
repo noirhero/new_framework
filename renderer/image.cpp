@@ -44,7 +44,7 @@ namespace Image {
         return std::make_unique<Sampler>(sampler);
     }
 
-    // Simple 2D.
+    // 2D texture.
     Dimension2::~Dimension2() {
         auto* device = Logical::Device::Get();
 
@@ -154,6 +154,7 @@ namespace Image {
 
         cmdPool.ImmediatelyEndAndSubmit();
 
+        // Image view.
         VkImageViewCreateInfo imageViewInfo{};
         imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
