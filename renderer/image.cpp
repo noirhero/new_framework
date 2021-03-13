@@ -5,6 +5,7 @@
 
 #include "allocator_cpu.h"
 #include "allocator_vma.h"
+#include "physical.h"
 #include "logical.h"
 
 namespace Image {
@@ -25,8 +26,8 @@ namespace Image {
         info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        info.anisotropyEnable = VK_TRUE;
-        info.maxAnisotropy = 16;
+        info.maxAnisotropy = Physical::Device::GetGPU().maxAnisotropy;
+        info.anisotropyEnable = 1.0f < info.maxAnisotropy ? VK_TRUE : VK_FALSE;
         info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         info.unnormalizedCoordinates = VK_FALSE;
         info.compareEnable = VK_FALSE;

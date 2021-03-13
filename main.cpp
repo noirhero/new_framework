@@ -122,14 +122,14 @@ namespace Main {
         const auto aspect = swapChain.width / static_cast<float>(swapChain.height);
         const auto projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
         const auto view = glm::lookAt(
-            glm::vec3(0, 5, 5), // Camera is in World Space
+            glm::vec3(0, 0, 5), // Camera is in World Space
             glm::vec3(0, 0, 0), // and looks at the origin
             glm::vec3(0, 1, 0)  // Head is up
         );
         static auto rotate = 0.0f;
         static auto seconds = 0.0f;
         seconds += delta;
-        if (3.0f <= seconds)
+        if (100.0f <= seconds)
             rotate += delta;
 
         const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));

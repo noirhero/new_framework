@@ -4,9 +4,10 @@
 
 struct PhysicalDeviceInfo {
     VkPhysicalDevice handle = VK_NULL_HANDLE;
-    uint32_t         gpuQueueIndex = std::numeric_limits<uint32_t>::max();
-    uint32_t         presentQueueIndex = std::numeric_limits<uint32_t>::max();
-    uint32_t         sparesQueueIndex = std::numeric_limits<uint32_t>::max();
+    uint32_t         gpuQueueIndex = INVALID_Q_IDX;
+    uint32_t         presentQueueIndex = INVALID_Q_IDX;
+    uint32_t         sparesQueueIndex = INVALID_Q_IDX;
+    float         maxAnisotropy = 1.0f;
 };
 
 namespace Physical::Instance {

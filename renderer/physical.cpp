@@ -133,9 +133,10 @@ namespace Physical {
         VkPhysicalDeviceMemoryProperties memoryProperty{};
         VkQueueFamilyPropertiesArray     queueFamilyProperties;
 
-        uint32_t                         gpuQueueIndex = std::numeric_limits<uint32_t>::max();
-        uint32_t                         presentQueueIndex = std::numeric_limits<uint32_t>::max();
-        uint32_t                         sparesQueueIndex = std::numeric_limits<uint32_t>::max();
+        uint32_t                         gpuQueueIndex = INVALID_Q_IDX;
+        uint32_t                         presentQueueIndex = INVALID_Q_IDX;
+        uint32_t                         sparesQueueIndex = INVALID_Q_IDX;
+        float                            maxAnisotropy = 1.0f;
     };
 
     std::vector<PhysicalDevice> g_physicalDevices;
@@ -178,6 +179,8 @@ namespace Physical {
 
             vkGetPhysicalDeviceProperties(device, &physicalDevice.property);
             vkGetPhysicalDeviceMemoryProperties(device, &physicalDevice.memoryProperty);
+
+            physicalDevice.maxAnisotropy = physicalDevice.property.limits.maxSamplerAnisotropy;
 
             uint32_t queueFamilyCount = 0;
             vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
