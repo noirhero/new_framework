@@ -26,7 +26,7 @@ namespace Descriptor {
 }
 
 namespace Descriptor {
-    class Pool{
+    class Pool {
     public:
         Pool(VkDescriptorPool handle, SetUPtr&& set) : _handle(handle), _set(std::move(set)) {}
         ~Pool();
@@ -42,7 +42,7 @@ namespace Descriptor {
 
 namespace Descriptor {
     class Layout {
-    	struct UpdateInfo {
+        struct UpdateInfo {
             VkDescriptorImageInfo  imageInfo{};
             VkDescriptorBufferInfo bufferInfo{};
         };

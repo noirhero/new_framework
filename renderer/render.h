@@ -21,7 +21,7 @@ namespace Buffer {
 namespace Render {
     class SwapChainFrameBuffer {
     public:
-    	SwapChainFrameBuffer(VkFrameBuffers&& buffers) : _buffers(std::move(buffers)) {}
+        SwapChainFrameBuffer(VkFrameBuffers&& buffers) : _buffers(std::move(buffers)) {}
         ~SwapChainFrameBuffer();
 
         VkFrameBuffers Get() const noexcept { return _buffers; }
@@ -37,7 +37,7 @@ namespace Render {
 namespace Render {
     class Pass {
     public:
-    	Pass(VkRenderPass handle, SwapChainFrameBufferUPtr frameBuffer) : _handle(handle), _frameBuffer(std::move(frameBuffer)) {}
+        Pass(VkRenderPass handle, SwapChainFrameBufferUPtr frameBuffer) : _handle(handle), _frameBuffer(std::move(frameBuffer)) {}
         ~Pass();
 
         VkRenderPass             Get() const noexcept { return _handle; }

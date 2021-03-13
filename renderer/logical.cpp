@@ -68,7 +68,7 @@ namespace Logical {
         vkGetDeviceQueue(g_device, g_gpuInfo.gpuQueueIndex, 0, &g_gpuQueue);
         vkGetDeviceQueue(g_device, g_gpuInfo.presentQueueIndex, 0, &g_presentQueue);
 
-        if(false == Allocator::CreateVMA(Physical::Instance::Get(), g_gpuInfo.handle, g_device)) {
+        if (false == Allocator::CreateVMA(Physical::Instance::Get(), g_gpuInfo.handle, g_device)) {
             return false;
         }
 
@@ -314,9 +314,9 @@ namespace Logical {
 
     // Command buffer.
     CommandBuffer::~CommandBuffer() {
-	    if(VK_NULL_HANDLE != _buffer) {
+        if (VK_NULL_HANDLE != _buffer) {
             vkFreeCommandBuffers(Logical::Device::Get(), _cmdPool, 1, &_buffer);
-	    }
+        }
     }
 
     // Command pool.
@@ -327,9 +327,9 @@ namespace Logical {
             vkFreeCommandBuffers(g_device, _handle, 1, &cmdBuf);
         }
 
-        if(VK_NULL_HANDLE != _handle) {
+        if (VK_NULL_HANDLE != _handle) {
             vkDestroyCommandPool(g_device, _handle, Allocator::CPU());
-    	}
+        }
     }
 
     VkCommandBuffer CommandPool::ImmediatelyBegin() {

@@ -127,7 +127,7 @@ namespace Render {
         return std::make_unique<Pass>(renderPass, std::move(swapChainFrameBuffer));
     }
 
-	// Pipeline cache.
+    // Pipeline cache.
     PipelineCache::~PipelineCache() {
         if (VK_NULL_HANDLE != _handle) {
             vkDestroyPipelineCache(Logical::Device::Get(), _handle, Allocator::CPU());
@@ -191,7 +191,7 @@ namespace Render {
             return nullptr;
         }
 
-    	// Pipeline.
+        // Pipeline.
         VkPipelineShaderStageCreateInfo vertexShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
         vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
         vertexShaderStageInfo.module = vs.Get();
@@ -425,13 +425,13 @@ namespace Render {
 
             // End.
             vkEndCommandBuffer(cmdBuffer);
-    	}
+        }
     }
 
     void SimpleRenderPresent(Logical::CommandPool& cmdPool) {
         auto* device = Logical::Device::Get();
         auto* gpuQueue = Logical::Device::GetGPUQueue();
-        //auto* presentQueue = Logical::Device::GetPresentQueue();
+        auto* presentQueue = Logical::Device::GetPresentQueue();
         auto& swapChain = Logical::SwapChain::Get();
 
         // Acquire image index.
@@ -476,7 +476,7 @@ namespace Render {
         present.pWaitSemaphores = &drawingSemaphore;
 
         // Queue the image for presentation.
-        vkQueuePresentKHR(gpuQueue, &present);
+        vkQueuePresentKHR(presentQueue, &present);
 
         vkDestroySemaphore(device, drawingSemaphore, Allocator::CPU());
         vkDestroySemaphore(device, presentSemaphore, Allocator::CPU());

@@ -14,9 +14,9 @@ namespace Descriptor {
 
     // Descriptor set.
     Set::~Set() {
-        if(VK_NULL_HANDLE != _handle) {
+        if (VK_NULL_HANDLE != _handle) {
             vkFreeDescriptorSets(Logical::Device::Get(), _pool, 1, &_handle);
-    	}
+        }
     }
 
     // Descriptor ppol.
@@ -28,10 +28,10 @@ namespace Descriptor {
         }
     }
 
-    VkDescriptorSet Pool::GetSet() const noexcept{
-    	if(nullptr == _set) {
+    VkDescriptorSet Pool::GetSet() const noexcept {
+        if (nullptr == _set) {
             return VK_NULL_HANDLE;
-    	}
+        }
         return _set->Get();
     }
 

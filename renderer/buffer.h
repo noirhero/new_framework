@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace Logical{
+namespace Logical {
     class CommandPool;
 }
 

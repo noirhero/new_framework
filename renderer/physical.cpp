@@ -74,7 +74,7 @@ namespace Physical {
     }
 
     bool Instance::Create() {
-        if(false == CollectingLayerProperties()) {
+        if (false == CollectingLayerProperties()) {
             return false;
         }
 
@@ -117,7 +117,7 @@ namespace Physical {
     }
 
     void Instance::Destroy() {
-        if(VK_NULL_HANDLE != g_instance) {
+        if (VK_NULL_HANDLE != g_instance) {
             vkDestroyInstance(g_instance, Allocator::CPU());
             g_instance = VK_NULL_HANDLE;
         }
@@ -141,7 +141,7 @@ namespace Physical {
     std::vector<PhysicalDevice> g_physicalDevices;
 
     PhysicalDeviceInfo Device::GetGPU() {
-        for(const auto& device : g_physicalDevices) {
+        for (const auto& device : g_physicalDevices) {
             if (Util::IsValidQueue(device.gpuQueueIndex))
                 return { device.handle, device.gpuQueueIndex, device.presentQueueIndex, device.sparesQueueIndex };
         }
