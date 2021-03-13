@@ -125,14 +125,14 @@ namespace Renderer {
             VK_EXT_memory_priority_enabled = false;
     }
 
-    uint32_t g_GraphicsQueueFamilyIndex = INVALID_Q_IDX;
-    uint32_t g_PresentQueueFamilyIndex = INVALID_Q_IDX;
-    uint32_t g_SparseBindingQueueFamilyIndex = INVALID_Q_IDX;
+    uint32_t g_GraphicsQueueFamilyIndex = INVALID_IDX;
+    uint32_t g_PresentQueueFamilyIndex = INVALID_IDX;
+    uint32_t g_SparseBindingQueueFamilyIndex = INVALID_IDX;
 
     bool Util::CheckToQueueFamilyProperties(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<VkQueueFamilyProperties>& properties) {
-        g_GraphicsQueueFamilyIndex = INVALID_Q_IDX;
-        g_PresentQueueFamilyIndex = INVALID_Q_IDX;
-        g_SparseBindingQueueFamilyIndex = INVALID_Q_IDX;
+        g_GraphicsQueueFamilyIndex = INVALID_IDX;
+        g_PresentQueueFamilyIndex = INVALID_IDX;
+        g_SparseBindingQueueFamilyIndex = INVALID_IDX;
 
         uint32_t index = 0;
         for (const auto& property : properties) {
@@ -156,18 +156,18 @@ namespace Renderer {
                 }
             }
 
-            if (g_SparseBindingEnabled && INVALID_Q_IDX != g_SparseBindingQueueFamilyIndex &&
+            if (g_SparseBindingEnabled && INVALID_IDX != g_SparseBindingQueueFamilyIndex &&
                 0 != (VK_QUEUE_SPARSE_BINDING_BIT & queueFlags)) {
                 g_SparseBindingQueueFamilyIndex = index;
             }
 
             ++index;
         }
-        if (INVALID_Q_IDX == g_GraphicsQueueFamilyIndex) {
+        if (INVALID_IDX == g_GraphicsQueueFamilyIndex) {
             return false;
         }
 
-        g_SparseBindingEnabled = g_SparseBindingEnabled && INVALID_Q_IDX != g_SparseBindingQueueFamilyIndex;
+        g_SparseBindingEnabled = g_SparseBindingEnabled && INVALID_IDX != g_SparseBindingQueueFamilyIndex;
 
         return true;
     }
@@ -247,7 +247,7 @@ namespace Renderer {
     }
 
     bool Util::IsValidQueue(uint32_t queueIndex) {
-        return INVALID_Q_IDX != queueIndex;
+        return INVALID_IDX != queueIndex;
     }
 
     void Util::DecorateVMAAllocateInformation(VmaAllocatorCreateInfo& info) {

@@ -3,11 +3,15 @@
 #pragma once
 
 struct PhysicalDeviceInfo {
-    VkPhysicalDevice handle = VK_NULL_HANDLE;
-    uint32_t         gpuQueueIndex = INVALID_Q_IDX;
-    uint32_t         presentQueueIndex = INVALID_Q_IDX;
-    uint32_t         sparesQueueIndex = INVALID_Q_IDX;
-    float         maxAnisotropy = 1.0f;
+    VkPhysicalDevice                 handle{ VK_NULL_HANDLE };
+
+    VkPhysicalDeviceProperties       property{};
+    VkPhysicalDeviceMemoryProperties memoryProperty{};
+    VkQueueFamilyPropertiesArray     queueFamilyProperties;
+
+    uint32_t                         gpuQueueIndex = INVALID_IDX;
+    uint32_t                         presentQueueIndex = INVALID_IDX;
+    uint32_t                         sparesQueueIndex = INVALID_IDX;
 };
 
 namespace Physical::Instance {
@@ -18,7 +22,7 @@ namespace Physical::Instance {
 }
 
 namespace Physical::Device {
-    PhysicalDeviceInfo GetGPU();
+    PhysicalDeviceInfo& GetGPU();
 
-    void               Collect(VkSurfaceKHR surface);
+    void                Collect(VkSurfaceKHR surface);
 }

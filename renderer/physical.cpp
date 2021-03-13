@@ -126,27 +126,15 @@ namespace Physical {
     }
 
     // Device
-    struct PhysicalDevice {
-        VkPhysicalDevice                 handle{ VK_NULL_HANDLE };
+    PhysicalDeviceInfo g_emptyPhysicalDevice;
+    std::vector<PhysicalDeviceInfo> g_physicalDevices;
 
-        VkPhysicalDeviceProperties       property{};
-        VkPhysicalDeviceMemoryProperties memoryProperty{};
-        VkQueueFamilyPropertiesArray     queueFamilyProperties;
-
-        uint32_t                         gpuQueueIndex = INVALID_Q_IDX;
-        uint32_t                         presentQueueIndex = INVALID_Q_IDX;
-        uint32_t                         sparesQueueIndex = INVALID_Q_IDX;
-        float                            maxAnisotropy = 1.0f;
-    };
-
-    std::vector<PhysicalDevice> g_physicalDevices;
-
-    PhysicalDeviceInfo Device::GetGPU() {
-        for (const auto& device : g_physicalDevices) {
+    PhysicalDeviceInfo& Device::GetGPU() {
+        for (auto& device : g_physicalDevices) {
             if (Util::IsValidQueue(device.gpuQueueIndex))
-                return { device.handle, device.gpuQueueIndex, device.presentQueueIndex, device.sparesQueueIndex };
+                return device;
         }
-        return {};
+        return g_emptyPhysicalDevice;
     }
 
     void Device::Collect(VkSurfaceKHR surface) {
@@ -172,15 +160,13 @@ namespace Physical {
                 Util::CheckToPhysicalDeviceExtensionProperties(extensionProperties);
             }
 
-            g_physicalDevices.emplace_back(PhysicalDevice{ device });
+            g_physicalDevices.emplace_back(PhysicalDeviceInfo{ device });
             auto& physicalDevice = g_physicalDevices.back();
 
             Util::CheckToPhysicalDeviceFeatures(device);
 
             vkGetPhysicalDeviceProperties(device, &physicalDevice.property);
             vkGetPhysicalDeviceMemoryProperties(device, &physicalDevice.memoryProperty);
-
-            physicalDevice.maxAnisotropy = physicalDevice.property.limits.maxSamplerAnisotropy;
 
             uint32_t queueFamilyCount = 0;
             vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);

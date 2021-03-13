@@ -170,6 +170,7 @@
     <ClInclude Include="Renderer\allocator_cpu.h" />
     <ClInclude Include="renderer\allocator_vma.h" />
     <ClInclude Include="renderer\buffer.h" />
+    <ClInclude Include="renderer\command.h" />
     <ClInclude Include="renderer\debugger.h" />
     <ClInclude Include="renderer\descriptor.h" />
     <ClInclude Include="renderer\image.h" />
@@ -194,6 +195,7 @@
     <ClCompile Include="Renderer\allocator_cpu.cpp" />
     <ClCompile Include="renderer\allocator_vma.cpp" />
     <ClCompile Include="renderer\buffer.cpp" />
+    <ClCompile Include="renderer\command.cpp" />
     <ClCompile Include="renderer\debugger.cpp" />
     <ClCompile Include="renderer\descriptor.cpp" />
     <ClCompile Include="renderer\image.cpp" />

@@ -6,21 +6,21 @@
 #include "renderer/renderer_pch.h"
 
 namespace Main {
-    Render::PassUPtr         g_renderPass;
-    Logical::CommandPoolUPtr g_gpuCmdPool;
+    Render::PassUPtr       g_renderPass;
+    Command::PoolUPtr      g_gpuCmdPool;
 
-    Shader::ModuleUPtr       g_vs;
-    Shader::ModuleUPtr       g_fs;
+    Shader::ModuleUPtr     g_vs;
+    Shader::ModuleUPtr     g_fs;
 
-    Image::SamplerUPtr       g_sampler;
-    Image::Dimension2UPtr    g_texture;
-    Buffer::UniformUPtr      g_ub;
+    Image::SamplerUPtr     g_sampler;
+    Image::Dimension2UPtr  g_texture;
+    Buffer::UniformUPtr    g_ub;
 
-    Descriptor::LayoutUPtr   g_descLayout;
-    Render::PipelineUPtr     g_pipeline;
+    Descriptor::LayoutUPtr g_descLayout;
+    Render::PipelineUPtr   g_pipeline;
 
-    Buffer::ObjectUPtr       g_vb;
-    Buffer::ObjectUPtr       g_ib;
+    Buffer::ObjectUPtr     g_vb;
+    Buffer::ObjectUPtr     g_ib;
 
     void Resize(uint32_t /*width*/, uint32_t /*height*/) {
         if (VK_NULL_HANDLE == Physical::Instance::Get()) {
@@ -36,7 +36,7 @@ namespace Main {
 
         BOOL_CHECK(Logical::SwapChain::Create());
         g_renderPass = Render::CreateSimpleRenderPass();
-        g_gpuCmdPool = Logical::AllocateGPUCommandPool();
+        g_gpuCmdPool = Command::AllocateGPUCommandPool();
         g_pipeline = Render::CreateSimplePipeline(*g_descLayout, *g_vs, *g_fs, *g_renderPass);
 
         Render::FillSimpleRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, *g_vb, *g_ib);
@@ -65,7 +65,7 @@ namespace Main {
         }
 
         g_renderPass = Render::CreateSimpleRenderPass();
-        g_gpuCmdPool = Logical::AllocateGPUCommandPool();
+        g_gpuCmdPool = Command::AllocateGPUCommandPool();
 
         g_vs = Shader::Create(Path::GetResourcePathAnsi() + "shaders/draw_vert.spv"s);
         g_fs = Shader::Create(Path::GetResourcePathAnsi() + "shaders/draw_frag.spv"s);

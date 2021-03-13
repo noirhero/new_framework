@@ -5,6 +5,7 @@
 
 #include "allocator_cpu.h"
 #include "logical.h"
+#include "command.h"
 #include "descriptor.h"
 #include "shader.h"
 #include "buffer.h"
@@ -361,7 +362,7 @@ namespace Render {
     }
 
     // Fill render command.
-    void FillSimpleRenderCommand(Pass& renderPass, Logical::CommandPool& cmdPool, Pipeline& pipeline, Descriptor::Layout& descLayout, Buffer::Object& vb, Buffer::Object& ib) {
+    void FillSimpleRenderCommand(Pass& renderPass, Command::Pool& cmdPool, Pipeline& pipeline, Descriptor::Layout& descLayout, Buffer::Object& vb, Buffer::Object& ib) {
         auto& swapChain = Logical::SwapChain::Get();
 
         auto frameBuffers = renderPass.GetFrameBuffers();
@@ -428,7 +429,7 @@ namespace Render {
         }
     }
 
-    void SimpleRenderPresent(Logical::CommandPool& cmdPool) {
+    void SimpleRenderPresent(Command::Pool& cmdPool) {
         auto* device = Logical::Device::Get();
         auto* gpuQueue = Logical::Device::GetGPUQueue();
         auto* presentQueue = Logical::Device::GetPresentQueue();

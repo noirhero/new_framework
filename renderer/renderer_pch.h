@@ -6,6 +6,7 @@
 #include "debugger.h"
 #include "surface.h"
 #include "logical.h"
+#include "command.h"
 #include "render.h"
 #include "shader.h"
 #include "image.h"

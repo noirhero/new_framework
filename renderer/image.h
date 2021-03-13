@@ -2,8 +2,8 @@
 
 #pragma once
 
-namespace Logical {
-    class CommandPool;
+namespace Command {
+    class Pool;
 }
 
 namespace Image {
@@ -37,5 +37,5 @@ namespace Image {
     };
     using Dimension2UPtr = std::unique_ptr<Dimension2>;
 
-    Dimension2UPtr CreateSimple2D(std::string&& path, Logical::CommandPool& cmdPool);
+    Dimension2UPtr CreateSimple2D(std::string&& path, Command::Pool& cmdPool);
 }

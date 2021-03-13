@@ -2,8 +2,8 @@
 
 #pragma once
 
-namespace Logical {
-    class CommandPool;
+namespace Command {
+    class Pool;
 }
 
 namespace Buffer {
@@ -40,5 +40,5 @@ namespace Buffer {
     };
     using ObjectUPtr = std::unique_ptr<Object>;
 
-    ObjectUPtr CreateObject(std::span<int64_t>&& mappedData, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, Logical::CommandPool& cmdPool);
+    ObjectUPtr CreateObject(std::span<int64_t>&& mappedData, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, Command::Pool& cmdPool);
 }

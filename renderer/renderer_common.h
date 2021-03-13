@@ -42,4 +42,4 @@ using VkFrameBuffers               = std::vector<VkFramebuffer>;
 using VkWriteDescriptorSets        = std::vector<VkWriteDescriptorSet>;
 using VkCommandBuffers             = std::vector<VkCommandBuffer>;
 
-constexpr uint32_t INVALID_Q_IDX = std::numeric_limits<uint32_t>::max();
+constexpr uint32_t INVALID_IDX = std::numeric_limits<uint32_t>::max();

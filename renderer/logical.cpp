@@ -6,6 +6,7 @@
 #include "renderer_util.h"
 #include "allocator_cpu.h"
 #include "allocator_vma.h"
+#include "command.h"
 #include "physical.h"
 #include "surface.h"
 
@@ -310,96 +311,5 @@ namespace Logical {
             destroySwapChainFn(g_device, g_swapChain.handle, Allocator::CPU());
             g_swapChain.handle = VK_NULL_HANDLE;
         }
-    }
-
-    // Command buffer.
-    CommandBuffer::~CommandBuffer() {
-        if (VK_NULL_HANDLE != _buffer) {
-            vkFreeCommandBuffers(Logical::Device::Get(), _cmdPool, 1, &_buffer);
-        }
-    }
-
-    // Command pool.
-    CommandPool::~CommandPool() {
-        _immediatelyCmdBuf.reset();
-
-        for (auto* cmdBuf : _swapChainFrameCmdBuffers) {
-            vkFreeCommandBuffers(g_device, _handle, 1, &cmdBuf);
-        }
-
-        if (VK_NULL_HANDLE != _handle) {
-            vkDestroyCommandPool(g_device, _handle, Allocator::CPU());
-        }
-    }
-
-    VkCommandBuffer CommandPool::ImmediatelyBegin() {
-        if (nullptr == _immediatelyCmdBuf) {
-            VkCommandBufferAllocateInfo cmdBufInfo{};
-            cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            cmdBufInfo.commandPool = _handle;
-            cmdBufInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            cmdBufInfo.commandBufferCount = 1;
-
-            VkCommandBuffer cmdBuf = VK_NULL_HANDLE;
-            VK_CHECK(vkAllocateCommandBuffers(g_device, &cmdBufInfo, &cmdBuf));
-
-            _immediatelyCmdBuf = std::make_unique<CommandBuffer>(_handle, cmdBuf);
-        }
-
-        VkCommandBufferBeginInfo cmdBufBeginInfo{};
-        cmdBufBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        cmdBufBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        VK_CHECK(vkBeginCommandBuffer(_immediatelyCmdBuf->Get(), &cmdBufBeginInfo));
-
-        return _immediatelyCmdBuf->Get();
-    }
-
-    void CommandPool::ImmediatelyEndAndSubmit() {
-        if (nullptr == _immediatelyCmdBuf) {
-            return;
-        }
-
-        vkEndCommandBuffer(_immediatelyCmdBuf->Get());
-
-        const VkCommandBuffer cmdBuffers[1] = { _immediatelyCmdBuf->Get() };
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = cmdBuffers;
-
-        vkQueueSubmit(g_gpuQueue, 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(g_gpuQueue);
-    }
-
-    std::vector<VkCommandBuffer> CommandPool::GetSwapChainFrameCommandBuffers() {
-        if (_swapChainFrameCmdBuffers.empty()) {
-            for (decltype(g_swapChain.imageCount) i = 0; i < g_swapChain.imageCount; ++i) {
-                VkCommandBufferAllocateInfo cmdInfo{};
-                cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-                cmdInfo.commandPool = _handle;
-                cmdInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-                cmdInfo.commandBufferCount = 1;
-
-                VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
-                VK_CHECK(vkAllocateCommandBuffers(g_device, &cmdInfo, &cmdBuffer));
-                _swapChainFrameCmdBuffers.emplace_back(cmdBuffer);
-            }
-        }
-
-        return _swapChainFrameCmdBuffers;
-    }
-
-    CommandPoolUPtr AllocateGPUCommandPool() {
-        VkCommandPoolCreateInfo info{};
-        info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        info.queueFamilyIndex = g_gpuInfo.gpuQueueIndex;
-        info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-        VkCommandPool handle = VK_NULL_HANDLE;
-        if (VK_SUCCESS != vkCreateCommandPool(g_device, &info, Allocator::CPU(), &handle)) {
-            return nullptr;
-        }
-
-        return std::make_unique<CommandPool>(handle);
     }
 }

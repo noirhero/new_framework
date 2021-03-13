@@ -8,8 +8,8 @@ struct SwapChainInfo {
     VkPresentModes                presentModes;
     uint32_t                      presentQueueIndex = 0;
     uint32_t                      imageCount = 0;
-    uint32_t                      width = std::numeric_limits<uint32_t>::max();
-    uint32_t                      height = std::numeric_limits<uint32_t>::max();
+    uint32_t                      width = INVALID_IDX;
+    uint32_t                      height = INVALID_IDX;
     VkFormat                      format = VK_FORMAT_UNDEFINED;
     VkFormat                      depthFormat = VK_FORMAT_UNDEFINED;
     VkPresentModeKHR              presentMode = VK_PRESENT_MODE_FIFO_KHR;
@@ -38,41 +38,4 @@ namespace Logical::SwapChain {
 
     bool           Create();
     void           Destroy();
-}
-
-namespace Logical {
-    class CommandBuffer {
-    public:
-        CommandBuffer(VkCommandPool cmdPool, VkCommandBuffer buffer) : _cmdPool(cmdPool), _buffer(buffer) {}
-        ~CommandBuffer();
-
-        constexpr VkCommandBuffer Get() const noexcept { return _buffer; }
-
-    private:
-        VkCommandPool             _cmdPool = VK_NULL_HANDLE;
-        VkCommandBuffer           _buffer = VK_NULL_HANDLE;
-    };
-    using CommandBufferUPtr = std::unique_ptr<CommandBuffer>;
-}
-
-namespace Logical {
-    class CommandPool {
-    public:
-        CommandPool(VkCommandPool cmdPool) : _handle(cmdPool) {}
-        ~CommandPool();
-
-        VkCommandBuffer  ImmediatelyBegin();
-        void             ImmediatelyEndAndSubmit();
-
-        VkCommandBuffers GetSwapChainFrameCommandBuffers();
-
-    private:
-        VkCommandPool     _handle = VK_NULL_HANDLE;
-
-        CommandBufferUPtr _immediatelyCmdBuf;
-        VkCommandBuffers  _swapChainFrameCmdBuffers;
-    };
-    using CommandPoolUPtr = std::unique_ptr<CommandPool>;
-
-    CommandPoolUPtr AllocateGPUCommandPool();
 }

@@ -7,6 +7,7 @@
 #include "allocator_vma.h"
 #include "physical.h"
 #include "logical.h"
+#include "command.h"
 
 namespace Image {
     using namespace Renderer;
@@ -26,7 +27,7 @@ namespace Image {
         info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        info.maxAnisotropy = Physical::Device::GetGPU().maxAnisotropy;
+        info.maxAnisotropy = Physical::Device::GetGPU().property.limits.maxSamplerAnisotropy;
         info.anisotropyEnable = 1.0f < info.maxAnisotropy ? VK_TRUE : VK_FALSE;
         info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         info.unnormalizedCoordinates = VK_FALSE;
@@ -62,7 +63,7 @@ namespace Image {
         return { sampler, _view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
     }
 
-    Dimension2UPtr CreateSimple2D(std::string&& path, Logical::CommandPool& cmdPool) {
+    Dimension2UPtr CreateSimple2D(std::string&& path, Command::Pool& cmdPool) {
         auto image = gli::load(path);
         if (image.empty()) {
             return nullptr;

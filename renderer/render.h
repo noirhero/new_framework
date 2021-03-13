@@ -2,8 +2,8 @@
 
 #pragma once
 
-namespace Logical {
-    class CommandPool;
+namespace Command {
+    class Pool;
 }
 
 namespace Shader {
@@ -99,6 +99,6 @@ namespace Render {
 }
 
 namespace Render {
-    void FillSimpleRenderCommand(Pass& renderPass, Logical::CommandPool& cmdPool, Pipeline& pipeline, Descriptor::Layout& descLayout, Buffer::Object& vb, Buffer::Object& ib);
-    void SimpleRenderPresent(Logical::CommandPool& cmdPool);
+    void FillSimpleRenderCommand(Pass& renderPass, Command::Pool& cmdPool, Pipeline& pipeline, Descriptor::Layout& descLayout, Buffer::Object& vb, Buffer::Object& ib);
+    void SimpleRenderPresent(Command::Pool& cmdPool);
 }
