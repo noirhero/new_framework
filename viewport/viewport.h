@@ -37,9 +37,9 @@ namespace Viewport {
         void      Update(float delta);
 
     private:
-        glm::vec3 _pos = { 0.0f, 0.0f, -5.0f };
-        glm::vec3 _at = { 0.0f, 0.0f, 1.0f };
-        glm::vec3 _right = { 1.0f, 0.0f, 0.0f };
+        glm::vec3 _pos = { 0.0f, 0.0f, 5.0f };
+        glm::vec3 _at = { 0.0f, 0.0f, -1.0f };
+        glm::vec3 _right = { -1.0f, 0.0f, 0.0f };
         glm::vec3 _up = { 0.0f, 1.0f, 0.0f };
 
         uint32_t  _keyFlags = 0;
@@ -48,6 +48,6 @@ namespace Viewport {
 
     public:
         float     moveSpeed = 1.0f;
-        float     rotateSpeed = 1.0f;
+        float     rotateSpeed = 0.05f;
     };
 }

@@ -44,7 +44,7 @@ namespace Viewport {
 
     // Camera.
     glm::mat4 Camera::Get() const {
-        const auto lookAt = _pos + _at;
+        const auto lookAt = _pos + _at * 100.0f;
         return glm::lookAt(_pos, lookAt, _up);
     }
 
@@ -70,13 +70,17 @@ namespace Viewport {
         }
 
         speed = delta * rotateSpeed;
-        if (std::numeric_limits<float>::epsilon() < _rotateXDelta) {
-            _at = glm::rotate(glm::mat4(1.0f), _rotateXDelta * speed, _right) * glm::vec4(_at, 0.0f);
+        if (0.1f < std::fabsf(_rotateXDelta)) {
+            Output::Print(fmt::format("Delta X : {}\n", _rotateXDelta));
+            _at = glm::rotate(glm::mat4(1.0f), _rotateXDelta * speed, _up) * glm::vec4(_at, 0.0f);
+            _right = glm::cross(_at, _up);
             _up = glm::cross(_right, _at);
         }
-        if (std::numeric_limits<float>::epsilon() < _rotateYDelta) {
-            _at = glm::rotate(glm::mat4(1.0f), _rotateYDelta * speed, _up) * glm::vec4(_at, 0.0f);
-            _right = glm::cross(_up, _at);
+        if (0.1f < std::fabsf(_rotateYDelta)) {
+            Output::Print(fmt::format("Delta Y : {}\n", _rotateYDelta));
+            _at = glm::rotate(glm::mat4(1.0f), _rotateYDelta * speed, _right) * glm::vec4(_at, 0.0f);
+            _right = glm::cross(_at, _up);
+            _up = glm::cross(_right, _at);
         }
 
         _keyFlags = 0;

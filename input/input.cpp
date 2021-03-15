@@ -60,7 +60,7 @@ namespace Input {
 
         for (auto& keyPressPair : g_keyPressCallbacks) {
             const auto id = keyPressPair.first;
-            if (g_map->GetBoolPrevious(id)) {
+            if (g_map->GetBoolIsNew(id)) {
                 keyPressPair.second(id);
             }
         }
@@ -75,7 +75,7 @@ namespace Input {
         for (auto& deltaPair : g_deltaCallbacks) {
             const auto id = deltaPair.first;
             const auto delta = g_map->GetFloatDelta(id);
-            if (std::numeric_limits<float>::epsilon() < delta) {
+            if (std::numeric_limits<float>::epsilon() < std::fabsf(delta)) {
                 deltaPair.second(id, delta);
             }
         }

@@ -247,7 +247,7 @@ namespace Render {
         rasterStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterStateInfo.polygonMode = VK_POLYGON_MODE_FILL;
         rasterStateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-        rasterStateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+        rasterStateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
         rasterStateInfo.depthClampEnable = VK_FALSE;
         rasterStateInfo.rasterizerDiscardEnable = VK_FALSE;
         rasterStateInfo.depthBiasEnable = VK_FALSE;

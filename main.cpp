@@ -61,12 +61,12 @@ namespace Main {
         switch (id) {
         case KEY_ROTATE_X:
             if (g_isCameraRotate) {
-                g_camera.RotateX(delta);
+                g_camera.RotateX(-delta);
             }
             break;
         case KEY_ROTATE_Y:
             if (g_isCameraRotate) {
-                g_camera.RotateY(delta);
+                g_camera.RotateY(-delta);
             }
             break;
         default:;
@@ -100,13 +100,14 @@ namespace Main {
             return false;
         }
         Input::Keyboard::SetRelease(KEY_TERMINATE, gainput::KeyEscape, KeyEvent);
-        Input::Keyboard::SetDown(KEY_MOVE_UP, gainput::KeyQ, KeyEvent);
-        Input::Keyboard::SetDown(KEY_MOVE_DOWN, gainput::KeyE, KeyEvent);
+        Input::Keyboard::SetDown(KEY_MOVE_UP, gainput::KeyE, KeyEvent);
+        Input::Keyboard::SetDown(KEY_MOVE_DOWN, gainput::KeyQ, KeyEvent);
         Input::Keyboard::SetDown(KEY_MOVE_LEFT, gainput::KeyA, KeyEvent);
         Input::Keyboard::SetDown(KEY_MOVE_RIGHT, gainput::KeyD, KeyEvent);
         Input::Keyboard::SetDown(KEY_MOVE_FRONT, gainput::KeyW, KeyEvent);
         Input::Keyboard::SetDown(KEY_MOVE_BACK, gainput::KeyS, KeyEvent);
-        Input::Mouse::SetRelease(KEY_ON_ROTATE, gainput::MouseButton1, KeyEvent);
+        Input::Mouse::SetPress(KEY_ON_ROTATE, gainput::MouseButton1, KeyEvent);
+        Input::Mouse::SetRelease(KEY_OFF_ROTATE, gainput::MouseButton1, KeyEvent);
         Input::Mouse::SetDelta(KEY_ROTATE_X, gainput::MouseAxisX, ValueEvent);
         Input::Mouse::SetDelta(KEY_ROTATE_Y, gainput::MouseAxisY, ValueEvent);
 
@@ -155,10 +156,10 @@ namespace Main {
             float u, v;
         };
         constexpr Vertex vertices[] = {
-            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f },
-            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f },
-            {  0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f },
-            { -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f },
+            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f },
+            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f },
+            {  0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f },
+            { -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f },
         };
         g_vb = Buffer::CreateObject(
             { (int64_t*)vertices, _countof(vertices) * sizeof(Vertex) },
@@ -196,7 +197,7 @@ namespace Main {
         static auto rotate = 0.0f;
         static auto seconds = 0.0f;
         seconds += delta;
-        if (10.0f <= seconds)
+        if (100.0f <= seconds)
             rotate += delta;
 
         const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
