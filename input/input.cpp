@@ -8,9 +8,7 @@ namespace Input {
         Keyboard
     };
 
-    using ReleaseCallbacks = std::unordered_map<uint32_t, ReleaseCallback>;
-    using PressCallbacks   = std::unordered_map<uint32_t, PressCallback>;
-    using DownCallbacks    = std::unordered_map<uint32_t, DownCallback>;
+    using KeyCallbacks     = std::unordered_map<uint32_t, KeyCallback>;
     using DeltaCallbacks   = std::unordered_map<uint32_t, ValueCallback>;
     using InputManagerUPtr = std::unique_ptr<gainput::InputManager>;
     using InputMapUPtr     = std::unique_ptr<gainput::InputMap>;
@@ -23,9 +21,10 @@ namespace Input {
 
     gainput::DeviceId      g_keyboardId = gainput::InvalidDeviceId;
     gainput::DeviceId      g_mouseId = gainput::InvalidDeviceId;
-    ReleaseCallbacks       g_keyReleaseCallbacks;
-    PressCallbacks         g_keyPressCallbacks;
-    DownCallbacks          g_keyDownCallbacks;
+
+    KeyCallbacks           g_keyReleaseCallbacks;
+    KeyCallbacks           g_keyPressCallbacks;
+    KeyCallbacks           g_keyDownCallbacks;
     DeltaCallbacks         g_deltaCallbacks;
 
     bool Initialize() {
@@ -42,6 +41,7 @@ namespace Input {
         g_keyReleaseCallbacks.clear();
         g_keyPressCallbacks.clear();
         g_keyDownCallbacks.clear();
+        g_deltaCallbacks.clear();
 
         g_map.reset();
         g_mng.reset();
@@ -109,28 +109,28 @@ namespace Input {
     }
 
     // Keyboard.
-    void Keyboard::SetRelease(uint32_t id, gainput::Key key, ReleaseCallback callback) {
+    void Keyboard::SetRelease(uint32_t id, gainput::Key key, KeyCallback callback) {
         SetKeyCallback(id, static_cast<gainput::DeviceButtonId>(key), callback, g_keyboardId, g_keyReleaseCallbacks);
     }
 
-    void Keyboard::SetPress(uint32_t id, gainput::Key key, PressCallback callback) {
+    void Keyboard::SetPress(uint32_t id, gainput::Key key, KeyCallback callback) {
         SetKeyCallback(id, static_cast<gainput::DeviceButtonId>(key), callback, g_keyboardId, g_keyPressCallbacks);
     }
 
-    void Keyboard::SetDown(uint32_t id, gainput::Key key, DownCallback callback) {
+    void Keyboard::SetDown(uint32_t id, gainput::Key key, KeyCallback callback) {
         SetKeyCallback(id, static_cast<gainput::DeviceButtonId>(key), callback, g_keyboardId, g_keyDownCallbacks);
     }
 
     // Mouse.
-    void Mouse::SetRelease(uint32_t id, gainput::MouseButton key, ReleaseCallback callback) {
+    void Mouse::SetRelease(uint32_t id, gainput::MouseButton key, KeyCallback callback) {
         SetKeyCallback(id, static_cast<gainput::DeviceButtonId>(key), callback, g_mouseId, g_keyReleaseCallbacks);
     }
 
-    void Mouse::SetPress(uint32_t id, gainput::MouseButton key, PressCallback callback) {
+    void Mouse::SetPress(uint32_t id, gainput::MouseButton key, KeyCallback callback) {
         SetKeyCallback(id, static_cast<gainput::DeviceButtonId>(key), callback, g_mouseId, g_keyPressCallbacks);
     }
 
-    void Mouse::SetDown(uint32_t id, gainput::MouseButton key, DownCallback callback) {
+    void Mouse::SetDown(uint32_t id, gainput::MouseButton key, KeyCallback callback) {
         SetKeyCallback(id, static_cast<gainput::DeviceButtonId>(key), callback, g_mouseId, g_keyDownCallbacks);
     }
 

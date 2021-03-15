@@ -41,9 +41,10 @@ namespace Main {
     Buffer::ObjectUPtr     g_ib;
 
     Viewport::Camera       g_camera;
+    Viewport::Projection   g_projection;
 
     void KeyEvent(uint32_t id) {
-        switch(id) {
+        switch (id) {
         case KEY_TERMINATE:  g_isFrameUpdate = false; break;
         case KEY_MOVE_UP:    g_camera.MoveUp(); break;
         case KEY_MOVE_DOWN:  g_camera.MoveDown(); break;
@@ -183,13 +184,13 @@ namespace Main {
         g_camera.Update(delta);
 
         auto& swapChain = Logical::SwapChain::Get();
-        Viewport::SetScreenWidth(static_cast<float>(swapChain.width));
-        Viewport::SetScreenHeight(static_cast<float>(swapChain.height));
-        Viewport::SetFieldOfView(45.0f);
-        Viewport::SetZNear(0.1f);
-        Viewport::SetZFar(100.0f);
+        g_projection.SetScreenWidth(static_cast<float>(swapChain.width));
+        g_projection.SetScreenHeight(static_cast<float>(swapChain.height));
+        g_projection.SetFieldOfView(45.0f);
+        g_projection.SetZNear(0.1f);
+        g_projection.SetZFar(100.0f);
 
-        const auto projection = Viewport::GetProjection();
+        const auto projection = g_projection.Get();
         const auto view = g_camera.Get();
 
         static auto rotate = 0.0f;

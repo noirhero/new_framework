@@ -3,9 +3,7 @@
 #pragma once
 
 namespace Input {
-    using ReleaseCallback = std::function<void(uint32_t)>;
-    using PressCallback = std::function<void(uint32_t)>;
-    using DownCallback = std::function<void(uint32_t)>;
+    using KeyCallback   = std::function<void(uint32_t)>;
     using ValueCallback = std::function<void(uint32_t, float)>;
 
     bool Initialize();
@@ -20,14 +18,14 @@ namespace Input {
 }
 
 namespace Input::Keyboard {
-    void SetRelease(uint32_t id, gainput::Key key, ReleaseCallback callback);
-    void SetPress(uint32_t id, gainput::Key key, PressCallback callback);
-    void SetDown(uint32_t id, gainput::Key key, DownCallback callback);
+    void SetRelease(uint32_t id, gainput::Key key, KeyCallback callback);
+    void SetPress(uint32_t id, gainput::Key key, KeyCallback callback);
+    void SetDown(uint32_t id, gainput::Key key, KeyCallback callback);
 }
 
 namespace Input::Mouse {
-    void SetRelease(uint32_t id, gainput::MouseButton key, ReleaseCallback callback);
-    void SetPress(uint32_t id, gainput::MouseButton key, ReleaseCallback callback);
-    void SetDown(uint32_t id, gainput::MouseButton key, ReleaseCallback callback);
+    void SetRelease(uint32_t id, gainput::MouseButton key, KeyCallback callback);
+    void SetPress(uint32_t id, gainput::MouseButton key, KeyCallback callback);
+    void SetDown(uint32_t id, gainput::MouseButton key, KeyCallback callback);
     void SetDelta(uint32_t id, gainput::MouseButton key, ValueCallback callback);
 }
