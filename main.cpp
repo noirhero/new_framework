@@ -5,12 +5,24 @@
 
 #include "input/input.h"
 #include "renderer/renderer_pch.h"
+#include "viewport/viewport.h"
 
 namespace Main {
     enum KeyEventId : uint32_t {
-        KEY_EVENT_TERMINATE,
+        KEY_TERMINATE,
+        KEY_MOVE_UP,
+        KEY_MOVE_DOWN,
+        KEY_MOVE_LEFT,
+        KEY_MOVE_RIGHT,
+        KEY_MOVE_FRONT,
+        KEY_MOVE_BACK,
+        KEY_ON_ROTATE,
+        KEY_OFF_ROTATE,
+        KEY_ROTATE_X,
+        KEY_ROTATE_Y,
     };
     bool                   g_isFrameUpdate = true;
+    bool                   g_isCameraRotate = false;
 
     Render::PassUPtr       g_renderPass;
     Command::PoolUPtr      g_gpuCmdPool;
@@ -28,10 +40,34 @@ namespace Main {
     Buffer::ObjectUPtr     g_vb;
     Buffer::ObjectUPtr     g_ib;
 
-    void KeyboardEvent(uint32_t id) {
+    Viewport::Camera       g_camera;
+
+    void KeyEvent(uint32_t id) {
         switch(id) {
-        case KEY_EVENT_TERMINATE:
-            g_isFrameUpdate = false;
+        case KEY_TERMINATE:  g_isFrameUpdate = false; break;
+        case KEY_MOVE_UP:    g_camera.MoveUp(); break;
+        case KEY_MOVE_DOWN:  g_camera.MoveDown(); break;
+        case KEY_MOVE_LEFT:  g_camera.MoveLeft(); break;
+        case KEY_MOVE_RIGHT: g_camera.MoveRight(); break;
+        case KEY_MOVE_FRONT: g_camera.MoveFront(); break;
+        case KEY_MOVE_BACK:  g_camera.MoveBack(); break;
+        case KEY_ON_ROTATE:  g_isCameraRotate = true; break;
+        case KEY_OFF_ROTATE: g_isCameraRotate = false; break;
+        default:;
+        }
+    }
+
+    void ValueEvent(uint32_t id, float delta) {
+        switch (id) {
+        case KEY_ROTATE_X:
+            if (g_isCameraRotate) {
+                g_camera.RotateX(delta);
+            }
+            break;
+        case KEY_ROTATE_Y:
+            if (g_isCameraRotate) {
+                g_camera.RotateY(delta);
+            }
             break;
         default:;
         }
@@ -63,7 +99,16 @@ namespace Main {
         if (false == Input::Initialize()) {
             return false;
         }
-        Input::SetKeyboardRelease(KEY_EVENT_TERMINATE, gainput::KeyEscape, KeyboardEvent);
+        Input::Keyboard::SetRelease(KEY_TERMINATE, gainput::KeyEscape, KeyEvent);
+        Input::Keyboard::SetDown(KEY_MOVE_UP, gainput::KeyQ, KeyEvent);
+        Input::Keyboard::SetDown(KEY_MOVE_DOWN, gainput::KeyE, KeyEvent);
+        Input::Keyboard::SetDown(KEY_MOVE_LEFT, gainput::KeyA, KeyEvent);
+        Input::Keyboard::SetDown(KEY_MOVE_RIGHT, gainput::KeyD, KeyEvent);
+        Input::Keyboard::SetDown(KEY_MOVE_FRONT, gainput::KeyW, KeyEvent);
+        Input::Keyboard::SetDown(KEY_MOVE_BACK, gainput::KeyS, KeyEvent);
+        Input::Mouse::SetRelease(KEY_ON_ROTATE, gainput::MouseButton1, KeyEvent);
+        Input::Mouse::SetDelta(KEY_ROTATE_X, gainput::MouseAxisX, ValueEvent);
+        Input::Mouse::SetDelta(KEY_ROTATE_Y, gainput::MouseAxisY, ValueEvent);
 
         if (false == Physical::Instance::Create()) {
             return false;
@@ -110,10 +155,10 @@ namespace Main {
             float u, v;
         };
         constexpr Vertex vertices[] = {
-            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f },
-            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f },
-            {  0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f },
-            { -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f },
+            { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f },
+            {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f },
+            {  0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f },
+            { -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f },
         };
         g_vb = Buffer::CreateObject(
             { (int64_t*)vertices, _countof(vertices) * sizeof(Vertex) },
@@ -121,7 +166,7 @@ namespace Main {
             *g_gpuCmdPool
         );
 
-        constexpr uint16_t indices[] = { 0, 1, 3, 3, 1, 2 };
+        constexpr uint16_t indices[] = { 0, 3, 1, 3, 2, 1 };
         g_ib = Buffer::CreateObject(
             { (int64_t*)indices, _countof(indices) * sizeof(uint16_t) },
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
@@ -136,28 +181,26 @@ namespace Main {
     bool Run(float delta) {
         Input::Update();
 
-        auto& swapChain = Logical::SwapChain::Get();
+        g_camera.Update(delta);
 
-        constexpr glm::mat4 clip(
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, -1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 0.5f, 0.0f,
-            0.0f, 0.0f, 0.5f, 1.0f);
-        const auto aspect = swapChain.width / static_cast<float>(swapChain.height);
-        const auto projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
-        const auto view = glm::lookAt(
-            glm::vec3(0, 0, 5), // Camera is in World Space
-            glm::vec3(0, 0, 0), // and looks at the origin
-            glm::vec3(0, 1, 0)  // Head is up
-        );
+        auto& swapChain = Logical::SwapChain::Get();
+        Viewport::SetScreenWidth(static_cast<float>(swapChain.width));
+        Viewport::SetScreenHeight(static_cast<float>(swapChain.height));
+        Viewport::SetFieldOfView(45.0f);
+        Viewport::SetZNear(0.1f);
+        Viewport::SetZFar(100.0f);
+
+        const auto projection = Viewport::GetProjection();
+        const auto view = g_camera.Get();
+
         static auto rotate = 0.0f;
         static auto seconds = 0.0f;
         seconds += delta;
-        if (100.0f <= seconds)
+        if (10.0f <= seconds)
             rotate += delta;
 
         const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
-        const auto mvp = clip * projection * view * model;
+        const auto mvp = projection * view * model;
         g_ub->Flush({ (int64_t*)&mvp, sizeof(glm::mat4) });
 
         Render::SimpleRenderPresent(*g_gpuCmdPool);

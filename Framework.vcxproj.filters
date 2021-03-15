@@ -72,6 +72,9 @@
     <ClInclude Include="input\input.h">
       <Filter>input</Filter>
     </ClInclude>
+    <ClInclude Include="viewport\viewport.h">
+      <Filter>viewport</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win_main.cpp">
@@ -136,6 +139,9 @@
     <ClCompile Include="input\input.cpp">
       <Filter>input</Filter>
     </ClCompile>
+    <ClCompile Include="viewport\viewport.cpp">
+      <Filter>viewport</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win32">
@@ -152,6 +158,9 @@
     </Filter>
     <Filter Include="input">
       <UniqueIdentifier>{808ab58e-7d0f-4781-8658-eb188c3ea40d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="viewport">
+      <UniqueIdentifier>{64eb9c19-a425-49dd-b3d1-9b57a7b531bc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
