@@ -58,6 +58,6 @@ namespace Viewport {
 
     public:
         float     moveSpeed = 1.0f;
-        float     rotateSpeed = 0.1f;
+        float     rotateSpeed = 0.5f;
     };
 }
