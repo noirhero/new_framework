@@ -64,6 +64,8 @@ int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR 
 
     MSG msg{};
     while (WM_QUIT != msg.message) {
+        Input::Update();
+
         if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);

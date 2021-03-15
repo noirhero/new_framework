@@ -71,17 +71,16 @@ namespace Viewport {
 
         speed = delta * rotateSpeed;
         if (0.1f < std::fabsf(_rotateXDelta)) {
-            Output::Print(fmt::format("Delta X : {}\n", _rotateXDelta));
             _at = glm::rotate(glm::mat4(1.0f), _rotateXDelta * speed, _up) * glm::vec4(_at, 0.0f);
-            _right = glm::cross(_at, _up);
-            _up = glm::cross(_right, _at);
         }
         if (0.1f < std::fabsf(_rotateYDelta)) {
-            Output::Print(fmt::format("Delta Y : {}\n", _rotateYDelta));
-            _at = glm::rotate(glm::mat4(1.0f), _rotateYDelta * speed, _right) * glm::vec4(_at, 0.0f);
-            _right = glm::cross(_at, _up);
-            _up = glm::cross(_right, _at);
+            const glm::vec3 newAt = glm::rotate(glm::mat4(1.0f), _rotateYDelta * speed, _right) * glm::vec4(_at, 0.0f);
+            const auto angle = glm::degrees(glm::acos(glm::dot(newAt, _up)));
+            if(5.0f < angle) {
+                _at = newAt;
+            }
         }
+        _right = glm::cross(_at, _up);
 
         _keyFlags = 0;
         _rotateXDelta = 0.0f;

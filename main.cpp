@@ -180,8 +180,6 @@ namespace Main {
     }
 
     bool Run(float delta) {
-        Input::Update();
-
         g_camera.Update(delta);
 
         auto& swapChain = Logical::SwapChain::Get();
