@@ -3,9 +3,15 @@
 #include "pch.h"
 #include "main.h"
 
+#include "input/input.h"
 #include "renderer/renderer_pch.h"
 
 namespace Main {
+    enum KeyEventId : uint32_t {
+        KEY_EVENT_TERMINATE,
+    };
+    bool                   g_isFrameUpdate = true;
+
     Render::PassUPtr       g_renderPass;
     Command::PoolUPtr      g_gpuCmdPool;
 
@@ -22,7 +28,18 @@ namespace Main {
     Buffer::ObjectUPtr     g_vb;
     Buffer::ObjectUPtr     g_ib;
 
-    void Resize(uint32_t /*width*/, uint32_t /*height*/) {
+    void KeyboardEvent(uint32_t id) {
+        switch(id) {
+        case KEY_EVENT_TERMINATE:
+            g_isFrameUpdate = false;
+            break;
+        default:;
+        }
+    }
+
+    void Resize(uint32_t width, uint32_t height) {
+        Input::SetDisplaySize(width, height);
+
         if (VK_NULL_HANDLE == Physical::Instance::Get()) {
             return;
         }
@@ -43,6 +60,11 @@ namespace Main {
     }
 
     bool Initialize() {
+        if (false == Input::Initialize()) {
+            return false;
+        }
+        Input::SetKeyboardRelease(KEY_EVENT_TERMINATE, gainput::KeyEscape, KeyboardEvent);
+
         if (false == Physical::Instance::Create()) {
             return false;
         }
@@ -112,6 +134,8 @@ namespace Main {
     }
 
     bool Run(float delta) {
+        Input::Update();
+
         auto& swapChain = Logical::SwapChain::Get();
 
         constexpr glm::mat4 clip(
@@ -138,7 +162,7 @@ namespace Main {
 
         Render::SimpleRenderPresent(*g_gpuCmdPool);
 
-        return true;
+        return g_isFrameUpdate;
     }
 
     void Finalize() {
@@ -160,5 +184,7 @@ namespace Main {
         Renderer::Debugger::Destroy(Physical::Instance::Get());
 #endif
         Physical::Instance::Destroy();
+
+        Input::Destroy();
     }
 }

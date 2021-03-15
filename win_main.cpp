@@ -1,9 +1,10 @@
 ﻿// Copyright 2018-2021 TAP, Inc. All Rights Reserved.
 
 #include "pch.h"
-#include "main.h"
 
 #include "win_handle.h"
+#include "main.h"
+#include "input/input.h"
 
 LRESULT CALLBACK WndProc(HWND winHandle, UINT message, WPARAM paramW, LPARAM paramL) {
     switch (message) {
@@ -66,6 +67,7 @@ int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR 
         if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
+            Input::HandleMessage(msg);
         }
         else {
             if (false == Main::Run(Timer::Update())) {

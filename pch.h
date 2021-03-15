@@ -56,6 +56,17 @@ using namespace std::string_literals;
 #pragma warning(default : 4458)
 #pragma warning(default : 5054)
 
+#pragma warning(disable : 4245)
+#pragma warning(disable : 4267)
+#if defined(_DEBUG)
+#pragma comment(lib, "gainput-d.lib")
+#else
+#pragma comment(lib, "gainput.lib")
+#endif
+#include <gainput/gainput.h>
+#pragma warning(default : 4245)
+#pragma warning(default : 4267)
+
 #include "util/util_output.h"
 #include "util/util_path.h"
 #include "util/util_file.h"

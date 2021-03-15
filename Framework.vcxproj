@@ -82,7 +82,7 @@
     <IntDir>$(SolutionDir)obj\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)_$(Platform)_$(Configuration)</TargetName>
     <IncludePath>$(VK_SDK_PATH)\Include;$(SolutionDir);$(SolutionDir)third_party;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VK_SDK_PATH)\Lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VK_SDK_PATH)\Lib;$(SolutionDir)third_party\gainput\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -90,7 +90,7 @@
     <IntDir>$(SolutionDir)obj\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)_$(Platform)_$(Configuration)</TargetName>
     <IncludePath>$(VK_SDK_PATH)\Include;$(SolutionDir);$(SolutionDir)third_party;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VK_SDK_PATH)\Lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VK_SDK_PATH)\Lib;$(SolutionDir)third_party\gainput\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -139,6 +139,9 @@
     <PreBuildEvent>
       <Command>$(SolutionDir)resources\shaders\compile_glsl.bat</Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>xcopy "$(SolutionDir)third_party\gainput\lib\*.dll" "$(OutputPath)" /d /y</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -163,8 +166,12 @@
     <PreBuildEvent>
       <Command>$(SolutionDir)resources\shaders\compile_glsl.bat</Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>xcopy "$(SolutionDir)third_party\gainput\lib\*.dll" "$(OutputPath)" /d /y</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="input\input.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Renderer\allocator_cpu.h" />
@@ -191,6 +198,7 @@
     <ClInclude Include="win_handle.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="input\input.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Renderer\allocator_cpu.cpp" />
     <ClCompile Include="renderer\allocator_vma.cpp" />
