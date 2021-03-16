@@ -75,6 +75,9 @@
     <ClInclude Include="viewport\viewport.h">
       <Filter>viewport</Filter>
     </ClInclude>
+    <ClInclude Include="util\util_gltf.h">
+      <Filter>util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win_main.cpp">
@@ -141,6 +144,9 @@
     </ClCompile>
     <ClCompile Include="viewport\viewport.cpp">
       <Filter>viewport</Filter>
+    </ClCompile>
+    <ClCompile Include="util\util_gltf.cpp">
+      <Filter>util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

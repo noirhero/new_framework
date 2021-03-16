@@ -65,10 +65,10 @@ namespace Viewport {
         }
 
         speed = delta * rotateSpeed;
-        if (0.1f < std::fabsf(_rotateXDelta)) {
+        if (std::numeric_limits<float>::epsilon() < std::fabsf(_rotateXDelta)) {
             _at = glm::rotate(glm::mat4(1.0f), _rotateXDelta * speed, _up) * glm::vec4(_at, 0.0f);
         }
-        if (0.1f < std::fabsf(_rotateYDelta)) {
+        if (std::numeric_limits<float>::epsilon() < std::fabsf(_rotateYDelta)) {
             const glm::vec3 newAt = glm::rotate(glm::mat4(1.0f), _rotateYDelta * speed, _right) * glm::vec4(_at, 0.0f);
             const auto angle = glm::degrees(glm::acos(glm::dot(newAt, _up)));
             if (5.0f < angle) {

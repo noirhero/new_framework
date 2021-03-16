@@ -192,6 +192,7 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="util\util_file.h" />
+    <ClInclude Include="util\util_gltf.h" />
     <ClInclude Include="util\util_output.h" />
     <ClInclude Include="util\util_path.h" />
     <ClInclude Include="util\util_timer.h" />
@@ -215,6 +216,7 @@
     <ClCompile Include="renderer\shader.cpp" />
     <ClCompile Include="renderer\surface.cpp" />
     <ClCompile Include="util\util_file.cpp" />
+    <ClCompile Include="util\util_gltf.cpp" />
     <ClCompile Include="util\util_output.cpp" />
     <ClCompile Include="util\util_path.cpp" />
     <ClCompile Include="util\util_timer.cpp" />

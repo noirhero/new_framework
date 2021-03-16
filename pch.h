@@ -67,9 +67,12 @@ using namespace std::string_literals;
 #pragma warning(default : 4245)
 #pragma warning(default : 4267)
 
+#include <tinygltf/tiny_gltf.h>
+
+#include "renderer/renderer_common.h"
+
 #include "util/util_output.h"
 #include "util/util_path.h"
 #include "util/util_file.h"
 #include "util/util_timer.h"
-
-#include "renderer/renderer_common.h"
+#include "util/util_gltf.h"

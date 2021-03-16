@@ -177,30 +177,30 @@ namespace Main {
 
         Render::FillSimpleRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, *g_vb, *g_ib);
 
+        g_projection.SetFieldOfView(45.0f);
+        g_projection.SetZNear(0.1f);
+        g_projection.SetZFar(100.0f);
+
+        auto rootNode = GLTF::Load(Path::GetResourcePathAnsi() + "models/cube.gltf"s);
+
         return true;
     }
 
     bool Run(float delta) {
         g_camera.Update(delta);
 
-        auto& swapChain = Logical::SwapChain::Get();
-        g_projection.SetScreenWidth(static_cast<float>(swapChain.width));
-        g_projection.SetScreenHeight(static_cast<float>(swapChain.height));
-        g_projection.SetFieldOfView(45.0f);
-        g_projection.SetZNear(0.1f);
-        g_projection.SetZFar(100.0f);
-
-        const auto projection = g_projection.Get();
-        const auto view = g_camera.Get();
-
         static auto rotate = 0.0f;
         static auto seconds = 0.0f;
         seconds += delta;
         if (100.0f <= seconds)
             rotate += delta;
-
         const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
-        const auto mvp = projection * view * model;
+
+        auto& swapChain = Logical::SwapChain::Get();
+        g_projection.SetScreenWidth(static_cast<float>(swapChain.width));
+        g_projection.SetScreenHeight(static_cast<float>(swapChain.height));
+
+        const auto mvp = g_projection.Get() * g_camera.Get() * model;
         g_ub->Flush({ (int64_t*)&mvp, sizeof(glm::mat4) });
 
         Render::SimpleRenderPresent(*g_gpuCmdPool);
