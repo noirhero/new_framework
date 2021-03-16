@@ -137,12 +137,12 @@ namespace GLTF {
         }
 
         // Meshes.
-    	for(const auto& gltfMesh : gltfModel.meshes) {
+        for (const auto& gltfMesh : gltfModel.meshes) {
             model->meshes.emplace_back();
             auto& mesh = model->meshes.back();
 
             ImportMesh(mesh, gltfMesh, gltfModel);
-    	}
+        }
 
         // Nodes.
         const auto& scene = gltfModel.scenes[0 <= gltfModel.defaultScene ? gltfModel.defaultScene : 0];
