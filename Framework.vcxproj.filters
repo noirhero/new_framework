@@ -78,6 +78,9 @@
     <ClInclude Include="util\util_gltf.h">
       <Filter>util</Filter>
     </ClInclude>
+    <ClInclude Include="model\model.h">
+      <Filter>model</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win_main.cpp">
@@ -148,6 +151,9 @@
     <ClCompile Include="util\util_gltf.cpp">
       <Filter>util</Filter>
     </ClCompile>
+    <ClCompile Include="model\model.cpp">
+      <Filter>model</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="win32">
@@ -167,6 +173,9 @@
     </Filter>
     <Filter Include="viewport">
       <UniqueIdentifier>{64eb9c19-a425-49dd-b3d1-9b57a7b531bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="model">
+      <UniqueIdentifier>{7f7daa0b-40db-49d2-8687-8c4c002b2207}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -61,7 +61,7 @@ namespace GLTF {
             destPrimitive.materialIndex = srcPrimitive.material;
 
             // Positions.
-            const auto& posAttrPair = srcAttributes.find("POSITION");
+            const auto posAttrPair = srcAttributes.find("POSITION");
             assert(srcAttributes.end() != posAttrPair);
 
             const auto& posAccessor = model.accessors[posAttrPair->second];
@@ -79,7 +79,7 @@ namespace GLTF {
             dest.bBox.max = glm::max(destPrimitive.bBox.max, dest.bBox.max);
 
             // Normals.
-            const auto& norAttrPair = srcAttributes.find("NORMAL");
+            const auto norAttrPair = srcAttributes.find("NORMAL");
             if (srcAttributes.end() != norAttrPair) {
                 const auto& norAccessor = model.accessors[norAttrPair->second];
                 assert(posAccessor.count == norAccessor.count);
@@ -93,7 +93,7 @@ namespace GLTF {
             }
 
             // Texture coordinate 0.
-            const auto& uv0Pair = srcAttributes.find("TEXCOORD_0");
+            const auto uv0Pair = srcAttributes.find("TEXCOORD_0");
             if (srcAttributes.end() != uv0Pair) {
                 const auto& uv0Accessor = model.accessors[uv0Pair->second];
                 assert(posAccessor.count == uv0Accessor.count);

@@ -23,6 +23,7 @@ namespace Render {
     public:
         SwapChainFrameBuffer(VkFrameBuffers&& buffers) : _buffers(std::move(buffers)) {}
         ~SwapChainFrameBuffer();
+        SwapChainFrameBuffer& operator=(const SwapChainFrameBuffer&) = delete;
 
         VkFrameBuffers Get() const noexcept { return _buffers; }
 
@@ -39,6 +40,7 @@ namespace Render {
     public:
         Pass(VkRenderPass handle, SwapChainFrameBufferUPtr frameBuffer) : _handle(handle), _frameBuffer(std::move(frameBuffer)) {}
         ~Pass();
+        Pass& operator=(const Pass&) = delete;
 
         VkRenderPass             Get() const noexcept { return _handle; }
         VkFrameBuffers           GetFrameBuffers() const noexcept;
@@ -57,6 +59,7 @@ namespace Render {
     public:
         PipelineCache(VkPipelineCache handle) : _handle(handle) {}
         ~PipelineCache();
+        PipelineCache& operator=(const PipelineCache&) = delete;
 
     private:
         VkPipelineCache _handle = VK_NULL_HANDLE;
@@ -69,6 +72,7 @@ namespace Render {
     public:
         PipelineLayout(VkPipelineLayout handle) : _handle(handle) {}
         ~PipelineLayout();
+        PipelineLayout& operator=(const PipelineLayout&) = delete;
 
         VkPipelineLayout Get() const noexcept { return _handle; }
 
@@ -83,6 +87,7 @@ namespace Render {
     public:
         Pipeline(VkPipeline handle, PipelineLayoutUPtr layout, PipelineCacheUPtr cache) : _handle(handle), _layout(std::move(layout)), _cache(std::move(cache)) {}
         ~Pipeline();
+        Pipeline& operator=(const Pipeline&) = delete;
 
         VkPipeline         Get() const noexcept { return _handle; }
         VkPipelineLayout   GetLayout() const noexcept;

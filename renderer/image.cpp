@@ -24,9 +24,36 @@ namespace Image {
         info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
         info.magFilter = VK_FILTER_LINEAR;
         info.minFilter = VK_FILTER_LINEAR;
-        info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.maxAnisotropy = Physical::Device::GetGPU().property.limits.maxSamplerAnisotropy;
+        info.anisotropyEnable = 1.0f < info.maxAnisotropy ? VK_TRUE : VK_FALSE;
+        info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        info.unnormalizedCoordinates = VK_FALSE;
+        info.compareEnable = VK_FALSE;
+        info.compareOp = VK_COMPARE_OP_ALWAYS;
+        info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        info.mipLodBias = 0.0f;
+        info.minLod = 0.0f;
+        info.maxLod = std::numeric_limits<float>::max();
+
+        VkSampler sampler = VK_NULL_HANDLE;
+        if (VK_SUCCESS != vkCreateSampler(Logical::Device::Get(), &info, Allocator::CPU(), &sampler)) {
+            return nullptr;
+        }
+
+        return std::make_unique<Sampler>(sampler);
+    }
+
+    SamplerUPtr CreateSampler(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode modeU, VkSamplerAddressMode modeV, VkSamplerAddressMode modeW) {
+        VkSamplerCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        info.magFilter = magFilter;
+        info.minFilter = minFilter;
+        info.addressModeU = modeU;
+        info.addressModeV = modeV;
+        info.addressModeW = modeW;
         info.maxAnisotropy = Physical::Device::GetGPU().property.limits.maxSamplerAnisotropy;
         info.anisotropyEnable = 1.0f < info.maxAnisotropy ? VK_TRUE : VK_FALSE;
         info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;

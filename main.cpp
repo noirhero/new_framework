@@ -6,6 +6,7 @@
 #include "input/input.h"
 #include "renderer/renderer_pch.h"
 #include "viewport/viewport.h"
+#include "model/model.h"
 
 namespace Main {
     enum KeyEventId : uint32_t {
@@ -182,6 +183,11 @@ namespace Main {
         g_projection.SetZFar(100.0f);
 
         auto loadModel = GLTF::Load(Path::GetResourcePathAnsi() + "models/cube.gltf"s);
+
+        Model::Sampler::Initialize();
+        auto sampler1 = Model::Sampler::Get(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+        auto sampler2 = Model::Sampler::Get(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+        Model::Sampler::Destroy();
 
         return true;
     }
