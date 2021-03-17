@@ -181,7 +181,7 @@ namespace Main {
         g_projection.SetZNear(0.1f);
         g_projection.SetZFar(100.0f);
 
-        auto rootNode = GLTF::Load(Path::GetResourcePathAnsi() + "models/cube.gltf"s);
+        auto loadModel = GLTF::Load(Path::GetResourcePathAnsi() + "models/cube.gltf"s);
 
         return true;
     }
