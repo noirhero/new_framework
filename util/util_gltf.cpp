@@ -61,10 +61,10 @@ namespace GLTF {
             destPrimitive.materialIndex = srcPrimitive.material;
 
             // Positions.
-            const auto posAttrPair = srcAttributes.find("POSITION");
-            assert(srcAttributes.end() != posAttrPair);
+            const auto posIterator = srcAttributes.find("POSITION");
+            assert(srcAttributes.end() != posIterator);
 
-            const auto& posAccessor = model.accessors[posAttrPair->second];
+            const auto& posAccessor = model.accessors[posIterator->second];
             const auto& posView = model.bufferViews[posAccessor.bufferView];
             const auto* srcPositions = reinterpret_cast<const float*>(&model.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]);
 
@@ -79,9 +79,9 @@ namespace GLTF {
             dest.bBox.max = glm::max(destPrimitive.bBox.max, dest.bBox.max);
 
             // Normals.
-            const auto norAttrPair = srcAttributes.find("NORMAL");
-            if (srcAttributes.end() != norAttrPair) {
-                const auto& norAccessor = model.accessors[norAttrPair->second];
+            const auto norIterator = srcAttributes.find("NORMAL");
+            if (srcAttributes.end() != norIterator) {
+                const auto& norAccessor = model.accessors[norIterator->second];
                 assert(posAccessor.count == norAccessor.count);
 
                 const auto& norView = model.bufferViews[norAccessor.bufferView];
@@ -93,9 +93,9 @@ namespace GLTF {
             }
 
             // Texture coordinate 0.
-            const auto uv0Pair = srcAttributes.find("TEXCOORD_0");
-            if (srcAttributes.end() != uv0Pair) {
-                const auto& uv0Accessor = model.accessors[uv0Pair->second];
+            const auto uv0Iterator = srcAttributes.find("TEXCOORD_0");
+            if (srcAttributes.end() != uv0Iterator) {
+                const auto& uv0Accessor = model.accessors[uv0Iterator->second];
                 assert(posAccessor.count == uv0Accessor.count);
 
                 const auto& uv0View = model.bufferViews[uv0Accessor.bufferView];
@@ -212,52 +212,52 @@ namespace GLTF {
 
 	void ImportMaterial(Material& dest, const tinygltf::Material& src) {
         // Albedo.
-        const auto albedoPair = src.values.find("baseColorTexture");
-        if (src.values.end() != albedoPair) {
-            dest.albedoIndex = albedoPair->second.TextureIndex();
-            dest.albedoUVIndex = albedoPair->second.TextureTexCoord();
+        const auto albedoIterator = src.values.find("baseColorTexture");
+        if (src.values.end() != albedoIterator) {
+            dest.albedoIndex = albedoIterator->second.TextureIndex();
+            dest.albedoUVIndex = albedoIterator->second.TextureTexCoord();
         }
 
         // Normal.
-        const auto normalPair = src.additionalValues.find("normalTexture");
-        if (src.additionalValues.end() != normalPair) {
-            dest.normalIndex = normalPair->second.TextureIndex();
-            dest.normalUVIndex = normalPair->second.TextureTexCoord();
+        const auto normalIterator = src.additionalValues.find("normalTexture");
+        if (src.additionalValues.end() != normalIterator) {
+            dest.normalIndex = normalIterator->second.TextureIndex();
+            dest.normalUVIndex = normalIterator->second.TextureTexCoord();
         }
 
         // Metallic roughness.
-        const auto metallicRoughnessPair = src.values.find("metallicRoughnessTexture");
-        if (src.values.end() != metallicRoughnessPair) {
-            dest.metallicRoughnessIndex = metallicRoughnessPair->second.TextureIndex();
-            dest.metallicRoughnessUVIndex = metallicRoughnessPair->second.TextureTexCoord();
+        const auto metallicRoughnessIterator = src.values.find("metallicRoughnessTexture");
+        if (src.values.end() != metallicRoughnessIterator) {
+            dest.metallicRoughnessIndex = metallicRoughnessIterator->second.TextureIndex();
+            dest.metallicRoughnessUVIndex = metallicRoughnessIterator->second.TextureTexCoord();
         }
 
         // Alpha mode.
-        const auto alphaModePair = src.additionalValues.find("alphaMode");
-        if (src.additionalValues.end() != alphaModePair) {
-            if ("BLEND"s == alphaModePair->second.string_value) {
+        const auto alphaModeIterator = src.additionalValues.find("alphaMode");
+        if (src.additionalValues.end() != alphaModeIterator) {
+            if ("BLEND"s == alphaModeIterator->second.string_value) {
                 dest.alphaMode = Material::Alpha::Blend;
             }
-            else if ("MASK"s == albedoPair->second.string_value) {
+            else if ("MASK"s == albedoIterator->second.string_value) {
                 dest.alphaMode = Material::Alpha::Mask;
                 dest.alphaCutoff = 0.5f;
             }
         }
-        const auto alphaCutOffPair = src.additionalValues.find("alphaCutoff");
-        if (src.additionalValues.end() != alphaCutOffPair) {
-            dest.alphaCutoff = static_cast<float>(alphaCutOffPair->second.Factor());
+        const auto alphaCutOffIterator = src.additionalValues.find("alphaCutoff");
+        if (src.additionalValues.end() != alphaCutOffIterator) {
+            dest.alphaCutoff = static_cast<float>(alphaCutOffIterator->second.Factor());
         }
 
         // Roughness factor.
-        const auto roughnessFactorPair = src.values.find("roughnessFactor");
-        if (src.values.end() != roughnessFactorPair) {
-            dest.roughness = static_cast<float>(roughnessFactorPair->second.Factor());
+        const auto roughnessFactorIterator = src.values.find("roughnessFactor");
+        if (src.values.end() != roughnessFactorIterator) {
+            dest.roughness = static_cast<float>(roughnessFactorIterator->second.Factor());
         }
 
         // Metallic factor.
-        const auto metallicFactorPair = src.values.find("metallicFactor");
-        if (src.values.end() != metallicFactorPair) {
-            dest.metallic = static_cast<float>(metallicFactorPair->second.Factor());
+        const auto metallicFactorIterator = src.values.find("metallicFactor");
+        if (src.values.end() != metallicFactorIterator) {
+            dest.metallic = static_cast<float>(metallicFactorIterator->second.Factor());
         }
     }
 

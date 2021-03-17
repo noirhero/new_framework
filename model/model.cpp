@@ -38,14 +38,30 @@ namespace Model {
     }
 
     Image::Sampler& Sampler::Get(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode modeU, VkSamplerAddressMode modeV, VkSamplerAddressMode modeW) {
-        const auto findPair = g_samplers.find({ minFilter, magFilter, modeU, modeV, modeW });
-        if (g_samplers.end() == findPair) {
+        const auto findIterator = g_samplers.find({ minFilter, magFilter, modeU, modeV, modeW });
+        if (g_samplers.end() == findIterator) {
             const auto result = g_samplers.emplace(SamplerKey{ minFilter, magFilter, modeU, modeV, modeW }, Image::CreateSampler(minFilter, magFilter, modeU, modeV, modeW));
             if (false == result.second) {
                 return *g_defaultSampler;
             }
             return *result.first->second;
         }
-        return *findPair->second;
+        return *findIterator->second;
     }
+
+    // Texture2D.
+    using Texture2Ds = std::unordered_map<std::string, Image::Dimension2>;
+    Texture2Ds g_texture2Ds;
+
+    bool Texture2D::Initialize() {
+        return false;
+    }
+
+    void Texture2D::Destroy() {
+        g_texture2Ds.clear();
+    }
+
+    //Image::Dimension2& Texture2D::Get(std::string&& key, std::span<uint8_t>&& pixels, uint32_t width, uint32_t height) {
+
+    //}
 }
