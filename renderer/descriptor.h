@@ -15,6 +15,8 @@ namespace Descriptor {
     public:
         Set(VkDescriptorPool pool, VkDescriptorSet handle) : _pool(pool), _handle(handle) {}
         ~Set();
+
+        Set(const Set&) = delete;
         Set& operator=(const Set&) = delete;
 
         constexpr VkDescriptorSet Get() const noexcept { return _handle; }
@@ -31,6 +33,8 @@ namespace Descriptor {
     public:
         Pool(VkDescriptorPool handle, SetUPtr&& set) : _handle(handle), _set(std::move(set)) {}
         ~Pool();
+
+        Pool(const Pool&) = delete;
         Pool& operator=(const Pool&) = delete;
 
         VkDescriptorSet  GetSet() const noexcept;
@@ -53,6 +57,8 @@ namespace Descriptor {
     public:
         Layout(VkDescriptorSetLayout handle, PoolUPtr&& pool) : _handle(handle), _pool(std::move(pool)) {}
         ~Layout();
+
+        Layout(const Layout&) = delete;
         Layout& operator=(const Layout&) = delete;
 
         VkDescriptorSetLayout Get() const noexcept { return _handle; }

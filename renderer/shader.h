@@ -7,6 +7,8 @@ namespace Shader {
     public:
         Module(VkShaderModule handle) : _handle(handle) {}
         ~Module();
+
+        Module(const Module&) = delete;
         Module& operator=(const Module&) = delete;
 
         VkShaderModule Get() const noexcept { return _handle; }

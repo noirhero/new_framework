@@ -7,6 +7,8 @@ namespace Command {
     public:
         Buffer(VkCommandPool cmdPool, VkCommandBuffer buffer) : _cmdPool(cmdPool), _buffer(buffer) {}
         ~Buffer();
+
+        Buffer(const Buffer&) = delete;
         Buffer& operator=(const Buffer&) = delete;
 
         VkCommandBuffer Get() const noexcept { return _buffer; }
@@ -23,6 +25,8 @@ namespace Command {
     public:
         Pool(VkCommandPool cmdPool) : _handle(cmdPool) {}
         ~Pool();
+
+        Pool(const Pool&) = delete;
         Pool& operator=(const Pool&) = delete;
 
         VkCommandBuffer  ImmediatelyBegin();

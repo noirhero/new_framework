@@ -184,11 +184,6 @@ namespace Main {
 
         auto loadModel = GLTF::Load(Path::GetResourcePathAnsi() + "models/cube.gltf"s);
 
-        Model::Sampler::Initialize();
-        auto sampler1 = Model::Sampler::Get(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT);
-        auto sampler2 = Model::Sampler::Get(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT);
-        Model::Sampler::Destroy();
-
         return true;
     }
 

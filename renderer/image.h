@@ -11,6 +11,8 @@ namespace Image {
     public:
         Sampler(VkSampler handle) : _handle(handle) {}
         ~Sampler();
+
+        Sampler(const Sampler&) = delete;
         Sampler& operator=(const Sampler&) = delete;
 
         constexpr VkSampler Get() const noexcept { return _handle; }
@@ -29,6 +31,8 @@ namespace Image {
     public:
         Dimension2(VkImage image, VmaAllocation alloc, VkImageView view) : _image(image), _alloc(alloc), _view(view) {}
         ~Dimension2();
+
+        Dimension2(const Dimension2&) = delete;
         Dimension2& operator=(const Dimension2&) = delete;
 
         VkDescriptorImageInfo Information(VkSampler sampler) const noexcept;

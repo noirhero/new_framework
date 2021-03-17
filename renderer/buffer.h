@@ -11,6 +11,8 @@ namespace Buffer {
     public:
         Uniform(VkDeviceSize size, VkBuffer buffer, VmaAllocation alloc, const VmaAllocationInfo& allocInfo) : _size(size), _buffer(buffer), _alloc(alloc), _allocInfo(allocInfo) {}
         ~Uniform();
+
+        Uniform(const Uniform&) = delete;
         Uniform& operator=(const Uniform&) = delete;
 
         VkDescriptorBufferInfo Information() const noexcept;
@@ -32,6 +34,8 @@ namespace Buffer {
     public:
         Object(VkBuffer handle, VmaAllocation alloc) : _handle(handle), _alloc(alloc) {}
         ~Object();
+
+        Object(const Object&) = delete;
         Object& operator=(const Object&) = delete;
 
         VkBuffer      Get() const noexcept { return _handle; }

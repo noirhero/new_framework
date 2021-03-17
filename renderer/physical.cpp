@@ -52,22 +52,22 @@ namespace Physical {
             }
         }
 
-        for (const auto& layer : layers) {
+        for (const auto& layerProperty : layers) {
             uint32_t extensionCount = 0;
-            vkEnumerateInstanceExtensionProperties(layer.layerName, &extensionCount, nullptr);
+            vkEnumerateInstanceExtensionProperties(layerProperty.layerName, &extensionCount, nullptr);
             if (0 == extensionCount) {
-                g_instanceLayers.emplace_back(InstanceLayer{ layer });
+                g_instanceLayers.emplace_back(InstanceLayer{ layerProperty });
                 continue;
             }
 
             VkExtensionPropertyArray extensions(extensionCount);
-            vkEnumerateInstanceExtensionProperties(layer.layerName, &extensionCount, extensions.data());
+            vkEnumerateInstanceExtensionProperties(layerProperty.layerName, &extensionCount, extensions.data());
 
             for (const auto& extensionProperties : extensions) {
                 Util::CheckToInstanceExtensionProperties(extensionProperties);
             }
 
-            g_instanceLayers.emplace_back(InstanceLayer{ layer, extensions });
+            g_instanceLayers.emplace_back(InstanceLayer{ layerProperty, extensions });
         }
 
         return true;
