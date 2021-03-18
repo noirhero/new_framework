@@ -75,4 +75,22 @@ namespace Model {
         }
         return *findIterator->second;
     }
+
+    // Skeletal.
+    using Skeletals = std::unordered_map<std::string, Skeletal>;
+    Skeletals g_skeletals;
+    Skeletal  g_defaultSkeletal;
+
+    struct SkeletalTemp {
+        int32_t     depth = 0;
+        GLTF::Node* node = nullptr;
+    };
+
+    //void CollectTemporalNodes(std::vector<SkeletalTemp*>& result, int32_t depth, const GLTF::Node* node) {
+    //    result.emplace_back(depth++, node);
+
+    //    for (const auto* child : node->children) {
+    //        CollectTemporalNodes(result, depth, child);
+    //    }
+    //}
 }

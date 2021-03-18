@@ -80,6 +80,7 @@ namespace GLTF {
     };
 
     struct Model {
+        std::string            name;
         Node                   root;
         Meshes                 meshes;
         Samplers               samplers;

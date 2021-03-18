@@ -32,6 +32,10 @@ namespace GLTF {
         if (16 == src.matrix.size()) {
             dest.local = glm::make_mat4(src.matrix.data());
         }
+        else {
+            constexpr auto identity = glm::mat4(1.0f);
+            dest.local = glm::scale(identity, dest.scale) * glm::mat4(dest.rotation) * glm::translate(identity, dest.translation);
+        }
     }
 
     Node* ImportNode(Node& parent, const tinygltf::Node& src, const tinygltf::Model& model) {
@@ -272,6 +276,9 @@ namespace GLTF {
         if (false == context.LoadASCIIFromFile(&gltfModel, &err, &war, path)) {
             return model;
         }
+        assert(0 < gltfModel.nodes.size());
+
+        model->name = gltfModel.nodes[0].name;
 
         // Nodes.
         const auto& scene = gltfModel.scenes[0 <= gltfModel.defaultScene ? gltfModel.defaultScene : 0];
