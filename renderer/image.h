@@ -46,4 +46,5 @@ namespace Image {
 
     Dimension2UPtr CreateSimple2D(std::string&& path, Command::Pool& cmdPool);
     Dimension2UPtr CreateFourPixel2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, Command::Pool& cmdPool);
+    Dimension2UPtr CreateSrcTo2D(std::span<const uint8_t>&& src, VkExtent3D&& extent, Command::Pool& cmdPool);
 }

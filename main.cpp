@@ -184,6 +184,15 @@ namespace Main {
 
         auto loadModel = GLTF::Load(Path::GetResourcePathAnsi() + "models/cube.gltf"s);
 
+        Model::Sampler::Initialize();
+        Model::Texture2D::Initialize(*g_gpuCmdPool);
+        for (const auto& modelTexture : loadModel->textures) {
+            static uint32_t index = 0;
+            Model::Texture2D::Get(fmt::format("cube_{}", index++), modelTexture.buffer, modelTexture.width, modelTexture.height, *g_gpuCmdPool);
+        }
+        Model::Texture2D::Destroy();
+        Model::Sampler::Destroy();
+
         return true;
     }
 

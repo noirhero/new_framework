@@ -22,7 +22,7 @@ namespace Model {
     bool SamplerKey::operator==(const SamplerKey& other) const {
         return SamplerKeyHashFn(*this) == SamplerKeyHashFn(other);
     }
-    using Samplers = std::unordered_map <SamplerKey, Image::SamplerUPtr, decltype(SamplerKeyHashFn)>;
+    using Samplers = std::unordered_map<SamplerKey, Image::SamplerUPtr, decltype(SamplerKeyHashFn)>;
 
     Samplers           g_samplers;
     Image::SamplerUPtr g_defaultSampler;
@@ -50,18 +50,29 @@ namespace Model {
     }
 
     // Texture2D.
-    using Texture2Ds = std::unordered_map<std::string, Image::Dimension2>;
-    Texture2Ds g_texture2Ds;
+    using Texture2Ds = std::unordered_map<std::string, Image::Dimension2UPtr>;
+    Texture2Ds            g_texture2Ds;
+    Image::Dimension2UPtr g_defaultTexture2D;
 
-    bool Texture2D::Initialize() {
-        return false;
+    bool Texture2D::Initialize(Command::Pool& cmdPool) {
+        g_defaultTexture2D = Image::CreateFourPixel2D(255, 89, 180, 255, cmdPool);
+        return true;
     }
 
     void Texture2D::Destroy() {
         g_texture2Ds.clear();
+        g_defaultTexture2D.reset();
     }
 
-    //Image::Dimension2& Texture2D::Get(std::string&& key, std::span<uint8_t>&& pixels, uint32_t width, uint32_t height) {
-
-    //}
+    Image::Dimension2& Texture2D::Get(std::string&& key, std::span<const uint8_t>&& pixels, uint32_t width, uint32_t height, Command::Pool& cmdPool) {
+        const auto findIterator = g_texture2Ds.find(key);
+        if (g_texture2Ds.end() == findIterator) {
+            const auto result = g_texture2Ds.emplace(key, Image::CreateSrcTo2D(std::move(pixels), { width, height, 1 }, cmdPool));
+            if (false == result.second) {
+                return *g_defaultTexture2D;
+            }
+            return *result.first->second;
+        }
+        return *findIterator->second;
+    }
 }

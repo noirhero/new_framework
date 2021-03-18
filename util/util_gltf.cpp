@@ -183,8 +183,8 @@ namespace GLTF {
 
         if (std::string::npos != fileName.find(".png")) {
             int32_t width, height, component;
-            const auto* srcBuffer = stbi_load(fullPath.c_str(), &width, &height, &component, 0);
-            const auto srcSpan = std::span<const stbi_uc>(srcBuffer, width * height * component);
+            const auto* srcBuffer = stbi_load(fullPath.c_str(), &width, &height, &component, STBI_rgb_alpha);
+            const auto srcSpan = std::span<const stbi_uc>(srcBuffer, width * height * STBI_rgb_alpha);
 
             dest.width = width;
             dest.height = height;

@@ -2,6 +2,10 @@
 
 #pragma once
 
+namespace Command {
+    class Pool;
+}
+
 namespace Image {
     class Sampler;
     class Dimension2;
@@ -14,7 +18,7 @@ namespace Model::Sampler {
 }
 
 namespace Model::Texture2D {
-    bool               Initialize();
+    bool               Initialize(Command::Pool& cmdPool);
     void               Destroy();
-    Image::Dimension2& Get(std::string&& key, std::span<uint8_t>&& pixels, uint32_t width, uint32_t height);
+    Image::Dimension2& Get(std::string&& key, std::span<const uint8_t>&& pixels, uint32_t width, uint32_t height, Command::Pool& cmdPool);
 }
