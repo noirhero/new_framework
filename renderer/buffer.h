@@ -16,7 +16,7 @@ namespace Buffer {
         Uniform& operator=(const Uniform&) = delete;
 
         VkDescriptorBufferInfo Information() const noexcept;
-        void                   Flush(std::span<int64_t>&& mappedData);
+        void                   Flush(std::span<const uint8_t>&& mappedData);
 
     private:
         VkDeviceSize           _size = 0;

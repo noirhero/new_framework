@@ -88,8 +88,8 @@ namespace Main {
         BOOL_CHECK(Logical::SwapChain::Create());
         g_renderPass = Render::CreateSimpleRenderPass();
         g_gpuCmdPool = Command::AllocateGPUCommandPool();
-        g_pipeline = Render::CreateSimplePipeline(*g_descLayout, *g_vs, *g_fs, *g_renderPass);
 
+        g_pipeline = Render::CreateVertexDeclToPipeline(g_model->mesh.vertexDecl, *g_descLayout, *g_vs, *g_fs, *g_renderPass);
         Render::FillMeshToRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, g_model->mesh);
     }
 
@@ -168,7 +168,7 @@ namespace Main {
         static auto rotate = 0.0f;
         static auto seconds = 0.0f;
         seconds += delta;
-        if (100.0f <= seconds)
+        if (5.0f <= seconds)
             rotate += delta;
         const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -177,7 +177,7 @@ namespace Main {
         g_projection.SetScreenHeight(static_cast<float>(swapChain.height));
 
         const auto mvp = g_projection.Get() * g_camera.Get() * model;
-        g_ub->Flush({ (int64_t*)&mvp, sizeof(glm::mat4) });
+        g_ub->Flush({ reinterpret_cast<const uint8_t*>(&mvp), sizeof(glm::mat4) });
 
         Render::SimpleRenderPresent(*g_gpuCmdPool);
 

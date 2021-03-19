@@ -20,7 +20,7 @@ namespace Buffer {
         return { _buffer, 0, _size };
     }
 
-    void Uniform::Flush(std::span<int64_t>&& mappedData) {
+    void Uniform::Flush(std::span<const uint8_t>&& mappedData) {
         const auto size = mappedData.size();
 
         VK_CHECK(vmaInvalidateAllocation(Allocator::VMA(), _alloc, 0, size));
