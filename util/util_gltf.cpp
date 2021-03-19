@@ -3,12 +3,17 @@
 #include "../pch.h"
 #include "util_gltf.h"
 
+#include "../renderer/renderer_pch.h"
 #include "../data/model.h"
 
 namespace GLTF {
     using Datas = std::unordered_map<std::string, Data::Model*>;
     Datas       g_datas;
     Data::Model g_defaultModel;
+
+    using BufferUPtrs = std::unordered_map<std::string, Buffer::ObjectUPtr>;
+    BufferUPtrs g_vertexBuffers;
+    BufferUPtrs g_indexBuffers;
 
     using Vec3s = std::vector<glm::vec3>;
     using Vec2s = std::vector<glm::vec2>;
@@ -264,6 +269,62 @@ namespace GLTF {
 
         dest.bones.emplace_back();
         ConvertNode(dest.bones.back(), src.nodes[0], temp);
+        assert(temp.normals.empty() || temp.positions.size() == temp.normals.size());
+        assert(temp.uvs.empty() || temp.positions.size() == temp.uvs.size());
+
+        dest.mesh.vertexCount = static_cast<decltype(dest.mesh.vertexCount)>(temp.positions.size());
+        dest.mesh.indexCount = static_cast<decltype(dest.mesh.indexCount)>(temp.indices.size());
+
+        uint32_t vertexOffset = 0;
+        for (auto& vertexInfo : dest.mesh.vertexDecl.infos) {
+            vertexInfo.offset = vertexOffset;
+            vertexOffset += vertexInfo.stride;
+        }
+        dest.mesh.vertexDecl.stride = vertexOffset;
+
+        std::vector<float> collectVertices;
+        for (size_t i = 0; i < temp.positions.size(); ++i) {
+            for (const auto& vertexInfo : dest.mesh.vertexDecl.infos) {
+                switch (vertexInfo.type) {
+                case Data::VertexType::Pos: {
+                    const auto& pos = temp.positions[i];
+                    collectVertices.emplace_back(pos.x);
+                    collectVertices.emplace_back(pos.y);
+                    collectVertices.emplace_back(pos.z);
+                    break;
+                }
+                case Data::VertexType::Nor: {
+                    const auto& nor = temp.normals[i];
+                    collectVertices.emplace_back(nor.x);
+                    collectVertices.emplace_back(nor.y);
+                    collectVertices.emplace_back(nor.z);
+                    break;
+                }
+                case Data::VertexType::UV0: {
+                    const auto& uv0 = temp.uvs[i];
+                    collectVertices.emplace_back(uv0.x);
+                    collectVertices.emplace_back(uv0.y);
+                    break;
+                }
+                default:;
+                }
+            }
+        }
+        auto vertexBuffer = Buffer::CreateObject(
+            { reinterpret_cast<const uint8_t*>(collectVertices.data()), dest.mesh.vertexCount * dest.mesh.vertexDecl.stride },
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VMA_MEMORY_USAGE_GPU_ONLY,
+            temp.cmdPool);
+        dest.mesh.vb = vertexBuffer.get();
+        g_vertexBuffers.emplace(dest.name, std::move(vertexBuffer));
+
+        auto indexBuffer = Buffer::CreateObject(
+            { reinterpret_cast<const uint8_t*>(collectVertices.data()), dest.mesh.indexCount * sizeof(uint16_t) },
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VMA_MEMORY_USAGE_GPU_ONLY,
+            temp.cmdPool);
+        dest.mesh.ib = indexBuffer.get();
+        g_indexBuffers.emplace(dest.name, std::move(indexBuffer));
     }
 
     Data::Model* CreateModel(const std::string& filePath, Command::Pool& cmdPool) {
@@ -278,6 +339,7 @@ namespace GLTF {
         assert(false == gltfModel.nodes.empty());
 
         auto* dest = new Data::Model;
+        dest->name = filePath;
         ConvertModel(*dest, gltfModel, cmdPool);
         return dest;
     }
@@ -296,6 +358,9 @@ namespace GLTF {
     }
 
     void Clear() {
+        g_vertexBuffers.clear();
+        g_indexBuffers.clear();
+
         for (const auto& modelPair : g_datas) {
             delete modelPair.second;
         }

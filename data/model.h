@@ -13,6 +13,7 @@ namespace Image {
 
 namespace Buffer {
     class Object;
+    using ObjectUPtr = std::unique_ptr<Object>;
 }
 
 namespace GLTF {
@@ -20,16 +21,16 @@ namespace GLTF {
 }
 
 namespace Data::Sampler {
-    bool               Initialize();
-    void               Destroy();
-    Image::Sampler&    Get(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode modeU, VkSamplerAddressMode modeV, VkSamplerAddressMode modeW);
+    bool                   Initialize();
+    void                   Destroy();
+    Image::Sampler&        Get(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode modeU, VkSamplerAddressMode modeV, VkSamplerAddressMode modeW);
 }
 
 namespace Data::Texture2D {
-    bool               Initialize(Command::Pool& cmdPool);
-    void               Destroy();
-    Image::Dimension2& Get(std::span<const uint8_t>&& pixels, uint32_t width, uint32_t height, Command::Pool& cmdPool);
-    Image::Dimension2& Get(std::string&& fileName, Command::Pool& cmdPool);
+    bool                   Initialize(Command::Pool& cmdPool);
+    void                   Destroy();
+    Image::Dimension2&     Get(std::span<const uint8_t>&& pixels, uint32_t width, uint32_t height, Command::Pool& cmdPool);
+    Image::Dimension2&     Get(std::string&& fileName, Command::Pool& cmdPool);
 }
 
 namespace Data {
@@ -46,47 +47,48 @@ namespace Data {
     };
 
     struct Subset {
-        uint32_t indexOffset = 0;
-        uint32_t numTri = 0;
-        Material material;
+        uint32_t           indexOffset = 0;
+        uint32_t           numTri = 0;
+        Material           material;
     };
     using Subsets = std::vector<Subset>;
 
     enum class VertexType : uint8_t {
-        None, Pos, Nor, UV0
+        Pos, Nor, UV0
     };
     struct VertexInfo {
-        uint32_t   offset = 0;
-        uint32_t   stride = 0;
-        VertexType type = VertexType::None;
+        uint32_t           offset = 0;
+        uint32_t           stride = 0;
+        VertexType         type = VertexType::Pos;
     };
     using VertexInfos = std::vector<VertexInfo>;
 	struct VertexDecl {
-        uint32_t    stride = 0;
-        VertexInfos infos;
+        uint32_t           stride = 0;
+        VertexInfos        infos;
 	};
 
     struct Mesh {
-        Buffer::Object* vb = nullptr;
-        Buffer::Object* ib = nullptr;
-        uint32_t        vertexCount = 0;
-        uint32_t        indexCount = 0;
-        VertexDecl      vertexDecl;
-        Subsets         subsets;
+        Buffer::Object*    vb = nullptr;
+        Buffer::Object*    ib = nullptr;
+        uint32_t           vertexCount = 0;
+        uint32_t           indexCount = 0;
+        VertexDecl         vertexDecl;
+        Subsets            subsets;
     };
 
     struct Bone {
-        int32_t   parent = INVALID_IDX;
-        int32_t   depth = 0;
-        AABB      bBox;
-        glm::mat4 local{ 1.0f };
+        int32_t            parent = INVALID_IDX;
+        int32_t            depth = 0;
+        AABB               bBox;
+        glm::mat4          local{ 1.0f };
     };
     using Bones = std::vector<Bone>;
 
     struct Model {
-        AABB     bBox;
-        Mesh     mesh;
-        Bones    bones;
+        AABB               bBox;
+        Mesh               mesh;
+        Bones              bones;
+        std::string        name;
 
         Model() = default;
         Model(const Model&) = delete;

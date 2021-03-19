@@ -164,14 +164,14 @@ namespace Main {
             { -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f },
         };
         g_vb = Buffer::CreateObject(
-            { (int64_t*)vertices, _countof(vertices) * sizeof(Vertex) },
+            { reinterpret_cast<const uint8_t*>(vertices), _countof(vertices) * sizeof(Vertex) },
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
             *g_gpuCmdPool
         );
 
         constexpr uint16_t indices[] = { 0, 3, 1, 3, 2, 1 };
         g_ib = Buffer::CreateObject(
-            { (int64_t*)indices, _countof(indices) * sizeof(uint16_t) },
+            { reinterpret_cast<const uint8_t*>(indices), _countof(indices) * sizeof(uint16_t) },
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
             *g_gpuCmdPool
         );
@@ -181,6 +181,13 @@ namespace Main {
         g_projection.SetFieldOfView(45.0f);
         g_projection.SetZNear(0.1f);
         g_projection.SetZFar(100.0f);
+
+        Data::Sampler::Initialize();
+        Data::Texture2D::Initialize(*g_gpuCmdPool);
+        GLTF::Get("cube.gltf", *g_gpuCmdPool);
+        GLTF::Clear();
+        Data::Texture2D::Destroy();
+        Data::Sampler::Destroy();
 
         return true;
     }
@@ -203,9 +210,6 @@ namespace Main {
         g_ub->Flush({ (int64_t*)&mvp, sizeof(glm::mat4) });
 
         Render::SimpleRenderPresent(*g_gpuCmdPool);
-
-        GLTF::Get("cube.gltf", *g_gpuCmdPool);
-        GLTF::Clear();
 
         return g_isFrameUpdate;
     }

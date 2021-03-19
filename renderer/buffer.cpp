@@ -56,7 +56,7 @@ namespace Buffer {
         }
     }
 
-    ObjectUPtr CreateObject(std::span<int64_t>&& mappedData, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, Command::Pool& cmdPool) {
+    ObjectUPtr CreateObject(std::span<const uint8_t>&& mappedData, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, Command::Pool& cmdPool) {
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;

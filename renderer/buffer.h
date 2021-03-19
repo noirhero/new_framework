@@ -46,5 +46,5 @@ namespace Buffer {
     };
     using ObjectUPtr = std::unique_ptr<Object>;
 
-    ObjectUPtr CreateObject(std::span<int64_t>&& mappedData, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, Command::Pool& cmdPool);
+    ObjectUPtr CreateObject(std::span<const uint8_t>&& mappedData, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, Command::Pool& cmdPool);
 }
