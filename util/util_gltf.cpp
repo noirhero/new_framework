@@ -4,7 +4,7 @@
 #include "util_gltf.h"
 
 #include "../renderer/renderer_pch.h"
-#include "../data/model.h"
+#include "../data/resource.h"
 
 namespace GLTF {
     using Datas = std::unordered_map<std::string, Data::Model*>;

@@ -30,16 +30,17 @@
 #define BOOL_CHECK(result) result
 #endif
 
-using VkLayerPropertyArray         = std::vector<VkLayerProperties>;
-using VkPhysicalDevices            = std::vector<VkPhysicalDevice>;
-using VkExtensionPropertyArray     = std::vector<VkExtensionProperties>;
-using VkQueueFamilyPropertiesArray = std::vector<VkQueueFamilyProperties>;
-using VkSurfaceFormats             = std::vector<VkSurfaceFormatKHR>;
-using VkPresentModes               = std::vector<VkPresentModeKHR>;
-using VkImages                     = std::vector<VkImage>;
-using VkImageViews                 = std::vector<VkImageView>;
-using VkFrameBuffers               = std::vector<VkFramebuffer>;
-using VkWriteDescriptorSets        = std::vector<VkWriteDescriptorSet>;
-using VkCommandBuffers             = std::vector<VkCommandBuffer>;
+using VkLayerPropertyArray               = std::vector<VkLayerProperties>;
+using VkPhysicalDevices                  = std::vector<VkPhysicalDevice>;
+using VkExtensionPropertyArray           = std::vector<VkExtensionProperties>;
+using VkQueueFamilyPropertiesArray       = std::vector<VkQueueFamilyProperties>;
+using VkSurfaceFormats                   = std::vector<VkSurfaceFormatKHR>;
+using VkPresentModes                     = std::vector<VkPresentModeKHR>;
+using VkImages                           = std::vector<VkImage>;
+using VkImageViews                       = std::vector<VkImageView>;
+using VkFrameBuffers                     = std::vector<VkFramebuffer>;
+using VkWriteDescriptorSets              = std::vector<VkWriteDescriptorSet>;
+using VkCommandBuffers                   = std::vector<VkCommandBuffer>;
+using VkVertexInputAttributeDescriptions = std::vector< VkVertexInputAttributeDescription>;
 
-constexpr uint32_t INVALID_IDX = std::numeric_limits<uint32_t>::max();
+constexpr uint32_t INVALID_IDX           = std::numeric_limits<uint32_t>::max();

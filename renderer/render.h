@@ -18,6 +18,11 @@ namespace Buffer {
     class Object;
 }
 
+namespace Data {
+    struct VertexDecl;
+    struct Mesh;
+}
+
 namespace Render {
     class SwapChainFrameBuffer {
     public:
@@ -111,9 +116,11 @@ namespace Render {
     using PipelineUPtr = std::unique_ptr<Pipeline>;
 
     PipelineUPtr CreateSimplePipeline(const Descriptor::Layout& descLayout, const Shader::Module& vs, const Shader::Module& fs, const Pass& renderPass);
+    PipelineUPtr CreateVertexDeclToPipeline(const Data::VertexDecl& decl, const Descriptor::Layout& descLayout, const Shader::Module& vs, const Shader::Module& fs, const Pass& renderPass);
 }
 
 namespace Render {
     void FillSimpleRenderCommand(Pass& renderPass, Command::Pool& cmdPool, Pipeline& pipeline, Descriptor::Layout& descLayout, Buffer::Object& vb, Buffer::Object& ib);
+    void FillMeshToRenderCommand(Pass& renderPass, Command::Pool& cmdPool, Pipeline& pipeline, Descriptor::Layout& descLayout, Data::Mesh& mesh);
     void SimpleRenderPresent(Command::Pool& cmdPool);
 }

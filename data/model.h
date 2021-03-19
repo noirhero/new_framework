@@ -13,24 +13,10 @@ namespace Image {
 
 namespace Buffer {
     class Object;
-    using ObjectUPtr = std::unique_ptr<Object>;
 }
 
 namespace GLTF {
     struct Node;
-}
-
-namespace Data::Sampler {
-    bool                   Initialize();
-    void                   Destroy();
-    Image::Sampler&        Get(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode modeU, VkSamplerAddressMode modeV, VkSamplerAddressMode modeW);
-}
-
-namespace Data::Texture2D {
-    bool                   Initialize(Command::Pool& cmdPool);
-    void                   Destroy();
-    Image::Dimension2&     Get(std::span<const uint8_t>&& pixels, uint32_t width, uint32_t height, Command::Pool& cmdPool);
-    Image::Dimension2&     Get(std::string&& fileName, Command::Pool& cmdPool);
 }
 
 namespace Data {
@@ -91,6 +77,7 @@ namespace Data {
         std::string        name;
 
         Model() = default;
+        ~Model() = default;
         Model(const Model&) = delete;
         Model& operator=(const Model&) = delete;
     };

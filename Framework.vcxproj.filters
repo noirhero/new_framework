@@ -81,6 +81,9 @@
     <ClInclude Include="data\model.h">
       <Filter>data</Filter>
     </ClInclude>
+    <ClInclude Include="data\resource.h">
+      <Filter>data</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win_main.cpp">
@@ -152,6 +155,9 @@
       <Filter>util</Filter>
     </ClCompile>
     <ClCompile Include="data\model.cpp">
+      <Filter>data</Filter>
+    </ClCompile>
+    <ClCompile Include="data\resource.cpp">
       <Filter>data</Filter>
     </ClCompile>
   </ItemGroup>
