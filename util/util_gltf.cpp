@@ -70,7 +70,6 @@ namespace GLTF {
                 return;
             }
         }
-
         dest.emplace_back(0, stride, type);
     }
 

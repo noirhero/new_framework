@@ -77,8 +77,12 @@ namespace Data {
     }
 
     Image::Dimension2& Texture2D::Get(std::span<const uint8_t>&& pixels, uint32_t width, uint32_t height, Command::Pool& cmdPool) {
-        const auto key = fmt::format("PixelGenerate_{}", g_pixelGenerateIndex++);
-        const auto result = g_texture2Ds.emplace(key, Image::CreateSrcTo2D(std::move(pixels), { width, height, 1 }, cmdPool));
+        auto texture = Image::CreateSrcTo2D(std::move(pixels), { width, height, 1 }, cmdPool);
+        if (nullptr == texture) {
+            return *g_defaultTexture2D;
+        }
+
+        const auto result = g_texture2Ds.emplace(fmt::format("PixelGenerate_{}", g_pixelGenerateIndex++), std::move(texture));
         if (false == result.second) {
             return *g_defaultTexture2D;
         }

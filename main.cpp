@@ -31,15 +31,11 @@ namespace Main {
     Shader::ModuleUPtr     g_vs;
     Shader::ModuleUPtr     g_fs;
 
-    Image::SamplerUPtr     g_sampler;
-    Image::Dimension2UPtr  g_texture;
+    Data::Model*           g_model = nullptr;
     Buffer::UniformUPtr    g_ub;
 
     Descriptor::LayoutUPtr g_descLayout;
     Render::PipelineUPtr   g_pipeline;
-
-    Buffer::ObjectUPtr     g_vb;
-    Buffer::ObjectUPtr     g_ib;
 
     Viewport::Camera       g_camera;
     Viewport::Projection   g_projection;
@@ -94,7 +90,7 @@ namespace Main {
         g_gpuCmdPool = Command::AllocateGPUCommandPool();
         g_pipeline = Render::CreateSimplePipeline(*g_descLayout, *g_vs, *g_fs, *g_renderPass);
 
-        Render::FillSimpleRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, *g_vb, *g_ib);
+        Render::FillMeshToRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, g_model->mesh);
     }
 
     bool Initialize() {
@@ -145,13 +141,10 @@ namespace Main {
 
         g_vs = Shader::Create(Path::GetResourcePathAnsi() + "shaders/draw_vert.spv"s);
         g_fs = Shader::Create(Path::GetResourcePathAnsi() + "shaders/draw_frag.spv"s);
-
-        //g_sampler = Image::CreateSimpleLinearSampler();
-        //g_texture = Image::CreateSimple2D(Path::GetResourcePathAnsi() + "images/learning_vulkan.ktx"s, *g_gpuCmdPool);
         g_ub = Buffer::CreateSimpleUniformBuffer(sizeof(glm::mat4));
 
-        auto& loadModel = GLTF::Get("cube.gltf", *g_gpuCmdPool);
-        auto& material = loadModel.mesh.subsets[0].material;
+        g_model = &GLTF::Get("cube.gltf", *g_gpuCmdPool);
+        auto& material = g_model->mesh.subsets[0].material;
 
         g_descLayout = Descriptor::CreateSimpleLayout();
         g_descLayout->UpdateBegin();
@@ -159,36 +152,8 @@ namespace Main {
         g_descLayout->AddUpdate(*material.albedoSampler , *material.albedo);
         g_descLayout->UpdateImmediately();
 
-        g_pipeline = Render::CreateVertexDeclToPipeline(loadModel.mesh.vertexDecl, *g_descLayout, *g_vs, *g_fs, *g_renderPass);
-        Render::FillMeshToRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, loadModel.mesh);
-
-        //g_pipeline = Render::CreateSimplePipeline(*g_descLayout, *g_vs, *g_fs, *g_renderPass);
-
-        //struct Vertex {
-        //    float x, y, z, w;
-        //    float r, g, b, a;
-        //    float u, v;
-        //};
-        //constexpr Vertex vertices[] = {
-        //    { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f },
-        //    {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f },
-        //    {  0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f },
-        //    { -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f },
-        //};
-        //g_vb = Buffer::CreateObject(
-        //    { reinterpret_cast<const uint8_t*>(vertices), _countof(vertices) * sizeof(Vertex) },
-        //    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
-        //    *g_gpuCmdPool
-        //);
-
-        //constexpr uint16_t indices[] = { 0, 3, 1, 3, 2, 1 };
-        //g_ib = Buffer::CreateObject(
-        //    { reinterpret_cast<const uint8_t*>(indices), _countof(indices) * sizeof(uint16_t) },
-        //    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
-        //    *g_gpuCmdPool
-        //);
-
-        //Render::FillSimpleRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, *g_vb, *g_ib);
+        g_pipeline = Render::CreateVertexDeclToPipeline(g_model->mesh.vertexDecl, *g_descLayout, *g_vs, *g_fs, *g_renderPass);
+        Render::FillMeshToRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, g_model->mesh);
 
         g_projection.SetFieldOfView(45.0f);
         g_projection.SetZNear(0.1f);
@@ -220,13 +185,9 @@ namespace Main {
     }
 
     void Finalize() {
-        g_ib.reset();
-        g_vb.reset();
         g_pipeline.reset();
         g_descLayout.reset();
         g_ub.reset();
-        g_texture.reset();
-        g_sampler.reset();
         GLTF::Clear();
         Data::Texture2D::Destroy();
         Data::Sampler::Destroy();
