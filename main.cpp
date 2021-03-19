@@ -6,7 +6,7 @@
 #include "input/input.h"
 #include "renderer/renderer_pch.h"
 #include "viewport/viewport.h"
-#include "model/model.h"
+#include "data/model.h"
 
 namespace Main {
     enum KeyEventId : uint32_t {
@@ -182,17 +182,6 @@ namespace Main {
         g_projection.SetZNear(0.1f);
         g_projection.SetZFar(100.0f);
 
-        auto loadModel = GLTF::Load(Path::GetResourcePathAnsi() + "models/cube.gltf"s);
-
-        Model::Sampler::Initialize();
-        Model::Texture2D::Initialize(*g_gpuCmdPool);
-        for (const auto& modelTexture : loadModel->textures) {
-            static uint32_t index = 0;
-            Model::Texture2D::Get(fmt::format("cube_{}", index++), modelTexture.buffer, modelTexture.width, modelTexture.height, *g_gpuCmdPool);
-        }
-        Model::Texture2D::Destroy();
-        Model::Sampler::Destroy();
-
         return true;
     }
 
@@ -214,6 +203,9 @@ namespace Main {
         g_ub->Flush({ (int64_t*)&mvp, sizeof(glm::mat4) });
 
         Render::SimpleRenderPresent(*g_gpuCmdPool);
+
+        GLTF::Get("cube.gltf", *g_gpuCmdPool);
+        GLTF::Clear();
 
         return g_isFrameUpdate;
     }

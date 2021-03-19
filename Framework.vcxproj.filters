@@ -78,8 +78,8 @@
     <ClInclude Include="util\util_gltf.h">
       <Filter>util</Filter>
     </ClInclude>
-    <ClInclude Include="model\model.h">
-      <Filter>model</Filter>
+    <ClInclude Include="data\model.h">
+      <Filter>data</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -151,8 +151,8 @@
     <ClCompile Include="util\util_gltf.cpp">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="model\model.cpp">
-      <Filter>model</Filter>
+    <ClCompile Include="data\model.cpp">
+      <Filter>data</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -174,7 +174,7 @@
     <Filter Include="viewport">
       <UniqueIdentifier>{64eb9c19-a425-49dd-b3d1-9b57a7b531bc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="model">
+    <Filter Include="data">
       <UniqueIdentifier>{7f7daa0b-40db-49d2-8687-8c4c002b2207}</UniqueIdentifier>
     </Filter>
   </ItemGroup>

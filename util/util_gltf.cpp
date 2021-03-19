@@ -3,66 +3,149 @@
 #include "../pch.h"
 #include "util_gltf.h"
 
-#define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STBI_MSC_SECURE_CRT
-#include <tinygltf/tiny_gltf.h>
+#include "../data/model.h"
 
 namespace GLTF {
-    Node::~Node() {
-        for (auto* child : children) {
-            delete child;
-        }
-    }
+    using Datas = std::unordered_map<std::string, Data::Model*>;
+    Datas       g_datas;
+    Data::Model g_defaultModel;
 
-    void ImportTransform(Node& dest, const tinygltf::Node& src) {
+    using Vec3s = std::vector<glm::vec3>;
+    using Vec2s = std::vector<glm::vec2>;
+    using uint16_ts = std::vector<uint16_t>;
+    struct ConvertData {
+        Command::Pool&         cmdPool;
+        const tinygltf::Model& src;
+        Data::Model&           dest;
+        Vec3s                  positions;
+        Vec3s                  normals;
+        Vec2s                  uvs;
+        uint16_ts              indices;
+    };
+
+    void ConvertTransform(glm::mat4& dest, const tinygltf::Node& src) {
+        glm::vec3 scale{ 1.0f };
         if (3 == src.scale.size()) {
-            dest.scale = glm::make_vec3(src.scale.data());
+            scale = glm::make_vec3(src.scale.data());
         }
 
+        glm::quat rotation{ 1.0f, 0.0f, 0.0f, 0.0f };
         if (4 == src.rotation.size()) {
-            dest.rotation = glm::make_quat(src.rotation.data());
+            rotation = glm::make_quat(src.rotation.data());
         }
 
-        if(3 == src.translation.size()) {
-            dest.translation = glm::make_vec3(src.translation.data());
+        glm::vec3 translation{ 0.0f };
+        if (3 == src.translation.size()) {
+            translation = glm::make_vec3(src.translation.data());
         }
 
         if (16 == src.matrix.size()) {
-            dest.local = glm::make_mat4(src.matrix.data());
+            dest = glm::make_mat4(src.matrix.data());
         }
         else {
             constexpr auto identity = glm::mat4(1.0f);
-            dest.local = glm::scale(identity, dest.scale) * glm::mat4(dest.rotation) * glm::translate(identity, dest.translation);
+            dest = glm::scale(identity, scale) * glm::mat4(rotation) * glm::translate(identity, translation);
         }
     }
 
-    Node* ImportNode(Node& parent, const tinygltf::Node& src, const tinygltf::Model& model) {
-        auto* dest = new Node;
-        parent.children.emplace_back(dest);
-        dest->parent = &parent;
-
-        ImportTransform(*dest, src);
-
-        dest->meshIndex = src.mesh;
-
-        for (const auto i : src.children) {
-            ImportNode(*dest, model.nodes[i], model);
+    int32_t GetBoneIndex(ConvertData& temp, const Data::Bone& bone) {
+        int32_t index = 0;
+        for (const auto& eachBone : temp.dest.bones) {
+            if (&eachBone == &bone) {
+                return index;
+            }
+            ++index;
         }
-
-        return dest;
+        return INVALID_IDX;
     }
 
-    void ImportMesh(Mesh& dest, const tinygltf::Mesh& src, const tinygltf::Model& model) {
+    void FillVertexInformation(Data::VertexInfos& dest, uint32_t stride, Data::VertexType type) {
+        for (const auto& info : dest) {
+            if (info.type == type) {
+                return;
+            }
+        }
+
+        dest.emplace_back(0, stride, type);
+    }
+
+    Image::Sampler* ConvertSampler(const tinygltf::Texture& src, ConvertData& temp) {
+        if(0 > src.sampler) {
+            return &Data::Sampler::Get(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+        }
+
+        constexpr auto convertFilterFn = [](int32_t srcFilter) {
+            switch (srcFilter) {
+            case 9728:
+            case 9984:
+            case 9985:
+                return VK_FILTER_NEAREST;
+            //case 9729:
+            //case 9986:
+            //case 9987:
+            //    return VK_FILTER_LINEAR;
+            default:
+                return VK_FILTER_LINEAR;
+            }
+        };
+        constexpr auto convertWrapModeFn = [](int32_t srcWrapMode) {
+            switch (srcWrapMode) {
+            case 10497: return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            case 33071: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            case 33648: return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+            default:    return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            }
+        };
+
+        const auto& srcSampler = temp.src.samplers[src.sampler];
+        return &Data::Sampler::Get(
+            convertFilterFn(srcSampler.minFilter),
+            convertFilterFn(srcSampler.minFilter),
+            convertWrapModeFn(srcSampler.wrapS),
+            convertWrapModeFn(srcSampler.wrapT),
+            VK_SAMPLER_ADDRESS_MODE_REPEAT
+        );
+    }
+
+    Image::Dimension2* ImportTexture(const tinygltf::Texture& src, ConvertData& temp) {
+        const auto& srcImage = temp.src.images[src.source];
+
+        if (false == srcImage.uri.empty()) {
+            return &Data::Texture2D::Get(srcImage.uri.c_str(), temp.cmdPool);
+        }
+
+        return &Data::Texture2D::Get({ srcImage.image.begin(), srcImage.image.end() }, temp.cmdPool);
+    }
+
+    void ConvertMaterial(Data::Material& dest, const tinygltf::Material& src, ConvertData& temp) {
+        const auto& srcTextures = temp.src.textures;
+
+        // Albedo.
+        const auto albedoIterator = src.values.find("baseColorTexture");
+        if (src.values.end() != albedoIterator) {
+            const auto& srcAlbedo = srcTextures[albedoIterator->second.TextureIndex()];
+            dest.albedoSampler = ConvertSampler(srcAlbedo, temp);
+            dest.albedo = ImportTexture(srcAlbedo, temp);
+        }
+
+        // Metallic roughness.
+        const auto metallicRoughnessIterator = src.values.find("metallicRoughnessTexture");
+        if (src.values.end() != metallicRoughnessIterator) {
+            const auto& srcMetallicRoughness = srcTextures[metallicRoughnessIterator->second.TextureIndex()];
+            dest.metallicRoughnessSampler = ConvertSampler(srcMetallicRoughness, temp);
+            dest.metallicRoughness = ImportTexture(srcMetallicRoughness, temp);
+        }
+    }
+
+    void ConvertMesh(Data::Bone& containBone, const tinygltf::Mesh& src, ConvertData& temp) {
+        const auto& model = temp.src;
+        auto& dest = temp.dest.mesh;
+        auto& totalBBox = temp.dest.bBox;
+
         for (const auto& srcPrimitive : src.primitives) {
-            dest.primitives.emplace_back();
-            auto& destPrimitive = dest.primitives.back();
-
             const auto& srcAttributes = srcPrimitive.attributes;
 
-            // Material index.
-            destPrimitive.materialIndex = srcPrimitive.material;
+            const auto vertexOffset = static_cast<uint16_t>(temp.positions.size());
 
             // Positions.
             const auto posIterator = srcAttributes.find("POSITION");
@@ -70,17 +153,18 @@ namespace GLTF {
 
             const auto& posAccessor = model.accessors[posIterator->second];
             const auto& posView = model.bufferViews[posAccessor.bufferView];
-            const auto* srcPositions = reinterpret_cast<const float*>(&model.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]);
+            const auto* srcPositions = reinterpret_cast<const glm::vec3*>(&model.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]);
 
-            destPrimitive.positions.resize(posAccessor.count);
-            const auto posMemSize = sizeof(glm::vec3) * posAccessor.count;
-            memcpy_s(destPrimitive.positions.data(), posMemSize, srcPositions, posMemSize);
+            const std::span<const glm::vec3> posSpan{ srcPositions, posAccessor.count };
+            temp.positions.insert(temp.positions.end(), posSpan.begin(), posSpan.end());
+
+            FillVertexInformation(dest.vertexDecl.infos, sizeof(glm::vec3), Data::VertexType::Pos);
 
             // Bounding box.
-            destPrimitive.bBox.min = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
-            destPrimitive.bBox.max = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
-            dest.bBox.min = glm::min(destPrimitive.bBox.min, dest.bBox.min);
-            dest.bBox.max = glm::max(destPrimitive.bBox.max, dest.bBox.max);
+            containBone.bBox.min = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
+            containBone.bBox.max = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
+            totalBBox.min = glm::min(containBone.bBox.min, totalBBox.min);
+            totalBBox.max = glm::max(containBone.bBox.max, totalBBox.max);
 
             // Normals.
             const auto norIterator = srcAttributes.find("NORMAL");
@@ -89,11 +173,12 @@ namespace GLTF {
                 assert(posAccessor.count == norAccessor.count);
 
                 const auto& norView = model.bufferViews[norAccessor.bufferView];
-                const auto* srcNormals = reinterpret_cast<const float*>(&model.buffers[norView.buffer].data[norAccessor.byteOffset + norView.byteOffset]);
+                const auto* srcNormals = reinterpret_cast<const glm::vec3*>(&model.buffers[norView.buffer].data[norAccessor.byteOffset + norView.byteOffset]);
 
-                destPrimitive.normals.resize(norAccessor.count);
-                const auto norMemSize = sizeof(glm::vec3) * norAccessor.count;
-                memcpy_s(destPrimitive.normals.data(), norMemSize, srcNormals, norMemSize);
+                const std::span<const glm::vec3> norSpan{ srcNormals, norAccessor.count };
+                temp.normals.insert(temp.normals.end(), norSpan.begin(), norSpan.end());
+
+                FillVertexInformation(dest.vertexDecl.infos, sizeof(glm::vec3), Data::VertexType::Nor);
             }
 
             // Texture coordinate 0.
@@ -103,11 +188,12 @@ namespace GLTF {
                 assert(posAccessor.count == uv0Accessor.count);
 
                 const auto& uv0View = model.bufferViews[uv0Accessor.bufferView];
-                const auto* uv0 = reinterpret_cast<const float*>(&model.buffers[uv0View.buffer].data[uv0Accessor.byteOffset + uv0View.byteOffset]);
+                const auto* uv0 = reinterpret_cast<const glm::vec2*>(&model.buffers[uv0View.buffer].data[uv0Accessor.byteOffset + uv0View.byteOffset]);
 
-                destPrimitive.uv0.resize(uv0Accessor.count);
-                const auto uv0MemSize = sizeof(glm::vec2) * uv0Accessor.count;
-                memcpy_s(destPrimitive.uv0.data(), uv0MemSize, uv0, uv0MemSize);
+                const std::span<const glm::vec2> uv0Span{ uv0, uv0Accessor.count };
+                temp.uvs.insert(temp.uvs.end(), uv0Span.begin(), uv0Span.end());
+
+                FillVertexInformation(dest.vertexDecl.infos, sizeof(glm::vec2), Data::VertexType::UV0);
             }
 
             // Indices.
@@ -115,201 +201,104 @@ namespace GLTF {
                 const auto& indexAccessor = model.accessors[srcPrimitive.indices];
                 const auto& indexView = model.bufferViews[indexAccessor.bufferView];
 
+                dest.subsets.emplace_back();
+                auto& subset = dest.subsets.back();
+                subset.indexOffset = static_cast<decltype(subset.indexOffset)>(temp.indices.size());
+
                 switch (indexAccessor.componentType) {
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
                     const auto* srcIndices = reinterpret_cast<const uint32_t*>(&model.buffers[indexView.buffer].data[indexAccessor.byteOffset + indexView.byteOffset]);
                     for (decltype(indexAccessor.count) i = 0; i < indexAccessor.count; ++i) {
-                        destPrimitive.indices.emplace_back(static_cast<uint16_t>(srcIndices[i]));
+                        const auto index = static_cast<uint16_t>(srcIndices[i] + vertexOffset);
+                        temp.indices.emplace_back(index);
                     }
                     break;
                 }
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
                     const auto* srcIndices = reinterpret_cast<const uint16_t*>(&model.buffers[indexView.buffer].data[indexAccessor.byteOffset + indexView.byteOffset]);
                     for (decltype(indexAccessor.count) i = 0; i < indexAccessor.count; ++i) {
-                        destPrimitive.indices.emplace_back(srcIndices[i]);
+                        const uint16_t index = srcIndices[i] + vertexOffset;
+                        temp.indices.emplace_back(index);
                     }
                     break;
                 }
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
                     const auto* srcIndices = reinterpret_cast<const uint8_t*>(&model.buffers[indexView.buffer].data[indexAccessor.byteOffset + indexView.byteOffset]);
                     for (decltype(indexAccessor.count) i = 0; i < indexAccessor.count; ++i) {
-                        destPrimitive.indices.emplace_back(static_cast<uint16_t>(srcIndices[i]));
+                        const auto index = static_cast<uint16_t>(srcIndices[i] + vertexOffset);
+                        temp.indices.emplace_back(index);
                     }
                     break;
                 }
                 default:;
                 }
+
+                const auto numIndices = static_cast<decltype(subset.numTri)>(temp.indices.size());
+                subset.numTri = (numIndices - subset.indexOffset) / 3;
+
+                if (0 <= srcPrimitive.material) {
+                    ConvertMaterial(subset.material, temp.src.materials[srcPrimitive.material], temp);
+                }
             }
         }
     }
 
-	void ImportSampler(Sampler& dest, const tinygltf::Sampler& src) {
-        constexpr auto convertFilterFn = [](int32_t srcFilter) {
-            switch (srcFilter) {
-            case 9728:
-            case 9984:
-            case 9985:
-                return VK_FILTER_NEAREST;
-            case 9729:
-            case 9986:
-            case 9987:
-                return VK_FILTER_LINEAR;
-            default:
-                return VK_FILTER_MAX_ENUM;
-            }
-        };
-        dest.magFilter = convertFilterFn(src.magFilter);
-        dest.minFilter = convertFilterFn(src.minFilter);
+    void ConvertNode(Data::Bone& dest, const tinygltf::Node& src, ConvertData& temp) {
+        ConvertTransform(dest.local, src);
 
-        constexpr auto convertWrapModeFn = [](int32_t srcWrapMode) {
-            switch (srcWrapMode) {
-            case 10497: return VK_SAMPLER_ADDRESS_MODE_REPEAT;
-            case 33071: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            case 33648: return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-            default:    return VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
-            }
-        };
-        dest.modeU = convertWrapModeFn(src.wrapS);
-        dest.modeV = convertWrapModeFn(src.wrapT);
-    }
+        if (0 <= src.mesh)
+            ConvertMesh(dest, temp.src.meshes[src.mesh], temp);
 
-    void ImportTexture(Texture& dest, gli::texture&& src) {
-        const auto extent = src.extent();
-        dest.width = extent.x;
-        dest.height = extent.y;
+        for (const auto i : src.children) {
+            temp.dest.bones.emplace_back();
+            auto& destChildNode = temp.dest.bones.back();
 
-        const auto srcSpan = std::span<const uint8_t>(static_cast<const uint8_t*>(src.data()), src.size());
-        dest.buffer.insert(dest.buffer.begin(), srcSpan.begin(), srcSpan.end());
-    }
-
-    void ImportTexture(Texture& dest, const std::string& fileName) {
-        const auto fullPath = Path::GetResourcePathAnsi() + "images/"s + fileName;
-
-        if (std::string::npos != fileName.find(".png")) {
-            int32_t width, height, component;
-            const auto* srcBuffer = stbi_load(fullPath.c_str(), &width, &height, &component, STBI_rgb_alpha);
-            const auto srcSpan = std::span<const stbi_uc>(srcBuffer, width * height * STBI_rgb_alpha);
-
-            dest.width = width;
-            dest.height = height;
-            dest.buffer.insert(dest.buffer.begin(), srcSpan.begin(), srcSpan.end());
-        }
-        else if (std::string::npos != fileName.find(".ktx") || std::string::npos != fileName.find(".dds") || std::string::npos != fileName.find(".kmg")) {
-            ImportTexture(dest, gli::load(fullPath));
+            destChildNode.parent = GetBoneIndex(temp, dest);
+            destChildNode.depth = dest.depth + 1;
+            ConvertNode(destChildNode, temp.src.nodes[i], temp);
         }
     }
 
-    void ImportTexture(Texture& dest, const tinygltf::Texture& src, const tinygltf::Model& model) {
-        const auto& srcImage = model.images[src.source];
+    void ConvertModel(Data::Model& dest, const tinygltf::Model& src, Command::Pool& cmdPool) {
+        ConvertData temp{ cmdPool, src, dest };
 
-        if (false == srcImage.uri.empty()) {
-            ImportTexture(dest, srcImage.uri);
-        }
-        else {
-            dest.width = srcImage.width;
-            dest.height = srcImage.height;
-            dest.buffer.insert(dest.buffer.begin(), srcImage.image.begin(), srcImage.image.end());
-        }
-
-        dest.samplerIndex = src.sampler;
+        dest.bones.emplace_back();
+        ConvertNode(dest.bones.back(), src.nodes[0], temp);
     }
 
-	void ImportMaterial(Material& dest, const tinygltf::Material& src) {
-        // Albedo.
-        const auto albedoIterator = src.values.find("baseColorTexture");
-        if (src.values.end() != albedoIterator) {
-            dest.albedoIndex = albedoIterator->second.TextureIndex();
-            dest.albedoUVIndex = albedoIterator->second.TextureTexCoord();
-        }
-
-        // Normal.
-        const auto normalIterator = src.additionalValues.find("normalTexture");
-        if (src.additionalValues.end() != normalIterator) {
-            dest.normalIndex = normalIterator->second.TextureIndex();
-            dest.normalUVIndex = normalIterator->second.TextureTexCoord();
-        }
-
-        // Metallic roughness.
-        const auto metallicRoughnessIterator = src.values.find("metallicRoughnessTexture");
-        if (src.values.end() != metallicRoughnessIterator) {
-            dest.metallicRoughnessIndex = metallicRoughnessIterator->second.TextureIndex();
-            dest.metallicRoughnessUVIndex = metallicRoughnessIterator->second.TextureTexCoord();
-        }
-
-        // Alpha mode.
-        const auto alphaModeIterator = src.additionalValues.find("alphaMode");
-        if (src.additionalValues.end() != alphaModeIterator) {
-            if ("BLEND"s == alphaModeIterator->second.string_value) {
-                dest.alphaMode = Material::Alpha::Blend;
-            }
-            else if ("MASK"s == albedoIterator->second.string_value) {
-                dest.alphaMode = Material::Alpha::Mask;
-                dest.alphaCutoff = 0.5f;
-            }
-        }
-        const auto alphaCutOffIterator = src.additionalValues.find("alphaCutoff");
-        if (src.additionalValues.end() != alphaCutOffIterator) {
-            dest.alphaCutoff = static_cast<float>(alphaCutOffIterator->second.Factor());
-        }
-
-        // Roughness factor.
-        const auto roughnessFactorIterator = src.values.find("roughnessFactor");
-        if (src.values.end() != roughnessFactorIterator) {
-            dest.roughness = static_cast<float>(roughnessFactorIterator->second.Factor());
-        }
-
-        // Metallic factor.
-        const auto metallicFactorIterator = src.values.find("metallicFactor");
-        if (src.values.end() != metallicFactorIterator) {
-            dest.metallic = static_cast<float>(metallicFactorIterator->second.Factor());
-        }
-    }
-
-    ModelUPtr Load(std::string&& path) {
-        auto model = std::make_unique<Model>();
-
+    Data::Model* CreateModel(const std::string& filePath, Command::Pool& cmdPool) {
         tinygltf::TinyGLTF context;
         std::string err;
         std::string war;
 
         tinygltf::Model gltfModel;
-        if (false == context.LoadASCIIFromFile(&gltfModel, &err, &war, path)) {
-            return model;
+        if (false == context.LoadASCIIFromFile(&gltfModel, &err, &war, filePath)) {
+            return nullptr;
         }
-        assert(0 < gltfModel.nodes.size());
+        assert(false == gltfModel.nodes.empty());
 
-        model->name = gltfModel.nodes[0].name;
+        auto* dest = new Data::Model;
+        ConvertModel(*dest, gltfModel, cmdPool);
+        return dest;
+    }
 
-        // Nodes.
-        const auto& scene = gltfModel.scenes[0 <= gltfModel.defaultScene ? gltfModel.defaultScene : 0];
-        for (const auto i : scene.nodes) {
-            ImportNode(model->root, gltfModel.nodes[i], gltfModel);
+    Data::Model& Get(std::string&& fileName, Command::Pool& cmdPool) {
+        const auto filePath = Path::GetResourcePathAnsi() + "models/"s + fileName;
+        const auto findIterator = g_datas.find(filePath);
+        if (g_datas.end() == findIterator) {
+            const auto result = g_datas.emplace(filePath, CreateModel(filePath, cmdPool));
+            if (false == result.second) {
+                return g_defaultModel;
+            }
+            return *result.first->second;
         }
+        return *findIterator->second;
+    }
 
-        // Meshes.
-        for (const auto& gltfMesh : gltfModel.meshes) {
-            model->meshes.emplace_back();
-            ImportMesh(model->meshes.back(), gltfMesh, gltfModel);
+    void Clear() {
+        for (const auto& modelPair : g_datas) {
+            delete modelPair.second;
         }
-
-        // Samplers.
-        for (const auto& gltfTexture : gltfModel.samplers) {
-            model->samplers.emplace_back();
-            ImportSampler(model->samplers.back(), gltfTexture);
-        }
-
-        // Textures.
-        for (const auto& gltfTexture : gltfModel.textures) {
-            model->textures.emplace_back();
-            ImportTexture(model->textures.back(), gltfTexture, gltfModel);
-        }
-
-        // Materials.
-        for (const auto& gltfMaterial : gltfModel.materials) {
-            model->materials.emplace_back();
-            ImportMaterial(model->materials.back(), gltfMaterial);
-        }
-
-        return model;
+        g_datas.clear();
     }
 }
