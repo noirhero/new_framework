@@ -34,8 +34,8 @@ int APIENTRY wWinMain(HINSTANCE winInstance, HINSTANCE /*prevInstance*/, LPWSTR 
         return 0;
     }
 
-    constexpr auto width = 150;
-    constexpr auto height = 150;
+    constexpr auto width = 300;
+    constexpr auto height = 300;
 
     RECT winRect = { 0, 0, width, height };
     AdjustWindowRect(&winRect, WS_OVERLAPPEDWINDOW, FALSE);

@@ -150,13 +150,15 @@ namespace Main {
         //g_texture = Image::CreateSimple2D(Path::GetResourcePathAnsi() + "images/learning_vulkan.ktx"s, *g_gpuCmdPool);
         g_ub = Buffer::CreateSimpleUniformBuffer(sizeof(glm::mat4));
 
+        auto& loadModel = GLTF::Get("cube.gltf", *g_gpuCmdPool);
+        auto& material = loadModel.mesh.subsets[0].material;
+
         g_descLayout = Descriptor::CreateSimpleLayout();
         g_descLayout->UpdateBegin();
         g_descLayout->AddUpdate(*g_ub);
-        g_descLayout->AddUpdate(*g_sampler, *g_texture);
+        g_descLayout->AddUpdate(*material.albedoSampler , *material.albedo);
         g_descLayout->UpdateImmediately();
 
-        auto& loadModel = GLTF::Get("cube.gltf", *g_gpuCmdPool);
         g_pipeline = Render::CreateVertexDeclToPipeline(loadModel.mesh.vertexDecl, *g_descLayout, *g_vs, *g_fs, *g_renderPass);
         Render::FillMeshToRenderCommand(*g_renderPass, *g_gpuCmdPool, *g_pipeline, *g_descLayout, loadModel.mesh);
 

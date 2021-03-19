@@ -319,7 +319,7 @@ namespace GLTF {
         g_vertexBuffers.emplace(dest.name, std::move(vertexBuffer));
 
         auto indexBuffer = Buffer::CreateObject(
-            { reinterpret_cast<const uint8_t*>(collectVertices.data()), dest.mesh.indexCount * sizeof(uint16_t) },
+            { reinterpret_cast<const uint8_t*>(temp.indices.data()), dest.mesh.indexCount * sizeof(uint16_t) },
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VMA_MEMORY_USAGE_GPU_ONLY,
             temp.cmdPool);
