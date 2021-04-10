@@ -253,8 +253,8 @@ namespace Render {
         auto* device = Logical::Device::Get();
 
         // Layout.
-        const VkPushConstantRange pushConstantRanges[1] {
-	        { VK_SHADER_STAGE_FRAGMENT_BIT, 0, 8/*colorFlag + mixerValue*/ },
+        const VkPushConstantRange pushConstantRanges[1]{
+            { VK_SHADER_STAGE_FRAGMENT_BIT, 0, 8/*colorFlag + mixerValue*/ },
         };
         const VkDescriptorSetLayout descLayouts[1] = {
             descLayout.Get()

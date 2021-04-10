@@ -149,7 +149,7 @@ namespace Main {
         g_descLayout = Descriptor::CreateSimpleLayout();
         g_descLayout->UpdateBegin();
         g_descLayout->AddUpdate(*g_ub);
-        g_descLayout->AddUpdate(*material.albedoSampler , *material.albedo);
+        g_descLayout->AddUpdate(*material.albedoSampler, *material.albedo);
         g_descLayout->UpdateImmediately();
 
         g_pipeline = Render::CreateVertexDeclToPipeline(g_model->mesh.vertexDecl, *g_descLayout, *g_vs, *g_fs, *g_renderPass);

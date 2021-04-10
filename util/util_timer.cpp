@@ -25,7 +25,7 @@ namespace Timer {
 
         ++g_countFrame;
         g_oneSeconds += g_delta;
-        if(1.0f <= g_oneSeconds) {
+        if (1.0f <= g_oneSeconds) {
             g_oneSeconds = 0.0f;
             g_frame = g_countFrame;
             g_countFrame = 0;

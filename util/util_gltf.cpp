@@ -7,21 +7,22 @@
 #include "../data/resource.h"
 
 namespace GLTF {
-    using Datas = std::unordered_map<std::string, Data::Model*>;
+    using Datas       = std::unordered_map<std::string, Data::Model*>;
+    using BufferUPtrs = std::unordered_map<std::string, Buffer::ObjectUPtr>;
+    using Vec3s       = std::vector<glm::vec3>;
+    using Vec2s       = std::vector<glm::vec2>;
+    using uint16_ts   = std::vector<uint16_t>;
+
     Datas       g_datas;
     Data::Model g_defaultModel;
 
-    using BufferUPtrs = std::unordered_map<std::string, Buffer::ObjectUPtr>;
     BufferUPtrs g_vertexBuffers;
     BufferUPtrs g_indexBuffers;
 
-    using Vec3s = std::vector<glm::vec3>;
-    using Vec2s = std::vector<glm::vec2>;
-    using uint16_ts = std::vector<uint16_t>;
     struct ConvertData {
-        Command::Pool&         cmdPool;
+        Command::Pool& cmdPool;
         const tinygltf::Model& src;
-        Data::Model&           dest;
+        Data::Model& dest;
         Vec3s                  positions;
         Vec3s                  normals;
         Vec2s                  uvs;
@@ -74,7 +75,7 @@ namespace GLTF {
     }
 
     Image::Sampler* ConvertSampler(const tinygltf::Texture& src, ConvertData& temp) {
-        if(0 > src.sampler) {
+        if (0 > src.sampler) {
             return &Data::Sampler::Get(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT);
         }
 

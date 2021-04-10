@@ -48,10 +48,10 @@ namespace Data {
         VertexType         type = VertexType::Pos;
     };
     using VertexInfos = std::vector<VertexInfo>;
-	struct VertexDecl {
+    struct VertexDecl {
         uint32_t           stride = 0;
         VertexInfos        infos;
-	};
+    };
 
     struct Mesh {
         Buffer::Object*    vb = nullptr;
