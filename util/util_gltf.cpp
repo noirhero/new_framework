@@ -119,7 +119,7 @@ namespace GLTF {
             return &Data::Texture2D::Get(srcImage.uri.c_str(), temp.cmdPool);
         }
 
-        return &Data::Texture2D::Get({ srcImage.image.begin(), srcImage.image.end() }, temp.cmdPool);
+        return &Data::Texture2D::Get(srcImage.image, srcImage.width, srcImage.height, temp.cmdPool);
     }
 
     void ConvertMaterial(Data::Material& dest, const tinygltf::Material& src, ConvertData& temp) {

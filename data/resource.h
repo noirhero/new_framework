@@ -26,6 +26,6 @@ namespace Data::Sampler {
 namespace Data::Texture2D {
     bool                   Initialize(Command::Pool& cmdPool);
     void                   Destroy();
-    Image::Dimension2& Get(std::span<const uint8_t>&& pixels, uint32_t width, uint32_t height, Command::Pool& cmdPool);
+    Image::Dimension2& Get(const std::vector<unsigned char>& pixels, uint32_t width, uint32_t height, Command::Pool& cmdPool);
     Image::Dimension2& Get(std::string&& fileName, Command::Pool& cmdPool);
 }

@@ -76,8 +76,8 @@ namespace Data {
         g_defaultTexture2D.reset();
     }
 
-    Image::Dimension2& Texture2D::Get(std::span<const uint8_t>&& pixels, uint32_t width, uint32_t height, Command::Pool& cmdPool) {
-        auto texture = Image::CreateSrcTo2D(std::move(pixels), { width, height, 1 }, cmdPool);
+    Image::Dimension2& Texture2D::Get(const std::vector<unsigned char>& pixels, uint32_t width, uint32_t height, Command::Pool& cmdPool) {
+        auto texture = Image::CreateSrcTo2D({ pixels.begin(), pixels.end() }, { width, height, 1 }, cmdPool);
         if (nullptr == texture) {
             return *g_defaultTexture2D;
         }

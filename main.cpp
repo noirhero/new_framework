@@ -143,7 +143,7 @@ namespace Main {
         g_fs = Shader::Create(Path::GetResourcePathAnsi() + "shaders/draw_frag.spv"s);
         g_ub = Buffer::CreateSimpleUniformBuffer(sizeof(glm::mat4));
 
-        g_model = &GLTF::Get("cube.gltf", *g_gpuCmdPool);
+        g_model = &GLTF::Get("damaged_helmet.gltf", *g_gpuCmdPool);
         auto& material = g_model->mesh.subsets[0].material;
 
         g_descLayout = Descriptor::CreateSimpleLayout();
