@@ -23,7 +23,7 @@ namespace Data {
         bool operator==(const SamplerKey&) const;
     };
     const auto SamplerKeyHashFn = [](const SamplerKey& key)->size_t {
-        return key.magFilter + key.minFilter + key.modeU + key.modeV + key.modeW;
+        return static_cast<size_t>(key.magFilter + key.minFilter + key.modeU + key.modeV + key.modeW);
     };
     bool SamplerKey::operator==(const SamplerKey& other) const {
         return SamplerKeyHashFn(*this) == SamplerKeyHashFn(other);

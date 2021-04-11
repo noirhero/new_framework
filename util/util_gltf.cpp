@@ -125,21 +125,23 @@ namespace GLTF {
     void ConvertMaterial(Data::Material& dest, const tinygltf::Material& src, ConvertData& temp) {
         const auto& srcTextures = temp.src.textures;
 
-        // Albedo.
-        const auto albedoIterator = src.values.find("baseColorTexture");
-        if (src.values.end() != albedoIterator) {
-            const auto& srcAlbedo = srcTextures[albedoIterator->second.TextureIndex()];
-            dest.albedoSampler = ConvertSampler(srcAlbedo, temp);
-            dest.albedo = ImportTexture(srcAlbedo, temp);
-        }
+        const auto convertFn = [&src, &srcTextures, &temp](std::string&& imageType)->std::tuple<Image::Sampler*, Image::Dimension2*> {
+            auto findIterator = src.values.find(imageType);
+            if (src.values.end() == findIterator) {
+                findIterator = src.additionalValues.find(imageType);
+                if (src.additionalValues.end() == findIterator)
+                    return {};
+            }
 
-        // Metallic roughness.
-        const auto metallicRoughnessIterator = src.values.find("metallicRoughnessTexture");
-        if (src.values.end() != metallicRoughnessIterator) {
-            const auto& srcMetallicRoughness = srcTextures[metallicRoughnessIterator->second.TextureIndex()];
-            dest.metallicRoughnessSampler = ConvertSampler(srcMetallicRoughness, temp);
-            dest.metallicRoughness = ImportTexture(srcMetallicRoughness, temp);
-        }
+            const auto& srcTexture = srcTextures[findIterator->second.TextureIndex()];
+            return { ConvertSampler(srcTexture, temp), ImportTexture(srcTexture, temp) };
+        };
+
+        std::tie(dest.emissiveSampler, dest.emissive)= convertFn("emissiveTexture"s);
+        std::tie(dest.albedoSampler, dest.albedo) = convertFn("baseColorTexture"s);
+        std::tie(dest.normalSampler, dest.normal) = convertFn("normalTexture"s);
+        std::tie(dest.metallicRoughnessSampler, dest.metallicRoughness) = convertFn("metallicRoughnessTexture"s);
+        std::tie(dest.occlusionSampler, dest.occlusion) = convertFn("occlusionTexture"s);
     }
 
     void ConvertMesh(Data::Bone& containBone, const tinygltf::Mesh& src, ConvertData& temp) {

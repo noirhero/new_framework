@@ -2,10 +2,6 @@
 
 #pragma once
 
-namespace Command {
-    class Pool;
-}
-
 namespace Image {
     class Sampler;
     class Dimension2;
@@ -15,10 +11,6 @@ namespace Buffer {
     class Object;
 }
 
-namespace GLTF {
-    struct Node;
-}
-
 namespace Data {
     struct AABB {
         glm::vec3          min = glm::vec3(std::numeric_limits<float>::max());
@@ -26,10 +18,20 @@ namespace Data {
     };
 
     struct Material {
+        Image::Dimension2* emissive = nullptr;
+        Image::Sampler*    emissiveSampler = nullptr;
+
         Image::Dimension2* albedo = nullptr;
         Image::Sampler*    albedoSampler = nullptr;
+
+        Image::Dimension2* normal = nullptr;
+        Image::Sampler*    normalSampler = nullptr;
+
         Image::Dimension2* metallicRoughness = nullptr;
         Image::Sampler*    metallicRoughnessSampler = nullptr;
+
+        Image::Dimension2* occlusion = nullptr;
+        Image::Sampler*    occlusionSampler = nullptr;
     };
 
     struct Subset {
@@ -79,6 +81,8 @@ namespace Data {
         Model() = default;
         ~Model() = default;
         Model(const Model&) = delete;
+        Model(Model&&) = delete;
         Model& operator=(const Model&) = delete;
+        Model& operator=(Model&&) = delete;
     };
 }

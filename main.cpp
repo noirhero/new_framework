@@ -170,7 +170,7 @@ namespace Main {
         seconds += delta;
         if (5.0f <= seconds)
             rotate += delta;
-        const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f));
+        const auto model = glm::rotate(glm::mat4(1.0f), rotate, glm::vec3(0.0f, 1.0f, 0.0f)) * g_model->bones[0].local;
 
         auto& swapChain = Logical::SwapChain::Get();
         g_projection.SetScreenWidth(static_cast<float>(swapChain.width));
